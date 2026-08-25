@@ -2,7 +2,7 @@ import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { createAdapter } from '@socket.io/redis-adapter';
 import { User } from '../../features/auth/user.model.js';
-import redis from '../config/redis.js';
+import redis, { usingFallback as redisUsingFallback } from '../config/redis.js';
 import {
   setPresence,
   incrementPresence,
@@ -32,11 +32,14 @@ export function attachSocket(httpServer) {
     pingTimeout: 20000,
   });
 
-  const pubClient = redis.duplicate();
-  const subClient = redis.duplicate();
-  pubClient.on('error', (err) => console.error('[redis] pubClient error:', err.message));
-  subClient.on('error', (err) => console.error('[redis] subClient error:', err.message));
-  io.adapter(createAdapter(pubClient, subClient));
+  let pubClient, subClient;
+  if (!redisUsingFallback) {
+    pubClient = redis.duplicate();
+    subClient = redis.duplicate();
+    pubClient.on('error', (err) => console.error('[redis] pubClient error:', err.message));
+    subClient.on('error', (err) => console.error('[redis] subClient error:', err.message));
+    io.adapter(createAdapter(pubClient, subClient));
+  }
   ioInstance = io;
 
   io.use(async (socket, next) => {
@@ -100,8 +103,8 @@ export function attachSocket(httpServer) {
   const close = () =>
     Promise.all([
       new Promise((resolve) => io.close(resolve)),
-      pubClient.quit().catch(() => pubClient.disconnect()),
-      subClient.quit().catch(() => subClient.disconnect()),
+      pubClient ? pubClient.quit().catch(() => pubClient.disconnect()) : Promise.resolve(),
+      subClient ? subClient.quit().catch(() => subClient.disconnect()) : Promise.resolve(),
     ]);
 
   return { io, close };
