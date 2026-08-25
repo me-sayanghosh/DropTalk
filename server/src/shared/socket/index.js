@@ -14,6 +14,7 @@ import { registerMessageHandlers } from '../../features/messages/messages.socket
 import { registerPresenceHandlers } from '../../features/presence/presence.socket.js';
 import { registerKeyHandlers } from '../../features/keys/keys.socket.js';
 import { registerWebRTCHandlers } from './webrtc.socket.js';
+import { CORS_ORIGINS } from '../utils/constants.js';
 
 let ioInstance = null;
 
@@ -22,12 +23,8 @@ export function getIO() {
 }
 
 export function attachSocket(httpServer) {
-  const corsOrigin = process.env.CORS_ORIGIN
-    ? process.env.CORS_ORIGIN.split(',').map((s) => s.trim())
-    : ['http://localhost:5173', 'http://localhost:3000'];
-
   const io = new Server(httpServer, {
-    cors: { origin: corsOrigin, credentials: true },
+    cors: { origin: CORS_ORIGINS, credentials: true },
     pingInterval: 25000,
     pingTimeout: 20000,
   });
