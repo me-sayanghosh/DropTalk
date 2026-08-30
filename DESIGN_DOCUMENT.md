@@ -1,21 +1,23 @@
-# DropTalk / ChatApp — System Architecture & Design Document
+# DropTalk — System Architecture & Design Document
 
-**Document Status:** Approved & Implemented  
-**Version:** 1.0.0  
-**Target Environment:** Node.js (v18+), React (v18+ / Vite), MongoDB, Redis, WebRTC, Socket.IO, Google Gemini API  
+**Document Status:** Live Reference (Auto-generated from codebase scan)  
+**Version:** 2.0.0  
+**Last Updated:** 2026-08-30  
+**Target Environment:** Node.js (v18+, ES Modules), React 18 (Vite 5), MongoDB (Mongoose 8), Redis (ioredis 5), WebRTC, Socket.IO 4, Google Gemini 2.0 Flash API
 
 ---
 
 ## 1. Executive Overview
 
-**DropTalk (ChatApp)** is a high-performance, real-time, privacy-first messaging and collaboration platform. It is engineered with a **Feature-Based Modular Architecture** on both the frontend and backend to support enterprise scalability, zero-trust security (via End-to-End Encryption), and intelligent workspace assistance (via Google Gemini AI).
+**DropTalk** is a high-performance, real-time, privacy-first messaging and collaboration platform built with a **Feature-Based Modular Architecture** on both the frontend and backend to support horizontal scalability, zero-trust security (via client-side E2EE), and intelligent workspace assistance (via Google Gemini AI).
 
 ### Core Pillars
-1. **Zero-Trust Security**: Client-side End-to-End Encryption (E2EE) using RSA-OAEP 2048-bit key exchange and AES-GCM 256-bit payload encryption.
-2. **Sub-Millisecond Synchronization**: Event-driven WebSockets with Socket.IO backed by Redis Pub/Sub adapter for multi-node horizontal scaling.
-3. **AI Workspace Copilot**: Direct integration with Google Gemini AI for real-time conversation summarization and contextual smart reply generation.
-4. **Rich Communication Suite**: Public/Private channels, Direct Messages (DMs), Threaded discussions, WebRTC Voice & Video calling, and interactive presence heatmaps.
-5. **Resilient Offline Architecture**: Client-side IndexedDB/LocalStorage queueing with state backfill upon reconnection.
+1. **Zero-Trust Security**: Client-side End-to-End Encryption (E2EE) using RSA-OAEP 2048-bit key exchange and AES-GCM 256-bit payload encryption via the native Web Crypto API.
+2. **Sub-Millisecond Synchronization**: Event-driven WebSockets with Socket.IO backed by a Redis Pub/Sub adapter (`@socket.io/redis-adapter`) for multi-node horizontal scaling.
+3. **AI Workspace Copilot**: Direct integration with Google Gemini 2.0 Flash for real-time conversation summarization and contextual smart reply generation.
+4. **Rich Communication Suite**: Public/Private/Ephemeral channels, Direct Messages (DMs) with accept/reject workflow, Threaded discussions, WebRTC Voice & Video calling, message forwarding, and presence heatmaps.
+5. **Resilient Offline Architecture**: Client-side LocalStorage/IndexedDB queuing with message backfill upon reconnection via `/api/rooms/backfill`.
+6. **Passwordless-First Auth**: Email OTP (6-digit, 10-minute TTL, bcrypt-hashed) and Google OAuth 2.0, with automatic username setup flow for new users.
 
 ---
 
@@ -23,101 +25,65 @@
 
 ```
                                ┌──────────────────────────────────────────────┐
-                               │           React (Vite) Frontend              │
-                               │  - State & AuthContext   - Glassmorphic UI   │
-                               │  - E2EE Crypto Engine    - WebRTC Client     │
+                               │           React 18 (Vite 5) Frontend         │
+                               │  - AuthContext / ToastContext                │
+                               │  - Web Crypto API (RSA-OAEP + AES-GCM)      │
+                               │  - Socket.IO Client (v4)                    │
+                               │  - Framer Motion / GSAP / OGL animations    │
                                └──────────────────────┬───────────────────────┘
                                                       │
-                                    HTTP Rest / WS Socket.IO
+                                    HTTP REST / WebSocket (Socket.IO)
                                                       │
                                                       ▼
-┌─────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                Node.js / Express API & Socket.IO Gateway                        │
-│                                                                                                 │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌───────────────────┐  │
-│  │ Auth Module  │  │ Rooms Module │  │ DMs Module   │  │ E2EE Keys    │  │ Gemini AI Service │  │
-│  └──────────────┘  └──────────────┘  └──────────────┘  └──────────────┘  └───────────────────┘  │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌───────────────────┐  │
-│  │ Messages Engine││ WebRTC Calls │  │ Presence Svc │  │ Moderation   │  │ Notification Svc  │  │
-│  └──────────────┘  └──────────────┘  └──────────────┘  └──────────────┘  └───────────────────┘  │
-└──────────────────────┬──────────────────────┬──────────────────────┬────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────────────────────┐
+│                           Node.js / Express API & Socket.IO Gateway (Port 4000)            │
+│                                                                                            │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌─────────────┐  │
+│  │ Auth Feature │  │ Rooms Feature│  │  DM Feature  │  │ E2EE Keys    │  │ AI Feature  │  │
+│  │ OTP + Google │  │ CRUD + Join  │  │  Accept/Rej  │  │ per-user RSA │  │ Gemini 2.0  │  │
+│  └──────────────┘  └──────────────┘  └──────────────┘  └──────────────┘  └─────────────┘  │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌─────────────┐  │
+│  │Messages Engine│  │WebRTC Calls │  │ Presence Svc │  │ Moderation   │  │  Upload Svc │  │
+│  │ Threads, React│  │ WS Signaling│  │Redis Heartbt │  │ Kick/Ban/Mute│  │  Multer 50MB│  │
+│  └──────────────┘  └──────────────┘  └──────────────┘  └──────────────┘  └─────────────┘  │
+└──────────────────────┬──────────────────────┬──────────────────────┬──────────────────────┘
                        │                      │                      │
                        ▼                      ▼                      ▼
-           ┌──────────────────────┐┌──────────────────────┐┌──────────────────────┐
-           │   MongoDB Storage    ││   Redis In-Memory    ││  Google Gemini API   │
-           │  (Users, Messages,   ││  (Presence, Heartbeat││  (Summaries, Smart   │
-           │   Rooms, Call Logs)  ││   Pub/Sub Adapter)   ││   Reply Suggestions) │
-           └──────────────────────┘└──────────────────────┘└──────────────────────┘
+           ┌───────────────────────┐┌───────────────────────┐┌──────────────────────┐
+           │   MongoDB (Mongoose 8)││   Redis (ioredis 5)   ││  Google Gemini API   │
+           │  Users, Rooms,        ││  Presence hash-map,   ││  gemini-2.0-flash    │
+           │  Messages, CallLogs,  ││  Online set, Heartbeat││  Summarize + Suggest │
+           │  Notifications, OTPs  ││  TTL keys, Pub/Sub    ││  REST API v1beta     │
+           └───────────────────────┘└───────────────────────┘└──────────────────────┘
 ```
 
 ---
 
-## 3. Comprehensive Feature Breakdown
+## 3. Authentication & Authorization
 
-### 3.1 Authentication & User Identity Management
-- **Registration & Login**: Dual-token authentication with short-lived JWT Access Tokens and long-lived Refresh Tokens. Password hashing powered by `bcryptjs`.
-- **Username Reservation**: Dynamic username check API (`/api/auth/check-username/:username`) ensuring unique handle assignment.
-- **Profile Customization**: Custom display names, profile avatars, status bio, custom sound settings, and theme preferences.
+### 3.1 Authentication Flows
 
-### 3.2 Real-Time Socket Messaging Engine
-- **Bi-directional WebSockets**: Socket.IO transport layer for instant message broadcast, typing indicators, and online state notifications.
-- **Redis Multi-Node Sync**: Redis Pub/Sub socket adapter allows multi-instance server deployment with zero message duplication.
-- **Rich Message Content**: Full Markdown support, inline code syntax highlighting, file attachments, and image previews.
-- **Message Operations**: Live message editing, soft deletion, pinned messages, and message forwarding across channels and DMs.
-- **Emoji Reactions**: Dynamic real-time emoji reactions attached to individual messages.
+#### Email OTP (Passwordless)
+1. `POST /api/auth/send-otp` — generates a 6-digit OTP, bcrypt-hashes it, stores in MongoDB `Otp` collection with 10-minute TTL, dispatches via Nodemailer.
+2. `POST /api/auth/verify-otp` — validates OTP, consumes it, upserts the `User` record, returns `accessToken` + `refreshToken`.
 
-### 3.3 End-to-End Encryption (E2EE)
-- **Asymmetric Key Exchange**: RSA-OAEP 2048-bit client-generated public/private key pairs. Public keys are registered on the backend (`/api/rooms/keys`).
-- **Symmetric Encryption**: AES-GCM 256-bit secret key per private channel, shared securely using RSA encryption.
-- **Zero-Knowledge Backend**: Server stores only ciphertext data; decryption occurs strictly inside user browser memory.
+#### Google OAuth 2.0
+- `POST /api/auth/google` — verifies Google ID token via `google-auth-library`. Falls back to `jwt.decode` if no `GOOGLE_CLIENT_ID` is set (dev mode).
+- `POST /api/auth/google-direct` — accepts raw `{email, name, picture, googleId}` from a client-side Google userinfo call.
 
-### 3.4 Direct Messaging & Friends System
-- **1-on-1 DM Channels**: Dedicated private messaging between connected users.
-- **Direct Call Invites**: Instant audio/video call initialization directly from DM channels.
-- **Unread Counters & Read Receipts**: Real-time read receipt tracking with blue check indicators.
+#### Token Management
+- **Access Token**: Short-lived JWT (default 15 min), signed with `JWT_SECRET`. Payload: `{ sub, username }`.
+- **Refresh Token**: UUID v4, stored in `user.refreshTokens[]` with `expiresAt` (default 7 days) and `family` UUID for rotation detection.
+- **Token Rotation**: On refresh, the old token is revoked and a new one issued in the same family. If a revoked token is reused, the entire family is invalidated.
+- **New User Flow**: First-time users get `needsUsername: true` and an auto-generated username, redirecting to `/set-username`.
 
-### 3.5 Room & Channel Lifecycle Management
-- **Public & Private Channels**: Custom channel categorization, topic definitions, and configurable inactivity timeout auto-archiving.
-- **Join Request Workflow**: Private channels support approval workflows (`/api/rooms/:roomId/request-join`), enabling room owners and moderators to review pending requests.
+### 3.2 Custom Status
+- `PUT /api/auth/custom-status` — sets `customStatus.emoji` (max 10 chars) and `customStatus.text` (max 80 chars).
 
-### 3.6 Contextual Threaded Discussions
-- **Sub-thread Conversations**: Any message can open a side-panel discussion thread.
-- **Thread Metadata**: Track total reply count, last reply timestamp, and participant avatars.
-
-### 3.7 WebRTC Voice & Video Calling
-- **P2P Audio/Video Streams**: Peer-to-Peer mesh connectivity using WebRTC APIs.
-- **Socket Signaling**: Socket.IO handles Offer, Answer, and ICE candidate negotiation.
-- **In-Call Controls**: Mute microphone, toggle camera video stream, screen sharing, and call duration timer.
-- **Call Logging**: Persistent call logs tracking missed, answered, and outgoing call durations (`CallLog` MongoDB model).
-
-### 3.8 Gemini AI Integration (Copilot)
-- **Room Chat Summarization**: Analyzes recent room messages and generates structured bulleted summaries via Google Gemini.
-- **Smart Reply Suggestions**: Contextually suggests quick response snippets based on incoming conversation flow.
-- **Dedicated AI Assistant Panel**: In-app panel for drafting responses or querying AI assistance directly.
-
-### 3.9 Presence Tracking, Heartbeat & Activity Map
-- **Redis Heartbeat Mechanism**: High-performance TTL tracking in Redis to maintain active user states (`online`, `idle`, `dnd`, `offline`).
-- **Typing Indicators**: Debounced broadcast signals ("User is typing...").
-- **Presence Heatmap**: Visual dashboard widget rendering member density and activity across rooms.
-
-### 3.10 Granular Role-Based Moderation
-- **Role Hierarchy**: Room Owner, Admin/Moderator, Member.
-- **Moderation Actions**: Kick member, Ban member (User ID/IP), Mute member (suppressing socket broadcast), and promote/demote roles.
-- **Forced Disconnection**: Server emits `room:kicked` socket events to forcibly eject moderated users.
-
-### 3.11 Offline Queueing, Caching & Message Backfill
-- **Client Cache**: LocalStorage/IndexedDB storage for immediate initial room renders.
-- **Offline Outbox**: Messages drafted offline are queued locally and automatically dispatched on reconnect.
-- **Backfill API**: `/api/rooms/backfill` synchronizes missing messages since the last received timestamp.
-
-### 3.12 Notifications System
-- **In-App Notification Center**: Drawer tracking @mentions, room invitations, and calls.
-- **Web Push Notifications**: Browser Notifications API integration for background alerts.
-
-### 3.13 UI/UX Design System
-- **Glassmorphism Theme**: Ultra-modern translucent dark aesthetic built with custom CSS variables.
-- **Quick Switcher**: Command palette (`Cmd/Ctrl + K`) for rapid navigation between rooms and DMs.
-- **Accessibility & Shortcuts**: Global keyboard shortcut modal and accessible navigation patterns.
+### 3.3 Middleware
+- `requireAuth` — validates `Authorization: Bearer <token>`, attaches `req.user = { id, username }`.
+- `requireRole(role)` / `requireAtLeastRole(role)` — checks `req.roomMember.role` against `ROLE_HIERARCHY = { owner: 3, moderator: 2, member: 1 }`.
+- **Rate Limiting**: Auth routes capped at 30 requests / 15-minute window.
 
 ---
 
@@ -126,104 +92,661 @@
 ### 4.1 `User` Schema
 ```javascript
 {
-  username: { type: String, required: true, unique: true, index: true },
-  email: { type: String, required: true, unique: true, index: true },
-  password: { type: String, required: true },
-  name: { type: String, required: true },
-  profileImage: { type: String, default: "" },
-  bio: { type: String, default: "" },
-  publicKey: { type: String, default: null }, // RSA Public Key for E2EE
-  settings: {
-    theme: { type: String, default: "dark" },
-    soundEnabled: { type: Boolean, default: true }
+  username:     String (unique, 3–24 chars, [a-zA-Z0-9_-]),
+  name:         String (default ''),
+  email:        String (unique, lowercase),
+  profileImage: String (default ''),
+  googleId:     String (sparse index, nullable),
+  needsUsername: Boolean (default false),    // triggers /set-username onboarding
+  passwordHash: String (unused, reserved),
+  refreshTokens: [{ token, family, createdAt, expiresAt }],
+  revokedTokens: [{ token, revokedAt, family }], // for reuse detection
+  notificationSettings: {
+    groupNotifications:  Boolean (default true),
+    directNotifications: Boolean (default true),
+    backgroundSync:      Boolean (default true),
   },
-  createdAt: { type: Date, default: Date.now }
+  customStatus: { emoji: String, text: String },
+  // Mongoose timestamps: createdAt, updatedAt
 }
 ```
+
+> **Note**: No `publicKey` on the User document. RSA public keys are transmitted via the Socket.IO handshake auth (`publicKeyJwk`) and stored per-room in `Room.encryptedKeys[]`.
 
 ### 4.2 `Room` Schema
 ```javascript
 {
-  name: { type: String, required: true },
-  type: { type: String, enum: ["public", "private", "encrypted"], default: "public" },
-  topic: { type: String, default: "" },
-  owner: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  name:       String (unique, maxlength 100),
+  createdBy:  ObjectId → User,
+  type:       enum['public', 'private', 'ephemeral'],  // 'encrypted' removed
+  isDM:       Boolean (default false),
+  dmStatus:   enum['pending', 'accepted'],
+  dmInitiator: ObjectId → User,
   members: [{
-    user: { type: Schema.Types.ObjectId, ref: "User" },
-    role: { type: String, enum: ["owner", "admin", "member"], default: "member" },
-    isMuted: { type: Boolean, default: false },
-    joinedAt: { type: Date, default: Date.now }
+    user:     ObjectId → User,
+    role:     enum['owner', 'moderator', 'member'],    // 'admin' renamed to 'moderator'
+    joinedAt: Date,
+    muted:    Boolean,
   }],
-  bannedUsers: [{ type: Schema.Types.ObjectId, ref: "User" }],
-  pendingRequests: [{ type: Schema.Types.ObjectId, ref: "User" }],
-  inactivityMinutes: { type: Number, default: 0 },
-  encryptedKey: { type: String, default: null },
-  createdAt: { type: Date, default: Date.now }
+  encryptedKeys: [{ user, key, keyId }], // per-user RSA-encrypted AES room keys
+  pendingRequests: [{ user, requestedAt }],
+  bannedUsers:    [{ user, bannedAt, bannedBy }],
+  pinnedMessages: [ObjectId → Message],
+  topic:     String (maxlength 250),
+  category:  String (default 'General', maxlength 50),
+  slowMode:  Number (default 0),   // per-message cooldown in seconds
+  expiresAt: Date (nullable),      // MongoDB TTL index for ephemeral rooms
+  // Mongoose timestamps: createdAt, updatedAt
 }
+// TTL Index: roomSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 })
 ```
 
 ### 4.3 `Message` Schema
 ```javascript
 {
-  room: { type: Schema.Types.ObjectId, ref: "Room", required: true, index: true },
-  sender: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  content: { type: String, required: true },
-  isEncrypted: { type: Boolean, default: false },
-  attachments: [{
-    url: String,
-    filename: String,
-    fileType: String,
-    size: Number
-  }],
-  reactions: [{
-    emoji: String,
-    users: [{ type: Schema.Types.ObjectId, ref: "User" }]
-  }],
-  isPinned: { type: Boolean, default: false },
-  parentMessage: { type: Schema.Types.ObjectId, ref: "Message", default: null }, // For threads
-  replyCount: { type: Number, default: 0 },
-  readBy: [{ type: Schema.Types.ObjectId, ref: "User" }],
-  deletedAt: { type: Date, default: null },
-  createdAt: { type: Date, default: Date.now, index: true }
+  room:          ObjectId → Room (index),
+  sender:        ObjectId → User,
+  clientMsgId:   String (unique sparse — client-side deduplication),
+  text:          String (maxlength 2000),
+  attachments:   [{ url, filename, fileType: enum['image','video','audio','document'], mimeType, size }],
+  parentMessage: ObjectId → Message (non-null = thread reply),
+  replyTo:       ObjectId → Message (inline quote-reply, distinct from threads),
+  deleted:       Boolean,
+  deletedBy:     ObjectId → User,
+  deletedFor:    [ObjectId → User],  // "delete for me" soft-delete per user
+  reported:      Boolean,
+  edited:        Boolean,
+  editedAt:      Date,
+  forwardedFrom: { senderUsername: String, roomName: String },
+  mentions:      [ObjectId → User],
+  reactions:     [{ emoji: String, users: [ObjectId → User] }],
+  // Mongoose timestamps: createdAt, updatedAt
 }
+// Indexes: { room, parentMessage, createdAt } + unique sparse { clientMsgId }
 ```
 
 ### 4.4 `CallLog` Schema
 ```javascript
 {
-  caller: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  receiver: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  type: { type: String, enum: ["audio", "video"], required: true },
-  status: { type: String, enum: ["answered", "missed", "rejected"], required: true },
-  durationSeconds: { type: Number, default: 0 },
-  startedAt: { type: Date, default: Date.now }
+  caller:          ObjectId → User,
+  receiver:        ObjectId → User (nullable — null for room calls),
+  room:            ObjectId → Room (nullable — null for 1-on-1 calls),
+  type:            enum['voice', 'video'],                               // was 'audio' → now 'voice'
+  status:          enum['completed', 'missed', 'rejected', 'cancelled'], // 'answered' → 'completed'
+  durationSeconds: Number,
+  startedAt:       Date,
+  endedAt:         Date,
+}
+```
+
+### 4.5 `Notification` Schema
+```javascript
+{
+  user:      ObjectId → User (index),
+  actor:     ObjectId → User,
+  type:      enum['mention', 'dm', 'reaction', 'system', 'channel'],
+  title:     String,
+  message:   String,
+  link:      String,
+  roomId:    String,
+  messageId: String,
+  read:      Boolean (default false, index),
+}
+```
+
+### 4.6 `Otp` Schema
+```javascript
+{
+  email:     String (index, lowercase),
+  otpHash:   String (bcrypt-hashed 6-digit code),
+  expiresAt: Date (MongoDB TTL-indexed — auto-expires at expiresAt),
 }
 ```
 
 ---
 
-## 5. Security & Verification Standard
+## 5. API Reference
 
-1. **Authentication Policy**: Stateless access tokens with short lifetimes (15 mins) alongside refresh tokens validated against Redis store.
-2. **Input Sanitization**: HTML escaping and XSS prevention on message rendering.
-3. **Rate Limiting**: Express rate limiting middleware applied to login, registration, and AI routes.
-4. **E2EE Integrity**: AES-256-GCM authenticated tag verification on client side to prevent payload tampering.
+### 5.1 Authentication (`/api/auth`)
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/send-otp` | — | Send 6-digit email OTP (rate-limited: 30/15min) |
+| POST | `/verify-otp` | — | Verify OTP → returns tokens + user |
+| POST | `/google` | — | Google ID token sign-in/register |
+| POST | `/google-direct` | — | Google userinfo payload sign-in/register |
+| POST | `/refresh` | — | Rotate refresh token (reuse detection) |
+| POST | `/logout` | ✓ | Revoke current refresh token |
+| GET | `/me` | ✓ | Fetch current user profile |
+| GET | `/check-username/:username` | ✓ | Availability check (case-insensitive) |
+| PUT | `/profile` | ✓ | Update `name`, `username`, `profileImage` |
+| PUT | `/username` | ✓ | Dedicated username endpoint (post-registration) |
+| GET | `/users/search?q=` | ✓ | Fuzzy search users by username/name/email (max 20) |
+| PUT | `/custom-status` | ✓ | Set custom status emoji + text |
+
+### 5.2 Rooms (`/api/rooms`)
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/` | ✓ | List all non-DM rooms with last message + member count |
+| POST | `/` | ✓ | Create room (`public`/`private`/`ephemeral`) |
+| GET | `/:roomId` | ✓ | Get room details |
+| PUT | `/:roomId` | ✓ | Update room name/type (owner only) |
+| PUT | `/:roomId/settings` | ✓ | Update topic, category, slowMode (owner/moderator) |
+| POST | `/:roomId/request-join` | ✓ | Request to join a private room |
+| GET | `/:roomId/pending-requests` | ✓ | List pending join requests (owner/moderator) |
+| POST | `/:roomId/pending-requests/:requestId/grant` | ✓ | Approve join request |
+| POST | `/:roomId/pending-requests/:requestId/deny` | ✓ | Reject join request |
+
+**Default Rooms**: On first `GET /`, if no rooms exist, three default rooms are auto-created: `general`, `random`, `lounge`.
+
+### 5.3 Messages (`/api/rooms`)
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/:roomId/messages` | ✓ | Paginated messages (`after`, `before`, `limit`; server-side cache 60s) |
+| GET | `/:roomId/messages/search?q=` | ✓ | Full-text search within room (max 30 results) |
+| POST | `/backfill` | ✓ | Batch sync missed messages for up to 20 rooms |
+| GET | `/:roomId/messages/:messageId/replies` | ✓ | Fetch thread replies (max 100) |
+| GET | `/:roomId/threads` | ✓ | Aggregate view of all threads with reply counts (max 50) |
+
+### 5.4 Direct Messages (`/api/dm`)
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/send` | ✓ | Send initial DM (creates room if needed, `dmStatus: 'pending'`) |
+| GET | `/conversations` | ✓ | List all DM conversations with partner info + last message |
+| POST | `/:roomId/accept` | ✓ | Recipient accepts the DM request |
+| DELETE | `/:roomId` | ✓ | Remove/reject DM conversation + all messages |
+| GET | `/:roomId/messages` | ✓ | Fetch DM message history |
+
+### 5.5 E2EE Keys (`/api/rooms`)
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/:roomId/keys` | ✓ | Store user's RSA-encrypted AES room key |
+| GET | `/:roomId/keys` | ✓ | Retrieve caller's own encrypted key(s) |
+| GET | `/:roomId/keys/all` | ✓ | Retrieve all members' encrypted keys (for distribution) |
+
+### 5.6 AI (`/api/rooms`)
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/:roomId/summarize` | ✓ | Summarize last 200 messages via Gemini 2.0 Flash |
+| POST | `/:roomId/suggest` | ✓ | Suggest 3 reply completions based on last 50 messages |
+
+### 5.7 Calls (`/api/calls`)
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/history` | ✓ | Fetch call logs (last 100, populated) |
+| POST | `/log` | ✓ | Create a call log entry |
+| DELETE | `/history` | ✓ | Clear all call history for current user |
+
+### 5.8 Notifications (`/api/notifications`)
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/` | ✓ | List notifications (max 50) + unread count |
+| PUT | `/read-all` | ✓ | Mark all as read |
+| PUT | `/:id/read` | ✓ | Mark single notification as read |
+| DELETE | `/clear-all` | ✓ | Delete all notifications |
+| DELETE | `/room/:roomId` | ✓ | Auto-clear notifications for a viewed room |
+| DELETE | `/:id` | ✓ | Delete single notification |
+| PUT | `/settings` | ✓ | Update notification preferences |
+
+### 5.9 Moderation (`/api/rooms`)
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/:roomId/members/:userId/kick` | ✓ (mod+) | Kick (optionally ban) a member |
+| POST | `/:roomId/members/:userId/mute` | ✓ (mod+) | Toggle mute on a member |
+| POST | `/:roomId/members/:userId/role` | ✓ (owner) | Promote/demote to `moderator` or `member` |
+| GET | `/:roomId/members` | ✓ | List members with roles |
+| POST | `/:roomId/ban/:userId` | ✓ (mod+) | Ban user (removes from members + encrypted keys) |
+| POST | `/:roomId/unban/:userId` | ✓ (mod+) | Remove ban |
+| GET | `/:roomId/banned` | ✓ (mod+) | List banned users |
+| DELETE | `/:roomId/messages/:messageId` | ✓ (mod+) | Soft-delete a message |
+| POST | `/:roomId/messages/:messageId/report` | ✓ | Flag a message as reported |
+
+### 5.10 File Upload (`/api/upload`)
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/` | ✓ | Single file upload (max 50 MB, UUID-named) |
+| POST | `/multiple` | ✓ | Up to 5 files at once |
+
+**Allowed MIME types**: JPEG, PNG, GIF, WebP, SVG, PDF, TXT, MP3, WAV, OGG, WebM (audio), MP4, WebM (video).
 
 ---
 
-## 6. Directory Structure Reference
+## 6. Real-Time WebSocket Architecture (Socket.IO)
+
+### 6.1 Connection & Authentication
+- Socket.IO attaches to the HTTP server on port 4000.
+- JWT is verified from `socket.handshake.auth.token`; `socket.user = { id, username, name, profileImage, publicKeyJwk }`.
+- Each socket joins `user:<userId>` for targeted events (mentions, DMs, notifications).
+
+### 6.2 Redis Pub/Sub Adapter
+- When Redis is available, `@socket.io/redis-adapter` bridges events across server instances using separate `pubClient`/`subClient`.
+- **Fallback**: If Redis is unavailable, an `InMemoryRedis` singleton is used and the adapter is skipped (single-node only, auto-detected at boot).
+
+### 6.3 Socket Event Catalog
+
+#### Room Events
+| Client → Server | Server → Client | Description |
+|---|---|---|
+| `room:join` | `room:members` | Join socket room, receive current online members |
+| `room:leave` | `room:user-left` | Leave socket room |
+| — | `room:user-joined` | Broadcast: user joined |
+| — | `room:user-kicked` | Broadcast: kick action |
+| — | `room:kicked` | Targeted to kicked user (with `banned` flag) |
+| — | `room:online` | Updated online members list |
+
+#### Message Events
+| Client → Server | Server → Client | Description |
+|---|---|---|
+| `message:send` | `message:new` | Send + broadcast new message (clientMsgId dedup) |
+| `message:edit` | `message:updated` | Edit message text |
+| `message:delete` | `message:deleted` | Soft-delete a message |
+| `message:react` | `message:reaction-updated` | Toggle emoji reaction |
+| `message:forward` | `message:new` | Forward message to target room |
+| `message:pin` | `room:message-pinned` | Pin a message |
+| `message:unpin` | `room:message-unpinned` | Unpin a message |
+| `message:read` | — | Mark messages as read |
+
+#### Presence Events
+| Client → Server | Server → Client | Description |
+|---|---|---|
+| `presence:update` | `presence:update` | Manual status update (`online`/`idle`/`dnd`) |
+| `presence:get-map` | `presence:map` | Request bulk presence map |
+| `typing:start` | `typing:update` | User started typing (3s Redis TTL) |
+| `typing:stop` | `typing:update` | User stopped typing |
+
+#### DM Events (server → client only)
+| Event | Description |
+|---|---|
+| `dm:new-request` | New DM initiated |
+| `dm:accepted` | DM request accepted |
+| `dm:removed` | DM conversation deleted |
+
+#### WebRTC Signaling Events
+| Event | Direction | Description |
+|---|---|---|
+| `webrtc:call-initiate` | c → s → target | Initiate call (`targetUserId` or `roomId`) |
+| `webrtc:call-incoming` | s → target | Incoming call notification |
+| `webrtc:call-accept` | c → s → caller | Accept the call |
+| `webrtc:call-accepted` | s → caller | Acceptance confirmation |
+| `webrtc:call-reject` | c → s → caller | Reject the call |
+| `webrtc:call-rejected` | s → caller | Rejection notification |
+| `webrtc:offer` | c → s → target | Relay SDP offer |
+| `webrtc:answer` | c → s → caller | Relay SDP answer |
+| `webrtc:ice-candidate` | c → s → target | Relay ICE candidate |
+| `webrtc:call-end` | c → s → target | End the call |
+| `webrtc:call-ended` | s → target | Call end notification |
+
+#### E2EE Key Events
+| Client → Server | Server → Client | Description |
+|---|---|---|
+| `keys:share` | `keys:received` | Share per-user encrypted room keys |
+
+---
+
+## 7. End-to-End Encryption (E2EE) Implementation
+
+All crypto operations use the browser-native **Web Crypto API** (`window.crypto.subtle`) — no external library required.
+
+### 7.1 Key Generation & Storage
+- On first connection, client generates an **RSA-OAEP 2048-bit** key pair (SHA-256).
+- JWK representation persisted in `localStorage` under `chatapp:userRsaKeys`.
+- Public key JWK transmitted in Socket.IO handshake auth (`publicKeyJwk`).
+
+### 7.2 Room Key Exchange Protocol
+1. Room owner generates a **256-bit AES-GCM** symmetric key (`generateRoomKey()`).
+2. For each member, owner encrypts the raw AES key with that member's RSA public key (`encryptRoomKey()`), producing Base64-encoded ciphertext.
+3. Per-user encrypted key stored in `Room.encryptedKeys[]` via `POST /api/rooms/:roomId/keys` or `keys:share` socket event.
+4. Members fetch their key via `GET /api/rooms/:roomId/keys` and decrypt with their private key (`decryptRoomKey()`).
+
+### 7.3 Message Encryption
+- `encryptText(aesKey, plaintext)` — prepends 12-byte random IV to AES-GCM ciphertext, Base64-encodes combined buffer.
+- `decryptText(aesKey, ciphertextBase64)` — splits IV and ciphertext, decrypts in memory.
+- Decrypted AES keys stored in-memory only (`roomKeys` map, not persisted). Banning removes user's `encryptedKeys` entry, revoking future access.
+
+---
+
+## 8. Presence & Heartbeat System
+
+### 8.1 Redis Data Structures
+| Key Pattern | Type | Purpose |
+|---|---|---|
+| `presence` | Hash | `userId → JSON({ status, currentRoom, lastSeen })` |
+| `presence:online` | Set | Set of currently-online user IDs |
+| `presence:connCount:<userId>` | String | Connection count (multi-tab support) |
+| `presence:heartbeat:<userId>:<socketId>` | String | TTL=60s, refreshed every 30s |
+| `typing:<roomId>:<userId>` | String | TTL=3s, set on typing start |
+
+### 8.2 Connection Lifecycle
+1. **On `connection`**: `setPresence(online)` → `incrementPresence()` → `startHeartbeat()` (30s interval). Broadcasts `presence:update` globally.
+2. **On `disconnect`**: Clears heartbeat, emits `room:user-left` to joined rooms, `decrementPresence()`. If `connCount` reaches 0, broadcasts `presence:update offline`.
+3. **Reconciliation**: `reconcilePresence()` runs every 90 seconds, scanning `presence:online` for stale users with no live heartbeat keys.
+
+### 8.3 Typing Indicators
+`getTypingUsers(roomId)` scans `typing:<roomId>:*` keys, extracting user IDs from key names. Debounced `typing:update` events broadcast to the room.
+
+---
+
+## 9. Server-Side Caching
+
+An in-process **TTL Map cache** (`CacheService`) reduces MongoDB load:
+
+- Messages cached for **60 seconds** under `msgs:<roomId>:<userId>`.
+- Invalidated on `message:send`, `message:edit`, `message:delete`, `message:react`, and backfill.
+- Glob-pattern invalidation: `cacheService.delete('msgs:<roomId>:*')`.
+
+---
+
+## 10. File Upload Service
+
+- **Storage**: Multer disk storage → `/server/uploads/<uuid><ext>`, served at `/uploads/*`.
+- **Max size**: 50 MB per file.
+- **Allowed MIME types**: JPEG, PNG, GIF, WebP, SVG, PDF, TXT, MP3, WAV, OGG, WebM (audio), MP4, WebM (video).
+- **Multiple upload**: Up to 5 files via `POST /api/upload/multiple`.
+
+---
+
+## 11. Email Service (Nodemailer)
+
+- Configured via `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_SECURE`, `SMTP_FROM`.
+- **Dev fallback**: If no SMTP credentials, a temporary Ethereal test account is auto-created. OTP codes also logged in color to server console.
+- HTML email template uses dark glassmorphic design matching the app aesthetic.
+
+---
+
+## 12. Comprehensive Feature Breakdown
+
+### 12.1 Authentication & Identity
+- **Passwordless OTP**: Email → 6-digit code → JWT pair. OTP bcrypt-hashed (10 rounds), auto-expires via MongoDB TTL index.
+- **Google OAuth**: Server-side ID token verification; supports `credential` (button) and `idToken` (userinfo).
+- **Username Setup**: New users get `needsUsername: true`, redirected to `/set-username`. Username: 3–24 chars, `[a-zA-Z0-9_-]`, case-insensitive uniqueness.
+- **User Search**: Case-insensitive regex across `username`, `name`, `email` (max 20 results).
+
+### 12.2 Real-Time Messaging Engine
+- **Deduplication**: `clientMsgId` (UUID) prevents duplicate messages during reconnection.
+- **Rich content**: Max 2000 chars, multi-file attachments, inline quote-replies (`replyTo`), thread replies (`parentMessage`), @mentions, message forwarding with `forwardedFrom` attribution.
+- **Reactions**: Toggle emoji; `message:react` toggles user in `reactions[].users[]`.
+- **Pinned Messages**: Room-level `pinnedMessages[]` array.
+- **Editing**: Sets `edited: true` + `editedAt`.
+- **Soft Delete**: `deleted: true` (tombstone for all) or `deletedFor: [userId]` (personal hide).
+- **Slow Mode**: `slowMode` (seconds) cooldown enforced client-side.
+
+### 12.3 Channel Types
+- **`public`**: Open to all.
+- **`private`**: Requires join request approval workflow.
+- **`ephemeral`**: MongoDB TTL-indexed, auto-deletes after `expiresAt` (configurable `inactivityMinutes`, default 60).
+
+### 12.4 Direct Messages
+- DM rooms: `Room` with `isDM: true`, `dmStatus: 'pending'|'accepted'`, `dmInitiator`.
+- Initiating creates a pending room + initial message, emits `dm:new-request`.
+- Recipient can `accept` or `DELETE` (deletes all messages + room).
+
+### 12.5 Threaded Discussions
+- Thread replies: `parentMessage: <messageId>`.
+- `GET /:roomId/threads` uses MongoDB `$lookup` + `$addFields` pipeline to return threads with `replyCount` and `lastReply`.
+
+### 12.6 WebRTC Voice & Video
+- **Pure relay**: Server forwards offer/answer/ICE between peers via `user:<userId>` rooms.
+- **Supports**: 1-on-1 (`targetUserId`) and group calls (`roomId`).
+- **Call Logging**: Metadata persisted via `POST /api/calls/log`.
+
+### 12.7 Gemini AI Integration
+- **Model**: `gemini-2.0-flash` via REST API.
+- **Summarize**: Last 200 messages → <200-word structured summary.
+- **Suggest**: Last 50 messages + draft → 3 completion options (JSON array, each <30 words).
+- Requires `GEMINI_API_KEY`.
+
+### 12.8 Notifications
+- Types: `mention`, `dm`, `reaction`, `system`, `channel`.
+- Created by `createNotification()` in `notifications.service.js`, delivered real-time via `io.to('user:<userId>')`.
+
+### 12.9 Moderation
+- **Role Hierarchy**: `owner > moderator > member`.
+- **Kick**: Removes from members, optionally bans, forces `socket.leave()` + emits `room:kicked`.
+- **Ban**: Removes from members + `encryptedKeys[]` (revokes E2EE), adds to `bannedUsers[]`.
+- **Mute**: Toggles `member.muted` (enforced client-side).
+- **Role Change**: Owner-only promotion/demotion.
+- **Message Moderation**: Moderators+ can soft-delete; any user can report.
+
+### 12.10 Presence & Activity Heatmap
+- Status states: `online | idle | dnd | offline`.
+- Real-time global `presence:update` broadcast on connect/disconnect.
+- `PresenceMap.jsx` visualizes member density across rooms.
+
+### 12.11 Offline Queueing & Backfill
+- Offline queue in `localStorage` (`chatapp:offlineQueue`), dispatched on reconnect.
+- Backfill: up to 20 rooms, 100 messages per room, sorted ascending by `_id`.
+
+### 12.12 UI/UX Design System
+- **React 18** + React Router 6, lazy-loaded routes via `React.lazy` + `Suspense`.
+- **Animations**: Framer Motion 12, GSAP 3, OGL (WebGL).
+- **Icons**: Lucide React.
+- **Auth UI**: `@react-oauth/google`.
+- **Glassmorphism**: Translucent dark aesthetic via CSS variables.
+- **Quick Switcher**: `Cmd/Ctrl+K` command palette.
+- **Toast System**: `ToastContext` + `ToastContainer`.
+- **Error Boundary**: Wraps entire app tree.
+- **Skeleton Loaders**: Progressive loading states.
+
+---
+
+## 13. Security & Hardening
+
+1. **Helmet.js**: `crossOriginResourcePolicy: 'cross-origin'` (uploads) + `crossOriginOpenerPolicy: 'same-origin-allow-popups'` (Google OAuth).
+2. **CORS**: Dynamic origin validation — allows configured origins, all localhost ports, and local private network ranges.
+3. **Rate Limiting**: 30 requests / 15 min on `/api/auth`.
+4. **JWT Security**: Short-lived access tokens, refresh token rotation with reuse detection.
+5. **bcrypt**: OTP codes hashed (10 rounds).
+6. **E2EE**: Server stores only ciphertext; plaintext never leaves the client.
+7. **Input Limits**: Messages ≤ 2000 chars; uploads ≤ 50 MB; MIME allowlist enforced.
+8. **DNS Hardening**: `dns.setServers(['1.1.1.1', '8.8.8.8'])`.
+9. **Graceful Shutdown**: SIGINT/SIGTERM/SIGUSR2 handlers with 10-second forced-exit fallback.
+10. **Global Error Handling**: `uncaughtException` / `unhandledRejection` handlers.
+
+---
+
+## 14. Testing
+
+| File | Framework | Coverage |
+|---|---|---|
+| `tests/auth.test.js` | Jest + Supertest + mongodb-memory-server | Auth routes (OTP, Google, refresh, profile) |
+| `tests/backfill.test.js` | Jest + Supertest + mongodb-memory-server | Message backfill API |
+| `tests/kickban.test.js` | Jest + Supertest + mongodb-memory-server | Moderation: kick, ban, unban |
+| `tests/setup.js` | Jest globalSetup | In-memory MongoDB lifecycle |
+
+**Run**: `cd server && npm test`  
+Jest uses `--experimental-vm-modules` (ESM support), `--forceExit`, `--detectOpenHandles`.
+
+---
+
+## 15. Directory Structure Reference
 
 ```
-c:\ChatApp/
-├── DESIGN_DOCUMENT.md            # Master System Architecture & Design Specification
-├── README.md                     # Quick Start & Setup Guide
-├── client/                       # React + Vite Frontend App
+DropTalk/
+├── DESIGN_DOCUMENT.md
+├── README.md
+│
+├── client/                             # React 18 + Vite 5 Frontend
+│   ├── index.html
+│   ├── vite.config.js
+│   ├── package.json
 │   └── src/
-│       ├── features/             # Feature Modules (auth, calls, chat, home, notifications, profile)
-│       └── shared/               # Core Utilities, Contexts, UI Components, E2EE Crypto
-└── server/                       # Node.js + Express Backend API
-    ├── src/
-    │   ├── features/             # Backend Domain Services (auth, ai, calls, dm, keys, messages, etc.)
-    │   └── shared/               # Database, Redis, WebSockets, Middleware Infrastructure
-    └── tests/                    # Integration Tests (Jest + mongodb-memory-server)
+│       ├── App.jsx                     # Root: routes + lazy-loaded pages
+│       ├── main.jsx                    # Entry: BrowserRouter + contexts
+│       ├── styles.css                  # Global CSS / Glassmorphism system
+│       ├── features/
+│       │   ├── auth/
+│       │   │   └── pages/
+│       │   │       ├── JoinNow.jsx         # OTP + Google sign-in
+│       │   │       └── SetUsername.jsx     # Post-registration username setup
+│       │   ├── calls/
+│       │   │   ├── components/
+│       │   │   │   ├── CallLogsMainView.jsx
+│       │   │   │   ├── CallLogsPanel.jsx
+│       │   │   │   └── StartCallModal.jsx
+│       │   │   └── hooks/useCalls.js
+│       │   ├── chat/
+│       │   │   ├── components/
+│       │   │   │   ├── AIPanel.jsx              # Gemini AI copilot
+│       │   │   │   ├── CallOverlay.jsx          # Active call UI
+│       │   │   │   ├── ChannelSettingsModal.jsx
+│       │   │   │   ├── Channels.jsx             # Channel list sidebar
+│       │   │   │   ├── CreateChannelModal.jsx
+│       │   │   │   ├── DMChat.jsx               # DM conversation view
+│       │   │   │   ├── DMPanel.jsx              # DM list
+│       │   │   │   ├── ForwardModal.jsx
+│       │   │   │   ├── KeyboardShortcutsModal.jsx
+│       │   │   │   ├── MemberList.jsx
+│       │   │   │   ├── MessageInput.jsx         # Composer
+│       │   │   │   ├── MessageList.jsx          # Message feed
+│       │   │   │   ├── MessageSearchModal.jsx
+│       │   │   │   ├── PendingRequests.jsx      # Join request management
+│       │   │   │   ├── PinnedMessagesModal.jsx
+│       │   │   │   ├── PresenceMap.jsx          # Activity heatmap
+│       │   │   │   ├── QuickSwitcherModal.jsx   # Cmd+K palette
+│       │   │   │   ├── ReactionPicker.jsx
+│       │   │   │   ├── ScrollToBottom.jsx
+│       │   │   │   ├── SuggestionsBar.jsx       # AI smart replies
+│       │   │   │   ├── ThreadPanel.jsx          # Thread side panel
+│       │   │   │   ├── TypingIndicator.jsx
+│       │   │   │   └── UserProfileCard.jsx
+│       │   │   ├── hooks/
+│       │   │   │   ├── useChat.js               # Main chat state + socket handlers
+│       │   │   │   ├── useDM.js                 # DM state management
+│       │   │   │   └── useWebRTC.js             # WebRTC peer connection
+│       │   │   └── pages/Chat.jsx               # Main authenticated shell
+│       │   ├── home/
+│       │   │   ├── components/
+│       │   │   │   ├── Aurora.jsx / .css        # WebGL animated background
+│       │   │   │   ├── Illustrations.jsx
+│       │   │   │   ├── RotatingText.jsx / .css
+│       │   │   │   └── ScrollFloat.jsx / .css
+│       │   │   └── pages/Home.jsx               # Marketing landing page
+│       │   ├── notifications/
+│       │   │   ├── components/
+│       │   │   │   ├── NotificationsMainView.jsx
+│       │   │   │   └── NotificationsPanel.jsx
+│       │   │   ├── NotificationDrawer.jsx
+│       │   │   └── useNotifications.js
+│       │   └── profile/
+│       │       └── pages/
+│       │           ├── Profile.jsx
+│       │           └── SettingsPage.jsx         # /settings/:section
+│       └── shared/
+│           ├── components/
+│           │   ├── ErrorBoundary.jsx
+│           │   └── ui/
+│           │       ├── AnimatedList.jsx / .css
+│           │       ├── PostRegisterStepper.jsx
+│           │       ├── SkeletonLoaders.jsx
+│           │       ├── Stepper.jsx / .css
+│           │       ├── ToastContainer.jsx
+│           │       └── index.js
+│           ├── context/
+│           │   ├── AuthContext.jsx              # JWT management + auto token refresh
+│           │   └── ToastContext.jsx             # Global toast system
+│           ├── hooks/
+│           │   └── useTheme.js
+│           └── utils/
+│               ├── api.js                       # Axios + refresh interceptor
+│               ├── cacheManager.js              # Client-side IndexedDB/LocalStorage cache
+│               ├── constants.js                 # API_BASE, SERVER_URL, STORAGE_KEYS
+│               ├── crypto.js                    # Web Crypto: RSA-OAEP + AES-GCM
+│               ├── dateUtils.js
+│               ├── index.js
+│               ├── socket.js                    # Socket.IO client singleton
+│               └── webNotifications.js          # Browser Notifications API
+│
+└── server/                             # Node.js 18+ + Express (ES Modules)
+    ├── package.json
+    ├── jest.config.js
+    ├── uploads/                        # Multer storage (gitignored)
+    ├── tests/
+    │   ├── setup.js
+    │   ├── auth.test.js
+    │   ├── backfill.test.js
+    │   └── kickban.test.js
+    └── src/
+        ├── index.js                    # Bootstrap: Express + routes + HTTP server
+        ├── features/
+        │   ├── ai/
+        │   │   └── ai.routes.js            # /summarize + /suggest (Gemini 2.0 Flash)
+        │   ├── auth/
+        │   │   ├── auth.routes.js          # OTP, Google OAuth, JWT, profile CRUD
+        │   │   ├── user.model.js           # User schema + toClient()
+        │   │   └── otp.model.js            # OTP schema (TTL-indexed)
+        │   ├── calls/
+        │   │   ├── calls.routes.js         # Call log CRUD
+        │   │   └── callLog.model.js        # CallLog schema + toClient(userId)
+        │   ├── dm/
+        │   │   └── dm.routes.js            # DM send/accept/reject/list/messages
+        │   ├── keys/
+        │   │   ├── keys.routes.js          # E2EE key HTTP routes
+        │   │   └── keys.socket.js          # keys:share socket handler
+        │   ├── messages/
+        │   │   ├── messages.routes.js      # Paginated fetch, search, backfill
+        │   │   ├── messages.socket.js      # send/edit/delete/react/pin handlers
+        │   │   ├── threads.routes.js       # Thread replies + aggregate
+        │   │   ├── message.model.js        # Message schema + toClient()
+        │   │   └── readReceipts.service.js
+        │   ├── moderation/
+        │   │   └── moderation.routes.js    # Kick/ban/mute/role/message moderation
+        │   ├── notifications/
+        │   │   ├── notifications.routes.js
+        │   │   ├── notifications.service.js# createNotification() helper
+        │   │   └── notification.model.js   # Notification schema + toClient()
+        │   ├── presence/
+        │   │   ├── presence.service.js     # Redis presence + heartbeat + reconcile
+        │   │   └── presence.socket.js      # presence:update, typing handlers
+        │   ├── rooms/
+        │   │   ├── rooms.routes.js         # Room CRUD + join workflow + settings
+        │   │   ├── rooms.socket.js         # room:join/leave handlers
+        │   │   └── room.model.js           # Room schema + toClient() + toSummary()
+        │   └── upload/
+        │       └── upload.routes.js        # Multer single + multi-file upload
+        └── shared/
+            ├── cache/
+            │   └── cache.service.js        # In-process TTL Map cache
+            ├── config/
+            │   ├── db.js                   # Mongoose connection
+            │   └── redis.js                # ioredis + InMemoryRedis fallback
+            ├── middleware/
+            │   ├── auth.js                 # requireAuth (Bearer JWT)
+            │   ├── rateLimit.js            # Rate limiter factories
+            │   └── roles.js                # requireRole / requireAtLeastRole
+            ├── socket/
+            │   ├── index.js                # Socket.IO server + connection lifecycle
+            │   └── webrtc.socket.js        # WebRTC signaling relay
+            └── utils/
+                ├── constants.js            # ROLE_HIERARCHY, ROOM_TYPES, PRESENCE, etc.
+                ├── errors.js               # parseExpiry, escapeRegex, generateAutoUsername
+                ├── index.js
+                └── mailer.js               # Nodemailer (SMTP + Ethereal fallback)
 ```
+
+---
+
+## 16. Environment Variables
+
+### Server (`server/.env`)
+| Variable | Default | Description |
+|---|---|---|
+| `PORT` | `4000` | HTTP server port |
+| `MONGODB_URI` | `mongodb://127.0.0.1:27017/chatapp` | MongoDB connection string |
+| `REDIS_URL` | `redis://127.0.0.1:6379` | Redis connection string |
+| `JWT_SECRET` | *(required)* | JWT signing secret |
+| `ACCESS_TOKEN_EXPIRY` | `15m` | Access token lifetime |
+| `REFRESH_TOKEN_EXPIRY` | `7d` | Refresh token lifetime |
+| `GOOGLE_CLIENT_ID` | *(optional)* | Google OAuth client ID |
+| `GEMINI_API_KEY` | *(optional)* | Google Gemini API key |
+| `CORS_ORIGIN` | `http://localhost:5173,...` | Comma-separated allowed origins |
+| `SMTP_HOST` | *(optional)* | SMTP server hostname |
+| `SMTP_PORT` | `587` | SMTP port |
+| `SMTP_USER` / `EMAIL_USER` | *(optional)* | SMTP username |
+| `SMTP_PASS` / `EMAIL_PASS` | *(optional)* | SMTP password |
+| `SMTP_SECURE` | `false` | TLS on connect (`true` for port 465) |
+| `SMTP_FROM` / `EMAIL_FROM` | `"DropTalk Auth" <no-reply@droptalk.com>` | From address |
+
+### Client (`client/.env`)
+| Variable | Default | Description |
+|---|---|---|
+| `VITE_API_BASE` | `http://localhost:4000/api` | Backend REST API base URL |
+| `VITE_SERVER_URL` | `http://localhost:4000` | Backend server URL (uploads + Socket.IO) |
