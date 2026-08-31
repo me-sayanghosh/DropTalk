@@ -211,7 +211,7 @@ export default function Channels({
     return (
       <div
         key={room.id}
-        className={`conv-card ${isActive ? 'active' : ''} ${isPrivateNotMember ? 'private-locked' : ''} ${hasUnread ? 'has-unread' : ''}`}
+        className={`conv-card ${isActive ? 'active' : ''} ${isPrivateNotMember ? 'private-locked' : ''} ${hasUnread ? 'has-unread' : ''} ${isMenuOpen ? 'menu-open' : ''}`}
         onClick={() => onSelect?.(room)}
       >
         {/* Circular Avatar */}
