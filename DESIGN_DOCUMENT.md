@@ -535,6 +535,89 @@ An in-process **TTL Map cache** (`CacheService`) reduces MongoDB load:
 - **Error Boundary**: Wraps entire app tree.
 - **Skeleton Loaders**: Progressive loading states.
 
+### 12.13 Frontend Pages & Routes
+
+All routes are declared in [`App.jsx`](client/src/App.jsx). Routes marked **Protected** redirect to `/join` if unauthenticated, and to `/set-username` if the user has `needsUsername: true`.
+
+#### Route Table
+
+| Route | Component File | Auth Guard | Description |
+|---|---|---|---|
+| `/` | `features/home/pages/Home.jsx` | Public | Marketing landing page with WebGL aurora background, animated rotating text, and scroll-float illustrations |
+| `/join` | `features/auth/pages/JoinNow.jsx` | Public | Combined login + signup page — two-step: email entry → 6-digit OTP input; also contains Google Sign-In button |
+| `/login` | Redirects → `/join` | Public | Alias redirect |
+| `/register` | Redirects → `/join` | Public | Alias redirect |
+| `/set-username` | `features/auth/pages/SetUsername.jsx` | Public (post-auth only) | Username setup page shown once to new users; validates availability in real-time; on submit sets `needsUsername: false` |
+| `/chat` | `features/chat/pages/Chat.jsx` | **Protected** | Main app shell with sidebar navigation |
+| `/channels` | `features/chat/pages/Chat.jsx` | **Protected** | Channel list view (same shell, no room selected) |
+| `/channels/:roomId` | `features/chat/pages/Chat.jsx` | **Protected** | Specific channel open; loads messages for `roomId` |
+| `/dm` | `features/chat/pages/Chat.jsx` | **Protected** | DM panel view (no conversation selected) |
+| `/dm/:dmId` | `features/chat/pages/Chat.jsx` | **Protected** | Specific DM conversation open |
+| `/calls` | `features/chat/pages/Chat.jsx` | **Protected** | Call logs view inside the chat shell |
+| `/notifications` | `features/chat/pages/Chat.jsx` | **Protected** | Notifications center inside the chat shell |
+| `/profile` | Redirects → `/settings/profile` | Public | Legacy redirect |
+| `/settings` | Redirects → `/settings/profile` | Public | Redirect to default settings section |
+| `/settings/:section` | `features/profile/pages/SettingsPage.jsx` | **Protected** | Settings page with tab-based sections (see below) |
+| `*` (404) | Redirects → `/` | Public | Catch-all fallback |
+
+> **Note**: `Profile.jsx` is a thin re-export wrapper (`export default function Profile() { return <SettingsPage /> }`) — it is not a standalone page.
+
+#### Settings Page Sections (`/settings/:section`)
+
+`SettingsPage.jsx` reads the `:section` URL param and renders one of 6 tab panels:
+
+| Section | Path | Content |
+|---|---|---|
+| **Profile** | `/settings/profile` | Edit display name, username (live availability check), profile photo upload, custom status emoji + text |
+| **Appearance** | `/settings/appearance` | Theme toggle (light/dark), preview |
+| **Privacy** | `/settings/privacy` | Account privacy controls |
+| **Notifications** | `/settings/notifications` | Toggle group notifications, DM notifications, background sync; saved to `User.notificationSettings` |
+| **Shortcuts** | `/settings/shortcuts` | Keyboard shortcut reference (read-only) |
+| **Help** | `/settings/help` | Help and support info |
+
+Invalid section params default to `profile`.
+
+#### Chat Shell Views (`features/chat/pages/Chat.jsx`)
+
+The `Chat.jsx` shell is a single-page layout that renders different panels based on the current route and UI state:
+
+| View | Trigger | Key Components Rendered |
+|---|---|---|
+| Channel list | `/channels` (no roomId) | `Channels.jsx`, `PresenceMap.jsx` |
+| Channel message feed | `/channels/:roomId` | `Channels.jsx`, `MessageList.jsx`, `MessageInput.jsx`, `MemberList.jsx` |
+| Thread panel | Thread opened in channel | `ThreadPanel.jsx` (slides in) |
+| AI copilot | AI button in header | `AIPanel.jsx` (slides in) |
+| DM list | `/dm` | `DMPanel.jsx` |
+| DM conversation | `/dm/:dmId` | `DMPanel.jsx`, `DMChat.jsx`, `MessageInput.jsx` |
+| Call logs | `/calls` | `CallLogsPanel.jsx`, `CallLogsMainView.jsx` |
+| Notifications | `/notifications` | `NotificationsPanel.jsx`, `NotificationsMainView.jsx` |
+| Active call overlay | Call in progress | `CallOverlay.jsx` (floating, above all views) |
+| Notification drawer | Bell icon | `NotificationDrawer.jsx` (slides in from right) |
+
+#### Modal / Overlay Components (globally available in Chat shell)
+
+| Component | Trigger | Purpose |
+|---|---|---|
+| `CreateChannelModal.jsx` | `+` button in sidebar | Create a new room (public/private/ephemeral) |
+| `ChannelSettingsModal.jsx` | Settings icon in channel header | Edit room name, topic, category, slowMode |
+| `PendingRequests.jsx` | Moderator+ only, notification in sidebar | Approve/deny join requests for private rooms |
+| `PinnedMessagesModal.jsx` | Pin icon in header | View and unpin pinned messages |
+| `MessageSearchModal.jsx` | Search icon | Full-text search within the current room |
+| `ForwardModal.jsx` | Forward action on a message | Pick a target room/DM to forward a message |
+| `QuickSwitcherModal.jsx` | `Cmd/Ctrl+K` | Command palette for fast room/DM navigation |
+| `KeyboardShortcutsModal.jsx` | `?` shortcut | Reference list of all keyboard shortcuts |
+| `ReactionPicker.jsx` | Emoji icon on message hover | Emoji grid for reacting to a message |
+| `UserProfileCard.jsx` | Click on a username | Mini profile card with DM start button |
+| `StartCallModal.jsx` | Phone icon in sidebar/member list | Initiate a voice or video call |
+
+#### Post-Registration Flow Components
+
+| Component | When Used | Purpose |
+|---|---|---|
+| `PostRegisterStepper.jsx` | After first login (needsUsername=true) | Multi-step onboarding stepper UI |
+| `Stepper.jsx` | Inside PostRegisterStepper | Reusable step indicator with animated progress |
+| `SetUsername.jsx` | Step 1 of post-register flow | Username selection with live uniqueness check |
+
 ---
 
 ## 13. Security & Hardening
