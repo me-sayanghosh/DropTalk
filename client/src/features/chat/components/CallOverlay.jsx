@@ -138,7 +138,11 @@ export default function CallOverlay({
             )}
             <div className="outgoing-pulse-ring" />
           </div>
+          <div className="call-type-indicator-badge">
+            {callerInfo?.isVideo ? '📹 Video Call' : '📞 Voice Call'}
+          </div>
           <h4>Calling {callerInfo?.fromUsername || 'User'}...</h4>
+          <p className="call-status-subtitle">Ringing & establishing connection...</p>
           <button className="call-btn decline big-cancel-btn" onClick={onEndCall} title="Cancel Call">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18" />
@@ -239,8 +243,22 @@ export default function CallOverlay({
                 ref={remoteVideoRef}
                 autoPlay
                 playsInline
-                className="remote-video-el"
+                className={`remote-video-el ${!remoteStream ? 'hidden-video' : ''}`}
               />
+
+              {/* Placeholder when remote stream is not yet active */}
+              {!remoteStream && (
+                <div className="remote-video-placeholder">
+                  <div className="remote-placeholder-avatar">
+                    {(callerInfo?.fromUsername || 'P')[0].toUpperCase()}
+                  </div>
+                  <h3>{callerInfo?.fromUsername || 'Peer'}</h3>
+                  <div className="remote-connecting-pill">
+                    <span className="connecting-pulse-dot" />
+                    <span>Connecting Video Stream...</span>
+                  </div>
+                </div>
+              )}
 
               {/* PIP Local Camera Preview */}
               <div className="local-pip-container">
@@ -253,7 +271,7 @@ export default function CallOverlay({
                 />
                 {isVideoOff && (
                   <div className="pip-avatar-fallback">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <line x1="1" y1="1" x2="23" y2="23" />
                       <path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l2-3h6l2 3h3a2 2 0 0 1 2 2v9.5" />
                     </svg>
