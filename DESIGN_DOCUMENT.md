@@ -326,44 +326,58 @@
 #### Room Events
 | Client → Server | Server → Client | Description |
 |---|---|---|
-| `room:join` | `room:members` | Join socket room, receive current online members |
+| `room:join` | — | Join socket room; response via ack `{ ok, online, members, roomType }` |
 | `room:leave` | `room:user-left` | Leave socket room |
-| — | `room:user-joined` | Broadcast: user joined |
-| — | `room:user-kicked` | Broadcast: kick action |
-| — | `room:kicked` | Targeted to kicked user (with `banned` flag) |
-| — | `room:online` | Updated online members list |
+| `room:kick` | `room:user-kicked` | Kick a member (moderator+); also emits `room:kicked` to target |
+| `room:request-join` | `room:new-request` | Request to join a private room (socket alternative to HTTP) |
+| `room:grant-join` | `room:request-granted` | Approve a pending join request; also emits `room:auto-join` to grantee |
+| `room:deny-join` | `room:request-denied` | Deny a pending join request |
+| — | `room:user-joined` | Broadcast: user joined the room |
+| — | `room:kicked` | Targeted to the kicked user (`{ roomId, banned }`) |
+| — | `room:auto-join` | Targeted to grantee after join request approved |
+| — | `room:online` | Updated online members + roles list for the room |
 
 #### Message Events
 | Client → Server | Server → Client | Description |
 |---|---|---|
-| `message:send` | `message:new` | Send + broadcast new message (clientMsgId dedup) |
-| `message:edit` | `message:updated` | Edit message text |
-| `message:delete` | `message:deleted` | Soft-delete a message |
-| `message:react` | `message:reaction-updated` | Toggle emoji reaction |
-| `message:forward` | `message:new` | Forward message to target room |
-| `message:pin` | `room:message-pinned` | Pin a message |
-| `message:unpin` | `room:message-unpinned` | Unpin a message |
-| `message:read` | — | Mark messages as read |
+| `message:send` | `message:new` | Send a message (with optional `forwardedFrom` field for forwarding; `clientMsgId` dedup) |
+| `message:edit` | `message:edited` | Edit own message text; sets `edited: true` + `editedAt` |
+| `message:delete` | `message:deleted` | Soft-delete a message (sender or moderator+) |
+| `message:delete-for-me` | `message:deleted-for-me` | Personal soft-delete — hides message only for the sender |
+| `message:react` | `message:reaction` | Toggle an emoji reaction; payload `{ roomId, messageId, reactions[] }` |
+| `message:thread-reply` | `message:new` + `message:thread-reply` | Post a reply in a thread (`parentMessageId` required) |
+| `message:pin` | `message:pinned` | Pin a message; payload `{ roomId, messageId, pinnedMessages[] }` |
+| `message:unpin` | `message:unpinned` | Unpin a message; payload `{ roomId, messageId, pinnedMessages[] }` |
+| `message:read` | `message:read` | Mark messages as read; broadcasts `{ roomId, userId, lastReadMessageId }` to room |
+| — | `message:mention` | Targeted to mentioned users `{ roomId, messageId, fromUsername, text, roomName }` |
 
-#### Presence Events
+#### Presence & Typing Events
 | Client → Server | Server → Client | Description |
 |---|---|---|
-| `presence:update` | `presence:update` | Manual status update (`online`/`idle`/`dnd`) |
-| `presence:get-map` | `presence:map` | Request bulk presence map |
-| `typing:start` | `typing:update` | User started typing (3s Redis TTL) |
-| `typing:stop` | `typing:update` | User stopped typing |
+| `user:typing` | `user:typing` | User is typing; broadcasts `{ roomId, user }` to others in room; 3s Redis TTL |
+| `user:stopped-typing` | `user:stopped-typing` | User stopped typing; broadcasts `{ roomId, userId }` to others in room |
+| `presence:request-map` | ack callback | Request full presence map for all online users (response via ack, not a named event) |
+| — | `presence:update` | Global broadcast on connect/disconnect/manual status change `{ userId, status, currentRoom }` |
 
 #### DM Events (server → client only)
 | Event | Description |
 |---|---|
-| `dm:new-request` | New DM initiated |
-| `dm:accepted` | DM request accepted |
-| `dm:removed` | DM conversation deleted |
+| `dm:new-request` | New DM initiated; targeted to recipient |
+| `dm:accepted` | DM request accepted; targeted to initiator |
+| `dm:removed` | DM conversation deleted; targeted to both participants |
+
+#### E2EE Key Events
+| Client → Server | Server → Client | Description |
+|---|---|---|
+| `room:key-store` | — | Store an RSA-encrypted AES room key for another member |
+| `room:key-request` | — | Request the current room's encrypted key (ack-based) |
+| `room:key-share` | `room:key-receive` | Push an encrypted room key to a specific member |
+| — | `room:key-share-request` | Server asks key holder to share key with a new joiner `{ roomId, requesterId, requesterPublicKeyJwk }` |
 
 #### WebRTC Signaling Events
 | Event | Direction | Description |
 |---|---|---|
-| `webrtc:call-initiate` | c → s → target | Initiate call (`targetUserId` or `roomId`) |
+| `webrtc:call-initiate` | c → s → target | Initiate call (by `targetUserId` for 1-on-1, or `roomId` for group) |
 | `webrtc:call-incoming` | s → target | Incoming call notification |
 | `webrtc:call-accept` | c → s → caller | Accept the call |
 | `webrtc:call-accepted` | s → caller | Acceptance confirmation |
@@ -374,11 +388,6 @@
 | `webrtc:ice-candidate` | c → s → target | Relay ICE candidate |
 | `webrtc:call-end` | c → s → target | End the call |
 | `webrtc:call-ended` | s → target | Call end notification |
-
-#### E2EE Key Events
-| Client → Server | Server → Client | Description |
-|---|---|---|
-| `keys:share` | `keys:received` | Share per-user encrypted room keys |
 
 ---
 
