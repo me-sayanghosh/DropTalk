@@ -255,15 +255,6 @@ export default function Chat() {
       {/* 1. Left-most Nav Rail */}
       <nav className="nav-rail">
         <div className="rail-top">
-          {/* Bauhaus Brand Mark */}
-          <div className="rail-brand-logo" onClick={() => nav('/')} title="DropTalk Home" style={{ cursor: 'pointer', marginBottom: '0.25rem' }}>
-            <div className="bauhaus-logo-shapes">
-              <span className="b-circle" />
-              <span className="b-square" />
-              <span className="b-triangle" />
-            </div>
-          </div>
-
           <button
             className="rail-btn action-plus"
             onClick={() => { setShowCreateModal(true); setNavRailTab('chat'); setMobileActiveView('sidebar'); }}
