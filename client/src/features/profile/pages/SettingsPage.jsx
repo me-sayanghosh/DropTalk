@@ -518,8 +518,8 @@ export default function SettingsPage() {
       </aside>
 
       {/* 3. Main Content Panel */}
-      <main className="main" style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
-        <header className="chat-header" style={{ padding: '1rem 1.5rem', borderBottom: '1px solid var(--border-light)' }}>
+      <main className="main">
+        <header className="chat-header">
           <div className="header-left">
             <button
               className="mobile-back-btn"
@@ -531,7 +531,7 @@ export default function SettingsPage() {
                 <polyline points="12 19 5 12 12 5" />
               </svg>
             </button>
-            <div className="header-avatar-badge" style={{ background: 'var(--primary)', color: '#ffffff' }}>
+            <div className="header-avatar-badge settings-header-badge">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                 <circle cx="12" cy="12" r="3" />
                 <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
@@ -1084,19 +1084,30 @@ export default function SettingsPage() {
 
                 <div className="help-cards-grid">
                   <div className="help-card">
-                    <div className="help-card-icon"></div>
+                    <div className="help-card-icon yellow">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                        <line x1="12" y1="17" x2="12.01" y2="17" />
+                      </svg>
+                    </div>
                     <h3>Help Center</h3>
                     <p>Browse tutorials, FAQs, and guides on workspace setup and E2EE encryption.</p>
-                    <a href="#help-faq" onClick={(e) => { e.preventDefault(); alert('Help Center: Visit https://droptalk.ai/help'); }}>
+                    <a href="#help-faq" onClick={(e) => { e.preventDefault(); alert('Help Center: Visit https://droptalk.ai/help'); }} className="help-card-link">
                       Visit Help Center &rarr;
                     </a>
                   </div>
 
                   <div className="help-card">
-                    <div className="help-card-icon"></div>
+                    <div className="help-card-icon red">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                        <polyline points="22,6 12,13 2,6" />
+                      </svg>
+                    </div>
                     <h3>Contact Us</h3>
                     <p>Need urgent assistance? Reach our support team 24/7 at support@droptalk.ai.</p>
-                    <a href="mailto:support@droptalk.ai">Email Support &rarr;</a>
+                    <a href="mailto:support@droptalk.ai" className="help-card-link">Email Support &rarr;</a>
                   </div>
                 </div>
 
@@ -1114,7 +1125,7 @@ export default function SettingsPage() {
                           onClick={() => setIsCategoryOpen((prev) => !prev)}
                         >
                           <span>{feedbackCategory}</span>
-                          <svg className="custom-select-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <svg className="custom-select-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="6 9 12 15 18 9" />
                           </svg>
                         </button>
