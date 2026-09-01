@@ -639,6 +639,7 @@ export default function Chat() {
                         currentUserId={user?.id}
                         onMemberUpdate={refreshMembers}
                         onOpenProfile={setSelectedProfileUser}
+                        onClose={() => setShowMembers(false)}
                       />
                       <PendingRequests
                         roomId={currentRoom.id}

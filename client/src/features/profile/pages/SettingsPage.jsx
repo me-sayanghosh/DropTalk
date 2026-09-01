@@ -316,7 +316,9 @@ export default function SettingsPage() {
 
   const avatarInitial = (username || user?.username || 'U')[0].toUpperCase();
 
-  const [mobileActiveView, setMobileActiveView] = useState('content');
+  const [mobileActiveView, setMobileActiveView] = useState(() =>
+    typeof window !== 'undefined' && window.innerWidth <= 768 ? 'sidebar' : 'chat'
+  );
 
   const sectionTitles = {
     profile: 'Profile Settings',
@@ -329,7 +331,7 @@ export default function SettingsPage() {
 
   const handleSelectSection = (secPath) => {
     nav(secPath);
-    setMobileActiveView('content');
+    setMobileActiveView('chat');
   };
 
   return (

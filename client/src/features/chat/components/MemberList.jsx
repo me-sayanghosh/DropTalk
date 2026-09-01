@@ -7,7 +7,7 @@ const ROLE_COLORS = {
   member: '#8A7A5C',
 };
 
-export default function MemberList({ members, online, roomId, currentUserId, onMemberUpdate, onOpenProfile }) {
+export default function MemberList({ members, online, roomId, currentUserId, onMemberUpdate, onOpenProfile, onClose }) {
   const [actionBusy, setActionBusy] = useState(null);
 
   const onlineIds = new Set(online.map((u) => u.id));
@@ -55,7 +55,14 @@ export default function MemberList({ members, online, roomId, currentUserId, onM
 
   return (
     <div className="member-list">
-      <h3>Members ({members.length})</h3>
+      <div className="member-list-header-row">
+        <h3>Members ({members.length})</h3>
+        {onClose && (
+          <button className="panel-close-btn" onClick={onClose} title="Close Panel">
+            &times;
+          </button>
+        )}
+      </div>
       <ul>
         {members.map((m) => {
           const isOnline = onlineIds.has(m.user);
