@@ -3,11 +3,10 @@ import { Link } from 'react-router-dom';
 import { motion, useInView } from 'framer-motion';
 import {
   Lock, MessageSquare, Sparkles, GitBranch, SmilePlus,
-  Shield, Eye, RefreshCw, KeyRound,
+  Shield, Eye, RefreshCw, KeyRound, ArrowRight, Check,
+  Circle, Square, Triangle,
 } from 'lucide-react';
-import Aurora from '../components/Aurora.jsx';
 import RotatingText from '../components/RotatingText.jsx';
-import ScrollFloat from '../components/ScrollFloat.jsx';
 import {
   E2EEIllustration, RealTimeIllustration, AIAssistantIllustration,
   ThreadRepliesIllustration, ReactionsIllustration, ModerationIllustration,
@@ -16,49 +15,55 @@ import {
 } from '../components/Illustrations.jsx';
 
 const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
+  hidden: { opacity: 0, y: 20 },
   visible: (i = 0) => ({
     opacity: 1,
     y: 0,
-    transition: { duration: 0.55, ease: 'easeOut', delay: i * 0.1 },
+    transition: { duration: 0.4, ease: 'easeOut', delay: i * 0.08 },
   }),
 };
 
 const staggerContainer = {
   hidden: {},
-  visible: { transition: { staggerChildren: 0.1 } },
+  visible: { transition: { staggerChildren: 0.08 } },
 };
 
 const FEATURES = [
-  { icon: Lock, illustration: E2EEIllustration, title: 'End-to-End Encryption', desc: 'RSA-OAEP and AES-GCM keep your private room messages sealed from the server.' },
-  { icon: MessageSquare, illustration: RealTimeIllustration, title: 'Real-Time Messaging', desc: 'Messages delivered instantly over WebSockets with automatic offline queue and backfill.' },
-  { icon: Sparkles, illustration: AIAssistantIllustration, title: 'AI Assistant', desc: 'Gemini-powered chat summarization and smart reply suggestions at your fingertips.' },
-  { icon: GitBranch, illustration: ThreadRepliesIllustration, title: 'Thread Replies', desc: 'Keep conversations organized with side-panel threaded discussions on any message.' },
-  { icon: SmilePlus, illustration: ReactionsIllustration, title: 'Message Reactions', desc: 'React with emoji to any message. Toggle reactions with a single click.' },
-  { icon: Shield, illustration: ModerationIllustration, title: 'Role-Based Moderation', desc: 'Owner and moderator roles with kick, ban, mute, and promote controls.' },
-  { icon: Eye, illustration: PresenceIllustration, title: 'Presence & Typing', desc: 'See who is online, where they are, and when they are typing in real time.' },
-  { icon: RefreshCw, illustration: OfflineSyncIllustration, title: 'Offline Sync', desc: 'Messages queued offline are sent automatically on reconnect with instant backfill.' },
-  { icon: KeyRound, illustration: AccessControlIllustration, title: 'Access Control', desc: 'Private rooms with join requests, approval workflows, and banned-user enforcement.' },
+  { icon: Lock, illustration: E2EEIllustration, shape: 'circle', color: '#D02020', title: 'End-to-End Encryption', desc: 'RSA-OAEP and AES-GCM keep your private room messages sealed from the server.' },
+  { icon: MessageSquare, illustration: RealTimeIllustration, shape: 'square', color: '#1040C0', title: 'Real-Time Messaging', desc: 'Messages delivered instantly over WebSockets with automatic offline queue and backfill.' },
+  { icon: Sparkles, illustration: AIAssistantIllustration, shape: 'triangle', color: '#F0C020', title: 'AI Copilot Assistant', desc: 'Gemini-powered chat summarization and smart reply suggestions at your fingertips.' },
+  { icon: GitBranch, illustration: ThreadRepliesIllustration, shape: 'circle', color: '#1040C0', title: 'Thread Replies', desc: 'Keep conversations organized with side-panel threaded discussions on any message.' },
+  { icon: SmilePlus, illustration: ReactionsIllustration, shape: 'square', color: '#F0C020', title: 'Message Reactions', desc: 'React with emoji to any message. Toggle reactions with a single click.' },
+  { icon: Shield, illustration: ModerationIllustration, shape: 'triangle', color: '#D02020', title: 'Role-Based Moderation', desc: 'Owner and moderator roles with kick, ban, mute, and promote controls.' },
+  { icon: Eye, illustration: PresenceIllustration, shape: 'circle', color: '#F0C020', title: 'Presence & Typing', desc: 'See who is online, where they are, and when they are typing in real time.' },
+  { icon: RefreshCw, illustration: OfflineSyncIllustration, shape: 'square', color: '#D02020', title: 'Offline Synchronization', desc: 'Messages queued offline are sent automatically on reconnect with instant backfill.' },
+  { icon: KeyRound, illustration: AccessControlIllustration, shape: 'triangle', color: '#1040C0', title: 'Access Control', desc: 'Private rooms with join requests, approval workflows, and banned-user enforcement.' },
 ];
 
 const STEPS = [
-  { num: '01', title: 'Create an account', desc: 'Sign up with your email. Pick a username that represents you.' },
-  { num: '02', title: 'Join or create a room', desc: 'Browse public channels, request access to private rooms, or start your own.' },
-  { num: '03', title: 'Chat in real time', desc: 'Send messages instantly. Private rooms are end-to-end encrypted by default.' },
-  { num: '04', title: 'Catch up with AI', desc: 'Use the AI assistant to summarize long conversations and get reply suggestions.' },
+  { num: '01', title: 'CREATE ACCOUNT', desc: 'Sign up with email or Google direct. Pick your handle.' },
+  { num: '02', title: 'JOIN OR LAUNCH ROOMS', desc: 'Browse public spaces, request private access, or start your own channel.' },
+  { num: '03', title: 'COMMUNICATE IN REAL TIME', desc: 'Instant WebSocket delivery with automatic AES-GCM 256-bit cryptography.' },
+  { num: '04', title: 'SUMMARIZE WITH AI', desc: 'Catch up on hundreds of messages in seconds using the integrated AI copilot.' },
+];
+
+const STATS = [
+  { value: '0.0ms', label: 'LATENCY OVERHEAD', sub: 'Instant socket broadcasts' },
+  { value: '256-BIT', label: 'AES-GCM CRYPTO', sub: 'Client-side encrypted keys' },
+  { value: '100%', label: 'DIRECT CONTROL', sub: 'Zero third-party tracking' },
+  { value: '24/7', label: 'PERSISTENCE', sub: 'Heartbeat offline sync' },
 ];
 
 const MOCK_MESSAGES = [
-  { id: 1, sender: 'Alice', text: 'Hey everyone! Just deployed the new feature.', mine: false },
-  { id: 2, sender: 'Bob', text: 'Looks great. The encryption flow is smooth now.', mine: false },
-  { id: 3, sender: 'You', text: 'Thanks! Took a while to get the key exchange right.', mine: true },
-  { id: 4, sender: 'Alice', text: 'The real-time presence is super responsive too.', mine: false },
-  { id: 5, sender: 'Bob', text: 'Agreed. Ship it!', mine: false, reaction: { emoji: '\u{1F44D}', count: 3 } },
+  { id: 1, sender: 'ALICE', text: 'Constructivist release deployed to production.', mine: false, color: '#D02020' },
+  { id: 2, sender: 'BOB', text: 'Encryption handshake completed in 14ms.', mine: false, color: '#1040C0' },
+  { id: 3, sender: 'YOU', text: 'Form follows function. The UI is exceptionally fast.', mine: true, color: '#F0C020' },
+  { id: 4, sender: 'ALICE', text: 'Agreed. Pure geometry and zero clutter.', mine: false, color: '#D02020', reaction: { emoji: '📐', count: 4 } },
 ];
 
 const SECURITY_ITEMS = [
   'JWT access tokens with refresh token rotation and reuse detection',
-  'Bcrypt password hashing with salt rounds',
+  'Bcrypt password hashing with strict salt rounds',
   'RSA-OAEP key exchange + AES-GCM encryption for private rooms',
   'Banned-user enforcement at the server and socket level',
   'Per-socket heartbeat presence with automatic stale-session cleanup',
@@ -83,7 +88,7 @@ function AnimatedSection({ children, className = '', ...props }) {
 
 function FeatureCard({ feature, index }) {
   const ref = useRef(null);
-  const inView = useInView(ref, { once: true, amount: 0.3 });
+  const inView = useInView(ref, { once: true, amount: 0.2 });
   const Icon = feature.icon;
   const Illustration = feature.illustration;
 
@@ -94,94 +99,102 @@ function FeatureCard({ feature, index }) {
       animate={inView ? 'visible' : 'hidden'}
       variants={fadeUp}
       custom={index % 3}
-      whileHover={{ y: -6, scale: 1.02 }}
-      transition={{ duration: 0.25, ease: 'easeOut' }}
-      className="home-feature-card"
+      className="bauhaus-card group"
     >
-      <motion.div className="home-feature-illustration" whileHover={{ rotate: 5 }} transition={{ duration: 0.3 }}>
-        <Illustration />
-      </motion.div>
-      <div className="home-feature-icon-wrap">
-        <motion.div
-          className="home-feature-icon"
-          whileHover={{ y: [0, -3, 0] }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-        >
-          <Icon size={22} strokeWidth={2} />
-        </motion.div>
+      {/* Bauhaus Corner Shape Badge */}
+      <div className="bauhaus-corner-badge">
+        {feature.shape === 'circle' && <div className="b-shape-circle" style={{ backgroundColor: feature.color }} />}
+        {feature.shape === 'square' && <div className="b-shape-square" style={{ backgroundColor: feature.color }} />}
+        {feature.shape === 'triangle' && <div className="b-shape-triangle" style={{ borderBottomColor: feature.color }} />}
       </div>
-      <h3>{feature.title}</h3>
-      <p>{feature.desc}</p>
+
+      <div className="bauhaus-card-art">
+        <Illustration />
+      </div>
+
+      <div className="bauhaus-card-meta">
+        <div className="bauhaus-icon-box" style={{ borderColor: '#121212' }}>
+          <Icon size={20} strokeWidth={2.5} />
+        </div>
+        <h3 className="bauhaus-card-title">{feature.title}</h3>
+      </div>
+
+      <p className="bauhaus-card-desc">{feature.desc}</p>
     </motion.div>
   );
 }
 
 function MockChatDemo() {
   const ref = useRef(null);
-  const inView = useInView(ref, { once: true, amount: 0.3 });
+  const inView = useInView(ref, { once: true, amount: 0.2 });
 
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, y: 40 }}
+      initial={{ opacity: 0, y: 30 }}
       animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.6, ease: 'easeOut', delay: 0.15 }}
-      className="mock-chat"
+      transition={{ duration: 0.5, ease: 'easeOut' }}
+      className="bauhaus-mock-chat"
     >
-      <div className="mock-chat-chrome">
-        <div className="mock-chrome-dots">
-          <span /><span /><span />
+      {/* Bauhaus Window Header */}
+      <div className="bauhaus-mock-header">
+        <div className="bauhaus-mock-controls">
+          <span className="b-dot b-dot-red" />
+          <span className="b-dot b-dot-blue" />
+          <span className="b-dot b-dot-yellow" />
         </div>
-        <div className="mock-chrome-title">DropTalk</div>
-        <div style={{ width: 48 }} />
+        <div className="bauhaus-mock-title">DROPTALK // LIVE_SESSION</div>
+        <div className="bauhaus-mock-badge">E2EE ACTIVE</div>
       </div>
-      <div className="mock-chat-header">
-        <div className="mock-chat-header-icon">#</div>
-        <div className="mock-chat-header-info">
-          <span className="mock-chat-header-name">general</span>
-          <span className="mock-chat-header-meta">3 online</span>
+
+      {/* Room subheader */}
+      <div className="bauhaus-mock-channel-bar">
+        <div className="bauhaus-channel-tag">
+          <span className="b-tag-sym">#</span>
+          <span className="b-tag-name">GENERAL_WORKSPACE</span>
+        </div>
+        <div className="bauhaus-presence-indicator">
+          <span className="b-presence-dot" />
+          <span>4 ONLINE</span>
         </div>
       </div>
-      <div className="mock-chat-messages">
+
+      {/* Messages Feed */}
+      <div className="bauhaus-mock-feed">
         {MOCK_MESSAGES.map((msg, i) => (
           <motion.div
             key={msg.id}
-            className={`mock-msg ${msg.mine ? 'mock-msg-mine' : ''}`}
-            initial={{ opacity: 0, y: 10 }}
-            animate={inView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.4, ease: 'easeOut', delay: 0.4 + i * 0.35 }}
+            className={`bauhaus-msg-row ${msg.mine ? 'mine' : 'theirs'}`}
+            initial={{ opacity: 0, x: msg.mine ? 20 : -20 }}
+            animate={inView ? { opacity: 1, x: 0 } : {}}
+            transition={{ duration: 0.35, delay: 0.2 + i * 0.15 }}
           >
-            {!msg.mine && <span className="mock-msg-sender">{msg.sender}</span>}
-            <div className="mock-msg-bubble">{msg.text}</div>
-            {msg.reaction && (
-              <motion.div
-                className="mock-msg-reaction"
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={inView ? { opacity: 1, scale: 1 } : {}}
-                transition={{ type: 'spring', stiffness: 400, damping: 15, delay: 0.4 + i * 0.35 + 0.5 }}
-              >
-                {msg.reaction.emoji} {msg.reaction.count}
-              </motion.div>
+            {!msg.mine && (
+              <div className="bauhaus-msg-sender-tag" style={{ borderLeftColor: msg.color }}>
+                {msg.sender}
+              </div>
             )}
+            <div className={`bauhaus-msg-box ${msg.mine ? 'b-box-mine' : 'b-box-theirs'}`}>
+              <div className="bauhaus-msg-text">{msg.text}</div>
+              {msg.reaction && (
+                <div className="bauhaus-reaction-chip">
+                  <span>{msg.reaction.emoji}</span>
+                  <span className="count">{msg.reaction.count}</span>
+                </div>
+              )}
+            </div>
           </motion.div>
         ))}
-        <motion.div
-          className="mock-typing"
-          initial={{ opacity: 0 }}
-          animate={inView ? { opacity: 1 } : {}}
-          transition={{ duration: 0.3, delay: 2.5 }}
-        >
-          <span className="mock-typing-dots"><span /><span /><span /></span>
-          <span className="mock-typing-text">Alice is typing</span>
-        </motion.div>
       </div>
-      <div className="mock-chat-input">
-        <div className="mock-chat-input-field">Type a message...</div>
-        <div className="mock-chat-send-btn">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M22 2L11 13" /><path d="M22 2L15 22L11 13L2 9L22 2Z" />
-          </svg>
+
+      {/* Input row */}
+      <div className="bauhaus-mock-input-row">
+        <div className="bauhaus-mock-input-field">
+          <span>Type constructivist message...</span>
         </div>
+        <button className="bauhaus-mock-send-btn" aria-label="Send">
+          <ArrowRight size={18} strokeWidth={3} />
+        </button>
       </div>
     </motion.div>
   );
@@ -189,211 +202,327 @@ function MockChatDemo() {
 
 export default function Home() {
   return (
-    <div className="home">
-      <div className="home-aurora">
-        <Aurora colorStops={['#FFB627', '#F5871F', '#FFF8E7']} blend={0.4} amplitude={0.8} speed={0.5} />
-      </div>
-      <div className="home-overlay" />
-
-      <div className="home-content">
-        {/* ── Nav ── */}
-        <nav className="home-nav">
-          <span className="home-brand">DropTalk</span>
-          <div className="home-nav-links">
-            <Link to="/join" className="home-btn-primary" style={{ padding: '8px 20px', borderRadius: '9999px', fontWeight: 700 }}>Join Now</Link>
-          </div>
-        </nav>
-
-        {/* ── 1. Hero ── */}
-        <section className="home-hero">
-          <motion.span
-            className="home-badge"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: 'easeOut' }}
-          >
-            Real-time encrypted messaging
-          </motion.span>
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: 'easeOut', delay: 0.1 }}
-          >
-            Chat without<br />
-            <span className="home-accent rotating-text-wrap">
-              <RotatingText
-                texts={['boundaries.', 'limits.', 'borders.', 'delays.']}
-                splitBy="characters"
-                rotationInterval={2700}
-                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                initial={{ y: '100%', opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: '-120%', opacity: 0 }}
-              />
-            </span>
-          </motion.h1>
-          <motion.p
-            className="home-subtitle"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: 'easeOut', delay: 0.2 }}
-          >
-            End-to-end encrypted rooms, real-time presence, thread replies,
-            AI-powered suggestions &mdash; all in one place.
-          </motion.p>
-          <motion.div
-            className="home-actions"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: 'easeOut', delay: 0.3 }}
-          >
-            <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
-              <Link to="/join" className="home-btn-primary large" style={{ padding: '14px 36px', fontSize: '1.05rem', fontWeight: 700 }}>Join Now</Link>
-            </motion.div>
-          </motion.div>
-        </section>
-
-        {/* ── 2. Feature Grid ── */}
-        <section className="home-section">
-          <AnimatedSection>
-            <h2 className="home-section-title"><ScrollFloat containerClassName="scroll-float-title">Everything you need to communicate</ScrollFloat></h2>
-            <motion.p className="home-section-sub" variants={fadeUp}>Nine features designed for secure, real-time collaboration.</motion.p>
-          </AnimatedSection>
-          <div className="home-feature-grid">
-            {FEATURES.map((f, i) => (
-              <FeatureCard key={f.title} feature={f} index={i} />
-            ))}
-          </div>
-        </section>
-
-        {/* ── 3. How It Works ── */}
-        <section className="home-section home-section-alt">
-          <AnimatedSection>
-            <h2 className="home-section-title"><ScrollFloat containerClassName="scroll-float-title">How it works</ScrollFloat></h2>
-            <motion.p className="home-section-sub" variants={fadeUp}>From sign-up to your first message in under a minute.</motion.p>
-          </AnimatedSection>
-          <div className="home-steps">
-            {STEPS.map((s, i) => (
-              <StepItem key={s.num} step={s} index={i} isLast={i === STEPS.length - 1} />
-            ))}
-          </div>
-        </section>
-
-        {/* ── 4. Security / Trust ── */}
-        <section className="home-section">
-          <div className="home-security">
-            <motion.div
-              className="home-security-text"
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, amount: 0.3 }}
-              variants={staggerContainer}
-            >
-              <motion.span className="home-badge" variants={fadeUp}>Security first</motion.span>
-              <motion.h2 className="home-section-title" style={{ textAlign: 'left' }} variants={fadeUp}>
-                Built to keep your conversations private
-              </motion.h2>
-              <motion.ul className="home-security-list" variants={staggerContainer}>
-                {SECURITY_ITEMS.map((item, i) => (
-                  <motion.li key={i} variants={fadeUp} custom={i}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--success)" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
-                    <span>{item}</span>
-                  </motion.li>
-                ))}
-              </motion.ul>
-            </motion.div>
-            <motion.div
-              className="home-security-visual"
-              initial={{ opacity: 0, scale: 0.9 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.6, ease: 'easeOut', delay: 0.2 }}
-            >
-              <motion.div
-                className="home-security-illust"
-                animate={{ scale: [1, 1.04, 1] }}
-                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-              >
-                <SecurityShieldIllustration />
-                <div className="home-security-label">E2EE Protected</div>
-              </motion.div>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* ── 5. Product Preview ── */}
-        <section className="home-section home-section-alt">
-          <AnimatedSection>
-            <motion.h2 className="home-section-title" variants={fadeUp}>See it in action</motion.h2>
-            <motion.p className="home-section-sub" variants={fadeUp}>Real-time messaging with reactions, typing indicators, and read receipts.</motion.p>
-          </AnimatedSection>
-          <MockChatDemo />
-        </section>
-
-        {/* ── 6. CTA Band ── */}
-        <section className="home-cta-band">
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.3 }}
-            transition={{ duration: 0.55, ease: 'easeOut' }}
-          >
-            <h2 className="home-cta-title"><ScrollFloat containerClassName="scroll-float-title scroll-float-cta">Ready to start chatting?</ScrollFloat></h2>
-            <p className="home-cta-sub">Join for free. No credit card required.</p>
-            <div className="home-cta-actions">
-              <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
-                <Link to="/join" className="home-btn-primary large" style={{ padding: '14px 36px', fontSize: '1.05rem', fontWeight: 700 }}>Join Now</Link>
-              </motion.div>
+    <div className="bauhaus-app">
+      {/* ── Top Architectural Navigation ── */}
+      <header className="bauhaus-nav">
+        <div className="bauhaus-nav-container">
+          <Link to="/" className="bauhaus-logo">
+            {/* Geometric Bauhaus Logo Mark: Circle, Square, Triangle */}
+            <div className="bauhaus-logo-shapes">
+              <span className="b-circle" />
+              <span className="b-square" />
+              <span className="b-triangle" />
             </div>
-          </motion.div>
-        </section>
+            <span className="bauhaus-logo-text">DROPTALK</span>
+          </Link>
 
-        {/* ── 7. Footer ── */}
-        <footer className="home-footer">
-          <div className="home-footer-links">
-            <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="home-footer-link">GitHub</a>
-            <span className="home-footer-sep">&middot;</span>
-            <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="home-footer-link">Documentation</a>
+          <div className="bauhaus-nav-actions">
+            <Link to="/join" className="bauhaus-btn bauhaus-btn-outline sm">
+              LOG IN
+            </Link>
+            <Link to="/join" className="bauhaus-btn bauhaus-btn-red sm">
+              JOIN NOW
+              <ArrowRight size={16} strokeWidth={3} />
+            </Link>
           </div>
-        </footer>
-      </div>
+        </div>
+      </header>
+
+      {/* ── 1. Hero Section (Bauhaus Split Composition) ── */}
+      <section className="bauhaus-hero">
+        <div className="bauhaus-hero-grid">
+          {/* Left Column: Typography & Intent */}
+          <div className="bauhaus-hero-left">
+            <div className="bauhaus-stamp">
+              <span className="bauhaus-stamp-num">01 //</span>
+              <span className="bauhaus-stamp-text">CONSTRUCTIVIST MESSAGING</span>
+            </div>
+
+            <h1 className="bauhaus-hero-title">
+              FORM FOLLOWS<br />
+              <span className="bauhaus-hero-highlight">
+                <RotatingText
+                  texts={['COMMUNICATION.', 'SECURITY.', 'PRECISION.', 'STRUCTURE.']}
+                  splitBy="characters"
+                  rotationInterval={2800}
+                  transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                  initial={{ y: '100%', opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: '-120%', opacity: 0 }}
+                />
+              </span>
+            </h1>
+
+            <p className="bauhaus-hero-lead">
+              A high-velocity messaging workspace engineered with end-to-end RSA/AES cryptography,
+              instant WebSockets, structured threads, and built-in AI copilot analysis.
+            </p>
+
+            <div className="bauhaus-hero-cta-group">
+              <Link to="/join" className="bauhaus-btn bauhaus-btn-red lg">
+                START CHATTING
+                <ArrowRight size={20} strokeWidth={3} />
+              </Link>
+              <a href="#features" className="bauhaus-btn bauhaus-btn-outline lg">
+                VIEW BLUEPRINT
+              </a>
+            </div>
+
+            {/* Geometric specs strip */}
+            <div className="bauhaus-specs-bar">
+              <div className="bauhaus-spec-item">
+                <span className="spec-dot" style={{ backgroundColor: '#D02020' }} />
+                <span>E2EE RSA-OAEP</span>
+              </div>
+              <div className="bauhaus-spec-item">
+                <span className="spec-dot" style={{ backgroundColor: '#1040C0' }} />
+                <span>WEBSOCKET SYNC</span>
+              </div>
+              <div className="bauhaus-spec-item">
+                <span className="spec-dot" style={{ backgroundColor: '#F0C020' }} />
+                <span>GEMINI COPILOT</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Bauhaus Constructivist Art Panel */}
+          <div className="bauhaus-hero-right">
+            <div className="bauhaus-art-poster">
+              {/* Overlapping Primary Shapes */}
+              <div className="bauhaus-art-circle" />
+              <div className="bauhaus-art-square" />
+              <div className="bauhaus-art-triangle" />
+              <div className="bauhaus-art-line-1" />
+              <div className="bauhaus-art-line-2" />
+
+              {/* Floating Architectural Cards */}
+              <div className="bauhaus-art-badge-1">
+                <span className="b-num">256</span>
+                <span className="b-lbl">BIT AES-GCM ENCRYPTION</span>
+              </div>
+
+              <div className="bauhaus-art-badge-2">
+                <div className="b-pulse" />
+                <span className="b-lbl">REAL-TIME SOCKETS ACTIVE</span>
+              </div>
+
+              <div className="bauhaus-art-center-card">
+                <div className="b-center-header">
+                  <span className="b-tag">BAUHAUS_OS</span>
+                  <span className="b-code">v2.4.0</span>
+                </div>
+                <div className="b-center-body">
+                  <div className="b-line b-line-red" />
+                  <div className="b-line b-line-blue" />
+                  <div className="b-line b-line-yellow" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 2. Full-Width Yellow Stats Band ── */}
+      <section className="bauhaus-stats-band">
+        <div className="bauhaus-stats-grid">
+          {STATS.map((st, i) => (
+            <div key={i} className="bauhaus-stat-cell">
+              <div className="bauhaus-stat-val">{st.value}</div>
+              <div className="bauhaus-stat-label">{st.label}</div>
+              <div className="bauhaus-stat-sub">{st.sub}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── 3. Features Blueprint (3x3 Bauhaus Grid) ── */}
+      <section id="features" className="bauhaus-section">
+        <div className="bauhaus-section-header">
+          <div className="bauhaus-section-tag">
+            <span>02 // ARCHITECTURE</span>
+          </div>
+          <h2 className="bauhaus-section-title">ENGINEERED FOR SUPREME CLARITY</h2>
+          <p className="bauhaus-section-subtitle">
+            Every feature is constructed for speed, mathematical privacy, and zero cognitive overhead.
+          </p>
+        </div>
+
+        <div className="bauhaus-features-grid">
+          {FEATURES.map((f, i) => (
+            <FeatureCard key={f.title} feature={f} index={i} />
+          ))}
+        </div>
+      </section>
+
+      {/* ── 4. How It Works (Rotated Steps) ── */}
+      <section className="bauhaus-section bauhaus-bg-canvas border-t-4">
+        <div className="bauhaus-section-header">
+          <div className="bauhaus-section-tag">
+            <span>03 // EXECUTION</span>
+          </div>
+          <h2 className="bauhaus-section-title">THE WORKFLOW IN FOUR MOVEMENTS</h2>
+          <p className="bauhaus-section-subtitle">
+            From initial authentication to active encrypted channels in seconds.
+          </p>
+        </div>
+
+        <div className="bauhaus-steps-grid">
+          {STEPS.map((s, i) => (
+            <div key={s.num} className="bauhaus-step-card">
+              {/* 45° Rotated Diamond Number */}
+              <div className="bauhaus-diamond-wrap">
+                <div className="bauhaus-diamond" style={{ backgroundColor: i % 2 === 0 ? '#D02020' : '#1040C0' }}>
+                  <span className="bauhaus-diamond-text">{s.num}</span>
+                </div>
+              </div>
+              <div className="bauhaus-step-body">
+                <h3 className="bauhaus-step-title">{s.title}</h3>
+                <p className="bauhaus-step-desc">{s.desc}</p>
+              </div>
+              {i < STEPS.length - 1 && <div className="bauhaus-step-connector" />}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── 5. Security & Trust (Primary Red Color Block) ── */}
+      <section className="bauhaus-security-band">
+        <div className="bauhaus-security-grid">
+          <div className="bauhaus-security-content">
+            <div className="bauhaus-stamp bauhaus-stamp-dark">
+              <span className="bauhaus-stamp-num">04 //</span>
+              <span className="bauhaus-stamp-text">MATHEMATICAL SECURITY</span>
+            </div>
+
+            <h2 className="bauhaus-security-title">
+              UNCOMPROMISED PRIVACY BY DEFAULT
+            </h2>
+
+            <p className="bauhaus-security-desc">
+              We eliminate trusted third parties from your private communications.
+              Keys are generated client-side, stored in browser isolation, and never transmitted unencrypted.
+            </p>
+
+            <ul className="bauhaus-security-list">
+              {SECURITY_ITEMS.map((item, idx) => (
+                <li key={idx} className="bauhaus-security-item">
+                  <div className="bauhaus-check-badge">
+                    <Check size={16} strokeWidth={3.5} />
+                  </div>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="bauhaus-security-visual">
+            <div className="bauhaus-shield-frame">
+              <SecurityShieldIllustration />
+              <div className="bauhaus-shield-banner">
+                <span>VERIFIED CRYPTO SYSTEM</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 6. Live Interactive Preview (Bauhaus Blue Accent) ── */}
+      <section className="bauhaus-section">
+        <div className="bauhaus-section-header">
+          <div className="bauhaus-section-tag">
+            <span>05 // WORKSPACE PREVIEW</span>
+          </div>
+          <h2 className="bauhaus-section-title">THE CONSTRUCTIVIST CHAT EXPERIENCE</h2>
+          <p className="bauhaus-section-subtitle">
+            Tactile controls, deliberate contrast, and lightning-fast feedback.
+          </p>
+        </div>
+
+        <MockChatDemo />
+      </section>
+
+      {/* ── 7. Final Call to Action (Bauhaus Yellow Block) ── */}
+      <section className="bauhaus-cta-band">
+        {/* Decorative corner geometric shapes */}
+        <div className="bauhaus-cta-decor-circle" />
+        <div className="bauhaus-cta-decor-square" />
+        <div className="bauhaus-cta-decor-triangle" />
+
+        <div className="bauhaus-cta-content">
+          <div className="bauhaus-stamp bauhaus-stamp-dark">
+            <span className="bauhaus-stamp-num">06 //</span>
+            <span className="bauhaus-stamp-text">GET STARTED</span>
+          </div>
+
+          <h2 className="bauhaus-cta-title">
+            READY TO COMMUNICATE WITH POWER AND CLARITY?
+          </h2>
+
+          <p className="bauhaus-cta-sub">
+            Free forever for open channels. Instant setup with zero credit card requirements.
+          </p>
+
+          <div className="bauhaus-cta-actions">
+            <Link to="/join" className="bauhaus-btn bauhaus-btn-red xl">
+              CREATE FREE ACCOUNT
+              <ArrowRight size={22} strokeWidth={3} />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 8. Stark Black Architectural Footer ── */}
+      <footer className="bauhaus-footer">
+        <div className="bauhaus-footer-grid">
+          <div className="bauhaus-footer-brand">
+            <div className="bauhaus-logo-shapes">
+              <span className="b-circle" />
+              <span className="b-square" />
+              <span className="b-triangle" />
+            </div>
+            <span className="bauhaus-footer-title">DROPTALK</span>
+            <p className="bauhaus-footer-tagline">
+              Form follows function. Real-time constructivist messaging for teams that build.
+            </p>
+          </div>
+
+          <div className="bauhaus-footer-links">
+            <div className="bauhaus-footer-col">
+              <h4>PLATFORM</h4>
+              <Link to="/join">Channels</Link>
+              <Link to="/join">Direct Messages</Link>
+              <Link to="/join">Audio / Video Calls</Link>
+              <Link to="/join">AI Copilot</Link>
+            </div>
+            <div className="bauhaus-footer-col">
+              <h4>SECURITY</h4>
+              <a href="#features">E2EE Protocol</a>
+              <a href="#features">RSA-OAEP Exchange</a>
+              <a href="#features">AES-GCM Encryption</a>
+              <a href="#features">Data Privacy</a>
+            </div>
+            <div className="bauhaus-footer-col">
+              <h4>SYSTEM</h4>
+              <a href="https://github.com" target="_blank" rel="noopener noreferrer">GitHub Repository</a>
+              <a href="https://github.com" target="_blank" rel="noopener noreferrer">Documentation</a>
+              <a href="#features">System Status</a>
+            </div>
+          </div>
+        </div>
+
+        <div className="bauhaus-footer-bottom">
+          <div className="bauhaus-footer-copy">
+            &copy; {new Date().getFullYear()} DROPTALK. CONSTRUCTIVIST MESSAGING SYSTEM.
+          </div>
+          <div className="bauhaus-footer-palette-demo">
+            <span className="p-dot" style={{ backgroundColor: '#D02020' }} title="Bauhaus Red" />
+            <span className="p-dot" style={{ backgroundColor: '#1040C0' }} title="Bauhaus Blue" />
+            <span className="p-dot" style={{ backgroundColor: '#F0C020' }} title="Bauhaus Yellow" />
+            <span className="p-dot" style={{ backgroundColor: '#FFFFFF' }} title="Bauhaus White" />
+            <span className="p-dot" style={{ backgroundColor: '#121212' }} title="Stark Black" />
+          </div>
+        </div>
+      </footer>
     </div>
-  );
-}
-
-function StepItem({ step, index, isLast }) {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, amount: 0.4 });
-
-  return (
-    <motion.div
-      ref={ref}
-      className="home-step"
-      initial={{ opacity: 0, x: -20 }}
-      animate={inView ? { opacity: 1, x: 0 } : {}}
-      transition={{ duration: 0.5, ease: 'easeOut', delay: index * 0.15 }}
-    >
-      <motion.div
-        className="home-step-num"
-        initial={{ scale: 0.8 }}
-        animate={inView ? { scale: 1 } : {}}
-        transition={{ duration: 0.4, ease: 'easeOut', delay: index * 0.15 }}
-      >
-        {step.num}
-      </motion.div>
-      <div className="home-step-content">
-        <h3>{step.title}</h3>
-        <p>{step.desc}</p>
-      </div>
-      {!isLast && (
-        <motion.div
-          className="home-step-connector"
-          initial={{ scaleY: 0 }}
-          animate={inView ? { scaleY: 1 } : {}}
-          transition={{ duration: 0.6, ease: 'easeOut', delay: index * 0.15 + 0.2 }}
-          style={{ transformOrigin: 'top' }}
-        />
-      )}
-    </motion.div>
   );
 }

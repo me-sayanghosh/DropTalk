@@ -208,56 +208,43 @@ export default function JoinNow() {
   }
 
   return (
-    <div className="auth" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0B0F19', padding: '1.5rem' }}>
+    <div className="bauhaus-auth-page">
+      {/* Background Constructivist Elements */}
+      <div className="bauhaus-auth-bg-circle" />
+      <div className="bauhaus-auth-bg-square" />
+      <div className="bauhaus-auth-bg-triangle" />
+
       <motion.div
-        initial={{ opacity: 0, y: 20, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.4, ease: 'easeOut' }}
-        className="auth-card"
-        style={{
-          width: '100%',
-          maxWidth: '440px',
-          background: 'rgba(15, 23, 42, 0.85)',
-          backdropFilter: 'blur(16px)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          borderRadius: '24px',
-          padding: '2.25rem',
-          boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(0, 82, 255, 0.15)',
-          color: '#F8FAFC',
-        }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: 'easeOut' }}
+        className="bauhaus-auth-card"
       >
+        {/* Top Primary Color Bar */}
+        <div className="bauhaus-auth-top-bar">
+          <span className="b-bar-red" />
+          <span className="b-bar-blue" />
+          <span className="b-bar-yellow" />
+        </div>
+
         {/* Logo & Header */}
-        <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
-          <motion.div
-            whileHover={{ scale: 1.05, rotate: 5 }}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '54px',
-              height: '54px',
-              background: 'linear-gradient(135deg, #0052FF, #7C3AED)',
-              borderRadius: '16px',
-              color: '#fff',
-              marginBottom: '1rem',
-              boxShadow: '0 8px 24px rgba(0, 82, 255, 0.4)',
-            }}
-          >
-            <Sparkles size={28} />
-          </motion.div>
-          <h1 style={{ color: '#F8FAFC', fontSize: '1.85rem', fontWeight: 800, tracking: '-0.02em', margin: 0 }}>
-            Join DropTalk
+        <div className="bauhaus-auth-header">
+          <div className="bauhaus-logo-shapes">
+            <span className="b-circle" />
+            <span className="b-square" />
+            <span className="b-triangle" />
+          </div>
+          <h1 className="bauhaus-auth-title">
+            JOIN DROPTALK
           </h1>
-          <p style={{ fontSize: '0.9rem', color: '#94A3B8', marginTop: '0.4rem', lineHeight: 1.4 }}>
-            Secure real-time workspace messaging. Choose your preferred sign-in method.
+          <p className="bauhaus-auth-subtitle">
+            CONSTRUCTIVIST MESSAGING // AUTHENTICATION
           </p>
         </div>
 
         {/* ── Method 1: Google OAuth Login ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '1.5rem', width: '100%' }}>
-          <motion.button
-            whileHover={{ scale: 1.02, backgroundColor: 'rgba(255, 255, 255, 0.08)' }}
-            whileTap={{ scale: 0.98 }}
+        <div className="bauhaus-auth-google-wrap">
+          <button
             type="button"
             disabled={busy}
             onClick={() => {
@@ -268,26 +255,10 @@ export default function JoinNow() {
                   setErr('Google sign-in initialized. If popup is blocked, please check browser settings or use Email OTP.');
                 }
               } else {
-                setErr('Real Google Client ID not detected in environment. Using Email OTP authentication below.');
+                setErr('Google Client ID not detected in environment. Using Email OTP authentication below.');
               }
             }}
-            style={{
-              cursor: busy ? 'not-allowed' : 'pointer',
-              border: '1px solid rgba(255, 255, 255, 0.18)',
-              borderRadius: '14px',
-              padding: '12px 24px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              background: 'rgba(255, 255, 255, 0.05)',
-              width: '100%',
-              justifyContent: 'center',
-              color: '#F8FAFC',
-              fontWeight: 600,
-              fontSize: '0.95rem',
-              transition: 'all 0.2s ease',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
-            }}
+            className="bauhaus-btn bauhaus-btn-outline w-full justify-center"
           >
             <svg width="20" height="20" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -295,60 +266,30 @@ export default function JoinNow() {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
             </svg>
-            <span>Continue with Google</span>
-          </motion.button>
+            <span>CONTINUE WITH GOOGLE</span>
+          </button>
         </div>
 
         {/* Divider */}
-        <div style={{ display: 'flex', alignItems: 'center', margin: '1.5rem 0', color: '#64748B', fontSize: '0.8rem', fontWeight: 600, letterSpacing: '0.05em' }}>
-          <div style={{ flex: 1, height: '1px', background: 'rgba(255, 255, 255, 0.1)' }} />
-          <span style={{ padding: '0 14px' }}>OR CONTINUE WITH EMAIL OTP</span>
-          <div style={{ flex: 1, height: '1px', background: 'rgba(255, 255, 255, 0.1)' }} />
+        <div className="bauhaus-divider">
+          <div className="bauhaus-divider-line" />
+          <span className="bauhaus-divider-text">OR VIA EMAIL OTP</span>
+          <div className="bauhaus-divider-line" />
         </div>
 
         {/* Status Messages */}
         {err && (
-          <motion.div
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            style={{
-              padding: '10px 14px',
-              borderRadius: '12px',
-              background: 'rgba(239, 68, 68, 0.15)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              color: '#FCA5A5',
-              fontSize: '0.85rem',
-              marginBottom: '1.25rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-            }}
-          >
-            <ShieldCheck size={16} style={{ flexShrink: 0 }} />
+          <div className="bauhaus-alert-error">
+            <ShieldCheck size={18} className="flex-shrink-0" />
             <span>{err}</span>
-          </motion.div>
+          </div>
         )}
 
         {info && (
-          <motion.div
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            style={{
-              padding: '10px 14px',
-              borderRadius: '12px',
-              background: 'rgba(16, 185, 129, 0.15)',
-              border: '1px solid rgba(16, 185, 129, 0.3)',
-              color: '#6EE7B7',
-              fontSize: '0.85rem',
-              marginBottom: '1.25rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-            }}
-          >
-            <CheckCircle2 size={16} style={{ flexShrink: 0 }} />
+          <div className="bauhaus-alert-success">
+            <CheckCircle2 size={18} className="flex-shrink-0" />
             <span>{info}</span>
-          </motion.div>
+          </div>
         )}
 
         {/* ── Method 2: Email OTP Flow ── */}
@@ -356,95 +297,64 @@ export default function JoinNow() {
           {step === 'email' ? (
             <motion.form
               key="step-email"
-              initial={{ opacity: 0, x: -20 }}
+              initial={{ opacity: 0, x: -15 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              transition={{ duration: 0.25 }}
+              exit={{ opacity: 0, x: 15 }}
+              transition={{ duration: 0.2 }}
               onSubmit={handleSendOtp}
-              style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}
+              className="bauhaus-auth-form"
             >
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#CBD5E1', marginBottom: '8px' }}>
-                  Email Address
+              <div className="bauhaus-form-group">
+                <label className="bauhaus-label">
+                  EMAIL ADDRESS
                 </label>
-                <div style={{ position: 'relative' }}>
-                  <Mail
-                    size={18}
-                    style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#64748B' }}
-                  />
+                <div className="bauhaus-input-wrap">
+                  <Mail size={18} className="bauhaus-input-icon" />
                   <input
                     type="email"
-                    placeholder="name@company.com"
+                    placeholder="ENTER YOUR WORK EMAIL..."
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     autoFocus
                     required
-                    style={{
-                      width: '100%',
-                      padding: '12px 14px 12px 42px',
-                      borderRadius: '14px',
-                      background: 'rgba(30, 41, 59, 0.7)',
-                      border: '1px solid rgba(255, 255, 255, 0.12)',
-                      color: '#F8FAFC',
-                      fontSize: '0.95rem',
-                      outline: 'none',
-                      boxSizing: 'border-box',
-                    }}
+                    className="bauhaus-input has-icon"
                   />
                 </div>
               </div>
 
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+              <button
                 disabled={busy}
                 type="submit"
-                style={{
-                  width: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  padding: '13px',
-                  borderRadius: '14px',
-                  background: 'linear-gradient(135deg, #0052FF, #2563EB)',
-                  color: '#FFFFFF',
-                  fontWeight: 700,
-                  fontSize: '0.95rem',
-                  border: 'none',
-                  cursor: busy ? 'not-allowed' : 'pointer',
-                  boxShadow: '0 8px 20px rgba(0, 82, 255, 0.3)',
-                  marginTop: '6px',
-                }}
+                className="bauhaus-btn bauhaus-btn-red w-full justify-center lg"
               >
                 {busy ? (
-                  'Sending Code…'
+                  'TRANSMITTING CODE…'
                 ) : (
                   <>
-                    <span>Send Verification Code</span>
-                    <ArrowRight size={18} />
+                    <span>SEND VERIFICATION CODE</span>
+                    <ArrowRight size={18} strokeWidth={3} />
                   </>
                 )}
-              </motion.button>
+              </button>
             </motion.form>
           ) : (
             <motion.div
               key="step-otp"
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: 15 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.25 }}
-              style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
+              exit={{ opacity: 0, x: -15 }}
+              transition={{ duration: 0.2 }}
+              className="bauhaus-auth-form"
             >
-              <div style={{ textAlign: 'center' }}>
-                <p style={{ fontSize: '0.88rem', color: '#94A3B8', margin: 0 }}>
-                  Enter the 6-digit code sent to <br />
-                  <strong style={{ color: '#F8FAFC' }}>{email}</strong>
+              <div className="bauhaus-otp-notice">
+                <p>
+                  ENTER THE 6-DIGIT CODE TRANSMITTED TO:<br />
+                  <strong>{email}</strong>
                 </p>
               </div>
 
               {/* 6 Digit OTP Inputs */}
-              <div style={{ display: 'flex', justifyContent: 'spaceBetween', gap: '8px', margin: '8px 0' }}>
+              <div className="bauhaus-otp-grid">
                 {otpDigits.map((digit, idx) => (
                   <input
                     key={idx}
@@ -455,56 +365,27 @@ export default function JoinNow() {
                     value={digit}
                     onChange={(e) => handleDigitChange(idx, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(idx, e)}
-                    style={{
-                      width: '100%',
-                      height: '52px',
-                      textAlign: 'center',
-                      fontSize: '1.4rem',
-                      fontWeight: 800,
-                      borderRadius: '12px',
-                      background: 'rgba(30, 41, 59, 0.8)',
-                      border: digit ? '2px solid #0052FF' : '1px solid rgba(255, 255, 255, 0.15)',
-                      color: '#F8FAFC',
-                      outline: 'none',
-                      boxSizing: 'border-box',
-                    }}
+                    className={`bauhaus-otp-cell ${digit ? 'filled' : ''}`}
                   />
                 ))}
               </div>
 
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+              <button
                 disabled={busy}
                 onClick={() => verifyOtpCode()}
-                style={{
-                  width: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  padding: '13px',
-                  borderRadius: '14px',
-                  background: 'linear-gradient(135deg, #0052FF, #2563EB)',
-                  color: '#FFFFFF',
-                  fontWeight: 700,
-                  fontSize: '0.95rem',
-                  border: 'none',
-                  cursor: busy ? 'not-allowed' : 'pointer',
-                  boxShadow: '0 8px 20px rgba(0, 82, 255, 0.3)',
-                }}
+                className="bauhaus-btn bauhaus-btn-blue w-full justify-center lg"
               >
                 {busy ? (
-                  'Verifying…'
+                  'VERIFYING CRYPTO TOKEN…'
                 ) : (
                   <>
-                    <KeyRound size={18} />
-                    <span>Verify & Continue</span>
+                    <KeyRound size={18} strokeWidth={3} />
+                    <span>VERIFY & ENTER</span>
                   </>
                 )}
-              </motion.button>
+              </button>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px', fontSize: '0.85rem' }}>
+              <div className="bauhaus-otp-actions">
                 <button
                   type="button"
                   onClick={() => {
@@ -512,29 +393,19 @@ export default function JoinNow() {
                     setErr('');
                     setInfo('');
                   }}
-                  style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: 0 }}
+                  className="bauhaus-link-btn"
                 >
-                  Change email
+                  &larr; EDIT EMAIL
                 </button>
 
                 <button
                   type="button"
                   disabled={resendCooldown > 0 || busy}
                   onClick={handleSendOtp}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: resendCooldown > 0 ? '#64748B' : '#60A5FA',
-                    cursor: resendCooldown > 0 ? 'not-allowed' : 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    padding: 0,
-                    fontWeight: 600,
-                  }}
+                  className={`bauhaus-link-btn ${resendCooldown > 0 ? 'disabled' : ''}`}
                 >
-                  <RotateCcw size={14} />
-                  <span>{resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : 'Resend code'}</span>
+                  <RotateCcw size={13} />
+                  <span>{resendCooldown > 0 ? `RESEND IN ${resendCooldown}S` : 'RESEND OTP'}</span>
                 </button>
               </div>
             </motion.div>

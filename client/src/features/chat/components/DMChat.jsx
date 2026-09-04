@@ -57,11 +57,15 @@ export default function DMChat({ room, messages, userId, onAccept, onRemove, onS
             </svg>
           </button>
         )}
-        <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
-          <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 0 1-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-        </svg>
-        <h3>Select a conversation</h3>
-        <p>Choose a DM from the sidebar or message someone privately from any group chat.</p>
+        <div className="dm-chat-empty-card">
+          <div className="dm-empty-icon-wrap">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 0 1-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+          </div>
+          <h3>Select a Conversation</h3>
+          <p>Choose a DM from the sidebar or message someone privately from any group chat.</p>
+        </div>
       </div>
     );
   }

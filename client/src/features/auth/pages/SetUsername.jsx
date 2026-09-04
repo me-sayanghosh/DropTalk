@@ -36,29 +36,62 @@ export default function SetUsername() {
   }
 
   return (
-    <div className="auth">
-      <div className="auth-card">
-        <h1>Pick a username</h1>
-        <p className="muted">This is how others will see you in chats. You can skip and set it later.</p>
-        <form onSubmit={handleSubmit}>
-          <input
-            type="text"
-            placeholder="Username (3-24 chars)"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            autoFocus
-            minLength={3}
-            maxLength={24}
-            pattern="[a-zA-Z0-9_\-]+"
-            required
-            autoComplete="username"
-          />
-          {err && <div className="error">{err}</div>}
-          <button type="submit" disabled={busy}>{busy ? 'Saving…' : 'Save & continue'}</button>
+    <div className="bauhaus-auth-page">
+      <div className="bauhaus-auth-bg-circle" />
+      <div className="bauhaus-auth-bg-square" />
+      <div className="bauhaus-auth-bg-triangle" />
+
+      <div className="bauhaus-auth-card">
+        <div className="bauhaus-auth-top-bar">
+          <span className="b-bar-yellow" />
+          <span className="b-bar-red" />
+          <span className="b-bar-blue" />
+        </div>
+
+        <div className="bauhaus-auth-header">
+          <div className="bauhaus-logo-shapes">
+            <span className="b-circle" />
+            <span className="b-square" />
+            <span className="b-triangle" />
+          </div>
+          <h1 className="bauhaus-auth-title">IDENTIFIER SETUP</h1>
+          <p className="bauhaus-auth-subtitle">SELECT YOUR UNIQUE CONSTRUCTIVIST HANDLE</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="bauhaus-auth-form">
+          <div className="bauhaus-form-group">
+            <label className="bauhaus-label">USERNAME (3-24 CHARACTERS)</label>
+            <input
+              type="text"
+              placeholder="e.g. walter_gropius"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              autoFocus
+              minLength={3}
+              maxLength={24}
+              pattern="[a-zA-Z0-9_\-]+"
+              required
+              autoComplete="username"
+              className="bauhaus-input"
+            />
+          </div>
+
+          {err && (
+            <div className="bauhaus-alert-error">
+              <span>{err}</span>
+            </div>
+          )}
+
+          <button type="submit" disabled={busy} className="bauhaus-btn bauhaus-btn-red w-full justify-center lg">
+            {busy ? 'REGISTERING HANDLE…' : 'CONFIRM & ENTER WORKSPACE'}
+          </button>
         </form>
-        <p className="muted" style={{ marginTop: '1.25rem', textAlign: 'center' }}>
-          <Link to="/chat" className="link">Skip for now</Link>
-        </p>
+
+        <div className="bauhaus-auth-footer-skip">
+          <Link to="/chat" className="bauhaus-link-btn">
+            SKIP FOR NOW &rarr;
+          </Link>
+        </div>
       </div>
     </div>
   );
