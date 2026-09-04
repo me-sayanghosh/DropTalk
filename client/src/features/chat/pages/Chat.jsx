@@ -404,11 +404,14 @@ export default function Chat() {
           /* Notifications Main View */
           <NotificationsMainView
             notifications={notifications}
+            unreadCount={unreadCount}
             filter={notifFilter}
+            onSelectFilter={(f) => setNotifFilter(f)}
             onMarkRead={markRead}
             onDeleteNotif={deleteNotification}
             onMarkAllRead={markAllRead}
             onClearAll={clearAllNotifications}
+            onBack={() => { nav('/channels'); setNavRailTab('chat'); setMobileActiveView('sidebar'); }}
             onNavigateToRoom={(roomId) => {
               const r = rooms.find((rm) => rm.id === roomId);
               if (r) {

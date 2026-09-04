@@ -3633,50 +3633,120 @@ button {
   box-sizing: border-box;
 }
 
-.notif-main-header {
-  height: 64px;
-  min-height: 64px;
-  padding: 0 1.5rem;
-  background: #FFFFFF;
+.notif-header-unread-tag {
+  background: var(--color-red);
+  color: #FFFFFF;
+  padding: 2px 8px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  border: 1.5px solid var(--color-black);
+  margin-left: 8px;
+}
+
+.notif-clear-btn:hover {
+  background: var(--color-red) !important;
+  color: #FFFFFF !important;
+}
+
+.notif-controls-wrapper {
+  padding: 0.85rem 1.5rem;
+  background: var(--bg-canvas);
   border-bottom: 4px solid var(--color-black);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-shrink: 0;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
-.notif-main-title {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.notif-main-title h3 {
-  font-size: 1.25rem;
-  font-weight: 900;
-  text-transform: uppercase;
-  margin: 0;
-}
-
-.notif-main-count {
-  background: var(--color-black);
-  color: #FFFFFF;
-  padding: 2px 8px;
-  font-size: 0.75rem;
-  font-weight: 900;
-}
-
-.notif-search-bar {
+.notif-controls-wrapper .notif-search-bar {
   position: relative;
   display: flex;
   align-items: center;
+  flex: 1;
+  max-width: 320px;
 }
-.notif-search-bar input {
-  padding: 8px 10px 8px 30px;
-  background: var(--bg-canvas);
+
+.notif-controls-wrapper .notif-search-bar svg {
+  position: absolute;
+  left: 10px;
+  color: var(--color-black);
+  pointer-events: none;
+}
+
+.notif-controls-wrapper .notif-search-bar input {
+  width: 100%;
+  padding: 7px 30px 7px 32px;
+  background: #FFFFFF;
   border: 2px solid var(--color-black);
-  font-size: 0.85rem;
-  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+  font-size: 0.82rem;
+  font-weight: 700;
   outline: none;
+  box-sizing: border-box;
+}
+
+.notif-search-clear {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+.notif-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.notif-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.notif-tab {
+  padding: 6px 12px;
+  background: #FFFFFF;
+  border: 2px solid var(--color-black);
+  box-shadow: var(--shadow-sm);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.notif-tab:hover {
+  background: var(--color-yellow-light);
+}
+
+.notif-tab.active {
+  background: var(--color-yellow);
+  box-shadow: 2px 2px 0 0 #121212;
+  transform: translate(-1px, -1px);
+}
+
+.notif-tab-count {
+  background: var(--color-black);
+  color: #FFFFFF;
+  padding: 1px 5px;
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.notif-tab-count.unread {
+  background: var(--color-red);
+  color: #FFFFFF;
 }
 
 .notif-feed-list {
@@ -3687,6 +3757,8 @@ button {
   flex-direction: column;
   gap: 12px;
   background: var(--bg-canvas);
+  background-image: radial-gradient(rgba(18, 18, 18, 0.08) 1.5px, transparent 1.5px);
+  background-size: 20px 20px;
 }
 
 .notif-card-item {
@@ -3782,7 +3854,10 @@ button {
 .notif-btn-action.delete:hover { background: var(--color-red); color: #FFFFFF; }
 
 .notif-empty-card {
-  padding: 3rem;
+  margin: auto;
+  max-width: 480px;
+  width: 100%;
+  padding: 2.5rem 2rem;
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -3790,8 +3865,40 @@ button {
   justify-content: center;
   gap: 1rem;
   background: #FFFFFF;
-  border: 3px solid var(--color-black);
+  border: 4px solid var(--color-black);
+  box-shadow: var(--shadow-xl);
+  box-sizing: border-box;
+}
+
+.notif-empty-icon-wrap {
+  width: 72px;
+  height: 72px;
+  background: var(--color-yellow);
+  border: 3.5px solid var(--color-black);
   box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-black);
+  margin-bottom: 0.25rem;
+}
+
+.notif-empty-card h4 {
+  font-size: 1.45rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: var(--color-black);
+}
+
+.notif-empty-card p {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin: 0;
+  max-width: 380px;
 }
 
 /* Call Logs Main View */
@@ -7072,6 +7179,63 @@ kbd, .kbd-group kbd {
     text-align: center;
     padding: 6px 4px;
     font-size: 0.76rem;
+  }
+
+  /* ── 11. Notifications Responsive View ── */
+  .notif-controls-wrapper {
+    padding: 0.65rem 0.75rem;
+    gap: 0.65rem;
+  }
+
+  .notif-controls-wrapper .notif-search-bar {
+    max-width: 100%;
+    width: 100%;
+    flex: 1 1 100%;
+  }
+
+  .notif-tabs {
+    width: 100%;
+    gap: 4px;
+    padding-bottom: 2px;
+  }
+
+  .notif-tab {
+    padding: 5px 8px;
+    font-size: 0.72rem;
+  }
+
+  .notif-feed-list {
+    padding: 0.75rem 0.5rem;
+    gap: 8px;
+  }
+
+  .notif-empty-card {
+    padding: 2rem 1rem;
+    box-shadow: 4px 4px 0 0 #121212;
+    border-width: 3px;
+  }
+
+  .notif-empty-icon-wrap {
+    width: 58px;
+    height: 58px;
+  }
+
+  .notif-empty-card h4 {
+    font-size: 1.15rem;
+  }
+
+  .notif-empty-card p {
+    font-size: 0.82rem;
+  }
+
+  .notif-card-item {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .notif-card-footer {
+    flex-wrap: wrap;
+    gap: 8px;
   }
 }
 
