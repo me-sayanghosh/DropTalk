@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatCardTime } from '../../../shared/utils/dateUtils.js';
 import StartCallModal from './StartCallModal.jsx';
 
 export default function CallLogsMainView({ logs = [], selectedLog, onStartCall, onClearHistory, onBack }) {
@@ -259,8 +260,84 @@ export default function CallLogsMainView({ logs = [], selectedLog, onStartCall, 
               </table>
             </div>
 
+            {/* Mobile Touch-Friendly Call List View (visible on mobile <=768px) */}
+            <div className="call-mobile-list mobile-only-list">
+              <div className="call-table-title-row">
+                <h3>Recent Activity</h3>
+                <span className="call-count-tag">{filteredLogs.length} logged</span>
+              </div>
+              <div className="call-mobile-items">
+                {filteredLogs.map((log) => {
+                  const partnerName = log.partner?.name || log.partner?.username || 'Unknown User';
+                  const avatar = log.partner?.profileImage;
+                  const initial = (log.partner?.username || 'U')[0].toUpperCase();
+                  const timeStr = formatCardTime(log.createdAt);
+                  const durationStr = formatDuration(log.durationSeconds);
+                  const isMissed = log.status === 'missed' || log.status === 'rejected';
 
+                  return (
+                    <div key={log.id} className={`call-item ${isMissed ? 'call-item--missed' : ''}`}>
+                      <div className="call-avatar">
+                        {avatar ? <img src={avatar} alt={partnerName} /> : <span>{initial}</span>}
+                        <span className={`call-type-badge ${log.type}`}>
+                          {log.type === 'video' ? '📹' : '📞'}
+                        </span>
+                      </div>
 
+                      <div className="call-item-body">
+                        <div className="call-item-header">
+                          <span className={`call-partner-name ${isMissed ? 'name-missed' : ''}`}>
+                            {partnerName}
+                          </span>
+                          <span className="call-item-time">{timeStr}</span>
+                        </div>
+
+                        <div className="call-item-footer">
+                          <div className="call-status-row">
+                            {renderDirectionIcon(log.direction, log.status)}
+                            <span className="call-status-text">
+                              {isMissed
+                                ? 'Missed Call'
+                                : `${log.direction === 'outgoing' ? 'Outgoing' : 'Incoming'}${durationStr ? ` (${durationStr})` : ''}`}
+                            </span>
+                          </div>
+
+                          {log.partner?.id && (
+                            <div className="call-item-actions">
+                              <button
+                                className="call-action-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onStartCall?.(log.partner.id, null, false, log.partner);
+                                }}
+                                title={`Voice call ${partnerName}`}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                                </svg>
+                              </button>
+                              <button
+                                className="call-action-btn video-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onStartCall?.(log.partner.id, null, true, log.partner);
+                                }}
+                                title={`Video call ${partnerName}`}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                                  <polygon points="23 7 16 12 23 17 23 7" />
+                                  <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+                                </svg>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
       </div>
