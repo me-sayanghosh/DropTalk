@@ -7268,6 +7268,7 @@ kbd, .kbd-group kbd {
   }
 }
 
+
 @media (max-width: 480px) {
   .msg {
     max-width: 92% !important;
