@@ -313,7 +313,15 @@ export default function MessageList({
           showDateSep = true;
         }
 
-        const mine = m.senderId === meId || m.sender?.id === meId;
+        const myIdStr = meId ? String(meId) : '';
+        const senderIdStr = m.senderId
+          ? String(m.senderId)
+          : m.sender?._id
+          ? String(m.sender._id)
+          : m.sender?.id
+          ? String(m.sender.id)
+          : '';
+        const mine = !!(myIdStr && senderIdStr && myIdStr === senderIdStr);
         const who = getSenderName(m);
         const senderRole = getMemberRole(m.senderId);
         const readStatus = getReadStatus(m);
@@ -593,12 +601,12 @@ export default function MessageList({
                 )}
 
                 {/* Private Message Button */}
-                {!mine && onDMUser && (
+                {!mine && onDMUser && senderIdStr && senderIdStr !== myIdStr && (
                   <button
                     className="msg-hover-btn msg-hover-btn--dm"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onDMUser(m.senderId, getSenderName(m));
+                      onDMUser(senderIdStr, getSenderName(m));
                     }}
                     title={`Message @${getSenderName(m)} privately`}
                     type="button"

@@ -19,9 +19,12 @@ import { useTheme } from '../../../shared/hooks/useTheme';
 import { NotificationsPanel } from '../../notifications/components/NotificationsPanel';
 import { NotificationsMainView } from '../../notifications/components/NotificationsMainView';
 import { formatBadgeCount } from '../../../shared/utils/dateUtils';
+import { useToast } from '../../../shared/context/ToastContext';
 import { NotificationItem, CallLog, Room, User } from '../../../types';
 
 export default function Chat() {
+  const toastCtx = useToast();
+  const showToast = toastCtx?.showToast;
   const [notifFilter, setNotifFilter] = useState('all');
   const {
     user, logout, rooms, currentRoom, displayMessages, online, members,
@@ -201,17 +204,53 @@ export default function Chat() {
 
   // Handle "Message Privately" clicked on a group message
   async function handleDMUser(toUserId: string, toUsername?: string) {
+    const myId = user?.id || (user as any)?._id;
+    if (myId && String(toUserId) === String(myId)) {
+      if (showToast) {
+        showToast({
+          title: 'Direct Message',
+          message: 'You cannot start a direct message with yourself.',
+          type: 'info',
+          category: 'dm',
+        });
+      } else {
+        setDmRequestToast('You cannot start a direct message with yourself.');
+        setTimeout(() => setDmRequestToast(null), 3000);
+      }
+      return;
+    }
+
     try {
       const dmText = `Hi! I want to message you privately.`;
       const room = await sendDMRequest(toUserId, dmText);
       // Switch to DM tab and open the conversation
       setNavRailTab('dm');
       openDM({ ...room, partner: { id: toUserId, username: toUsername || 'User' } });
-      setDmRequestToast(`DM request sent to ${toUsername || 'User'}`);
-      setTimeout(() => setDmRequestToast(null), 3000);
+      const successMsg = `DM request sent to @${toUsername || 'User'}`;
+      if (showToast) {
+        showToast({
+          title: 'Direct Message',
+          message: successMsg,
+          type: 'success',
+          category: 'dm',
+        });
+      } else {
+        setDmRequestToast(successMsg);
+        setTimeout(() => setDmRequestToast(null), 3000);
+      }
     } catch (err: any) {
-      setDmRequestToast(`Failed: ${err.message}`);
-      setTimeout(() => setDmRequestToast(null), 3000);
+      const errMsg = err?.response?.data?.error || err.message || 'Failed to send DM request';
+      if (showToast) {
+        showToast({
+          title: 'Direct Message Failed',
+          message: errMsg,
+          type: 'error',
+          category: 'dm',
+        });
+      } else {
+        setDmRequestToast(`Failed: ${errMsg}`);
+        setTimeout(() => setDmRequestToast(null), 3000);
+      }
     }
   }
 
@@ -606,7 +645,7 @@ export default function Chat() {
                     room={currentRoom}
                     members={members}
                     online={online}
-                    currentUserId={user?.id}
+                    currentUserId={user?.id || (user as any)?._id}
                     onBack={() => setChannelView('chat')}
                     onMemberUpdate={refreshMembers}
                     onOpenProfile={(u) => setSelectedProfileUser(u)}
@@ -631,7 +670,7 @@ export default function Chat() {
                       >
                         <MessageList
                           messages={displayMessages}
-                          meId={user?.id}
+                          meId={user?.id || (user as any)?._id}
                           onDelete={deleteMessage}
                           onDeleteForMe={deleteForMe}
                           members={members}
@@ -728,8 +767,9 @@ export default function Chat() {
         <UserProfileCard
           user={selectedProfileUser}
           isOnline={online.some((o) => o.id === selectedProfileUser.id || (o as any)._id === selectedProfileUser.id)}
+          currentUserId={user?.id || (user as any)?._id}
           onClose={() => setSelectedProfileUser(null)}
-          onStartDM={(toUserId: string) => handleDMUser(toUserId)}
+          onStartDM={(toUserId: string) => handleDMUser(toUserId, selectedProfileUser.username)}
           onMention={(username: string) => {
             setCurrentInput((prev) => (prev ? `${prev} @${username} ` : `@${username} `));
           }}
