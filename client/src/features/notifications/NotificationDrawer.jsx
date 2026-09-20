@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { requestNotificationPermission } from '../../shared/utils/webNotifications.js';
+import { requestNotificationPermission } from '../../shared/utils/webNotifications';
 
 export default function NotificationDrawer({
   isOpen,

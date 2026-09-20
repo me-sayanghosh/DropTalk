@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { api } from '../../../shared/utils/api.js';
+import { api } from '../../../shared/utils/api';
 
 export default function StartCallModal({ isOpen, onClose, onStartCall }) {
   const [search, setSearch] = useState('');

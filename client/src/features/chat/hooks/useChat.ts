@@ -54,7 +54,7 @@ export default function useChat() {
   const [pendingRooms, setPendingRooms] = useState<Set<string>>(new Set());
   const [replyTo, setReplyTo] = useState<any | null>(null);
   const [replyToData, setReplyToData] = useState<Record<string, any>>({});
-  const [membersMap, setMembersMap] = useState<Record<string, string>>({});
+  const [membersMap, setMembersMap] = useState<Record<string, any>>({});
   const [toast, setToast] = useState<any>(null);
   // unreadCounts: { [roomId]: number } — resets to 0 when room is opened
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});

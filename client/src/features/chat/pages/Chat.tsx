@@ -179,7 +179,7 @@ export default function Chat() {
       if (targetDM) {
         await openDM(targetDM);
       } else if (notifRoomId) {
-        await openDM({ id: notifRoomId, partner: notif.actor || { id: notif.actorId, username: 'User' } });
+        await openDM({ id: notifRoomId, partner: notif.actor || { id: notif.actorId || '', username: 'User' } } as any);
       }
     } else {
       setNavRailTab('chat');
@@ -214,8 +214,9 @@ export default function Chat() {
     let targetProfileImage = userObj?.profileImage || userObj?.avatar;
 
     if (!targetName && toUserId && membersMap?.[toUserId]) {
-      targetName = membersMap[toUserId].name || membersMap[toUserId].username;
-      targetProfileImage = membersMap[toUserId].profileImage || membersMap[toUserId].avatar;
+      const m = membersMap[toUserId];
+      targetName = typeof m === 'object' ? (m.name || m.username) : m;
+      targetProfileImage = typeof m === 'object' ? (m.profileImage || m.avatar) : undefined;
     }
     if (!targetName && conversations) {
       const c = conversations.find((con: any) => con.partner?.id === toUserId || con.partner?.userId === toUserId);
@@ -232,9 +233,10 @@ export default function Chat() {
       }
     }
     if (!targetName && currentDM?.partner) {
-      if (currentDM.partner.id === toUserId || (currentDM.partner as any)._id === toUserId) {
-        targetName = currentDM.partner.name || currentDM.partner.username;
-        targetProfileImage = currentDM.partner.profileImage || currentDM.partner.avatar;
+      const p = currentDM.partner as any;
+      if (p.id === toUserId || p._id === toUserId) {
+        targetName = p.name || p.username;
+        targetProfileImage = p.profileImage || p.avatar;
       }
     }
 

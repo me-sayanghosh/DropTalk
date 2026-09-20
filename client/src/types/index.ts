@@ -80,6 +80,7 @@ export interface Room {
   pinnedMessages?: string[];
   lastMessage?: Message;
   memberCount?: number;
+  partner?: User;
   unreadCount?: number;
   createdAt?: string;
   updatedAt?: string;
@@ -156,6 +157,7 @@ export interface NotificationItem {
   _id?: string;
   user: string;
   actor?: User;
+  actorId?: string;
   type: 'mention' | 'dm' | 'reaction' | 'system' | 'channel';
   title: string;
   message: string;

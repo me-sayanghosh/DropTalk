@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { formatCardTime } from '../../../shared/utils/dateUtils.js';
+import { formatCardTime } from '../../../shared/utils/dateUtils';
 
 export function NotificationsMainView({
   notifications = [],

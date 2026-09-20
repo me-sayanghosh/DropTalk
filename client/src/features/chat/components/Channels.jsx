@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { formatBadgeCount, formatCardTime } from '../../../shared/utils/dateUtils.js';
+import { formatBadgeCount, formatCardTime } from '../../../shared/utils/dateUtils';
 import { ChannelSkeleton } from '../../../shared/components/ui/SkeletonLoaders';
 
 const ROOM_TYPES = [

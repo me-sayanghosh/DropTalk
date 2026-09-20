@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { formatCardTime } from '../../../shared/utils/dateUtils.js';
-import StartCallModal from './StartCallModal.jsx';
+import { formatCardTime } from '../../../shared/utils/dateUtils';
+import StartCallModal from './StartCallModal';
 
 export default function CallLogsMainView({ logs = [], selectedLog, onStartCall, onClearHistory, onBack }) {
   const [showModal, setShowModal] = useState(false);
