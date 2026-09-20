@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { formatDateSeparator } from '../../../shared/utils/dateUtils.js';
-import { getMediaUrl } from '../../../shared/utils/index.js';
+import { formatDateSeparator } from '../../../shared/utils/dateUtils';
+import { getMediaUrl } from '../../../shared/utils';
 
 export default function DMChat({ room, messages, userId, onAccept, onRemove, onSend, loading, onStartCall, onBack }) {
   const [text, setText] = useState('');

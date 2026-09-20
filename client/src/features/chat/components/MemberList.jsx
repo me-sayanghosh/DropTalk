@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { api } from '../../../shared/utils/index.js';
+import { api } from '../../../shared/utils';
 
 const ROLE_COLORS = {
   owner: '#E8720C',

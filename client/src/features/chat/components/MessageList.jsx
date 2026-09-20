@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { formatDateSeparator } from '../../../shared/utils/dateUtils.js';
-import { getMediaUrl } from '../../../shared/utils/index.js';
+import { formatDateSeparator } from '../../../shared/utils/dateUtils';
+import { getMediaUrl } from '../../../shared/utils';
 
 /**
  * Parse message text and highlight @username mentions.

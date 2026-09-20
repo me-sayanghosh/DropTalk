@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { api, getMediaUrl } from '../../../shared/utils/index.js';
+import { api, getMediaUrl } from '../../../shared/utils';
 
 export default function MessageInput({ onSend, onTyping, onTextChange, replyTo, onClearReply, membersMap, slowMode = 0 }) {
   const [text, setText] = useState('');

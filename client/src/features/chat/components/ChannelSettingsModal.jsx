@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { api } from '../../../shared/utils/api.js';
+import { api } from '../../../shared/utils/api';
 
 export default function ChannelSettingsModal({ room, onClose, onUpdated }) {
   const [name, setName] = useState(room?.name || '');

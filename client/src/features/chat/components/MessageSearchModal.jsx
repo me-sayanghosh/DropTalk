@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { api } from '../../../shared/utils/api.js';
+import { api } from '../../../shared/utils/api';
 
 export default function MessageSearchModal({ roomId, isOpen, onClose, onJumpToMessage }) {
   const [query, setQuery] = useState('');

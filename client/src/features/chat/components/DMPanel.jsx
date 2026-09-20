@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { api } from '../../../shared/utils/api.js';
-import { formatBadgeCount, formatCardTime } from '../../../shared/utils/dateUtils.js';
+import { api } from '../../../shared/utils/api';
+import { formatBadgeCount, formatCardTime } from '../../../shared/utils/dateUtils';
 import { DMSkeleton } from '../../../shared/components/ui/SkeletonLoaders';
 
 export default function DMPanel({ conversations, currentDM, onOpen, onSendRequest, userId, loading = false }) {

@@ -11,6 +11,10 @@ node_modules/
 .env.*.local
 # .env.example is intentionally NOT ignored (safe template for new devs)
 
+# Next.js build output
+.next/
+out/
+
 # Vite build output
 dist/
 dist-ssr/
