@@ -9,7 +9,7 @@ import {
   PendingRequests, MessageList, MessageInput,
   DMPanel, DMChat, CreateChannelModal, UserProfileCard, ForwardModal, MessageSearchModal,
   PinnedMessagesModal, ChannelSettingsModal, CallOverlay, QuickSwitcherModal, KeyboardShortcutsModal,
-  CallLogsPanel, CallLogsMainView, AIPanel,
+  CallLogsPanel, CallLogsMainView, AIPanel, ChannelMembersPage,
 } from '../components';
 import NotificationDrawer from '../../notifications/NotificationDrawer';
 import { useNotifications } from '../../notifications/useNotifications';
@@ -89,9 +89,15 @@ export default function Chat() {
   };
 
   const [navRailTab, setNavRailTab] = useState<'calls' | 'notifications' | 'dm' | 'chat'>(getInitialTab);
+  const [channelView, setChannelView] = useState<'chat' | 'members'>('chat');
   const [dmRequestToast, setDmRequestToast] = useState<string | null>(null);
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [mobileActiveView, setMobileActiveView] = useState<'sidebar' | 'chat'>(getInitialMobileView);
+
+  // Reset channel view to chat whenever room changes
+  useEffect(() => {
+    setChannelView('chat');
+  }, [currentRoom?.id]);
 
   // Sync tab & mobile active view with URL location changes and reload
   useEffect(() => {
@@ -459,10 +465,25 @@ export default function Chat() {
             <header className="chat-header">
               {currentRoom ? (
                 <>
-                  <div className="header-left">
+                  <div
+                    className={`header-left header-clickable ${channelView === 'members' ? 'active' : ''}`}
+                    onClick={() => setChannelView(prev => prev === 'members' ? 'chat' : 'members')}
+                    title={channelView === 'members' ? 'Click to return to chat' : 'Click to view all channel members'}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setChannelView(prev => prev === 'members' ? 'chat' : 'members');
+                      }
+                    }}
+                  >
                     <button
                       className="mobile-back-btn"
-                      onClick={() => setMobileActiveView('sidebar')}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMobileActiveView('sidebar');
+                      }}
                       title="Back to Channels"
                     >
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -476,12 +497,17 @@ export default function Chat() {
                       </svg>
                     </div>
                     <div className="header-room-info">
-                      <h2 className="header-room-name">
-                        {currentRoom.name}{' '}
-                        <svg className="verified-badge-svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                        </svg>
-                      </h2>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <h2 className="header-room-name">
+                          {currentRoom.name}{' '}
+                          <svg className="verified-badge-svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                          </svg>
+                        </h2>
+                        <span className="header-members-hint-pill">
+                          {channelView === 'members' ? '← Chat' : '👥 Members'}
+                        </span>
+                      </div>
                       <div className="header-room-meta">
                         {currentRoom.topic && (
                           <span className="header-topic-tag" title={currentRoom.topic}>
@@ -566,24 +592,6 @@ export default function Chat() {
                         <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
                       </svg>
                     </button>
-                    <button
-                      className={`header-icon-btn ${showPresence ? 'active' : ''}`}
-                      onClick={() => { setShowPresence(!showPresence); setShowMembers(false); }}
-                      title="Presence Map"
-                    >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
-                      </svg>
-                    </button>
-                    <button
-                      className={`header-icon-btn ${showMembers ? 'active' : ''}`}
-                      onClick={() => { setShowMembers(!showMembers); setShowPresence(false); }}
-                      title="Members"
-                    >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                      </svg>
-                    </button>
                   </div>
                 </>
               ) : (
@@ -593,97 +601,87 @@ export default function Chat() {
 
             <div className="main-content">
               {currentRoom ? (
-                <>
-                  <div className="chat-area">
-                    {isPrivate && keyStatus !== 'ready' && keyStatus !== null && (
-                      <div className="encryption-notice">
-                        {keyStatus === 'waiting' ? 'Exchanging E2EE keys...' : 'Encryption key error'}
-                      </div>
-                    )}
-                    <div
-                      className="messages-container"
-                      ref={messagesContainerRef}
-                      onScroll={(e: React.UIEvent<HTMLDivElement>) => {
-                        if (e.currentTarget.scrollTop < 40) {
-                          loadOlderMessages();
-                        }
-                      }}
-                    >
-                      <MessageList
-                        messages={displayMessages}
-                        meId={user?.id}
-                        onDelete={deleteMessage}
-                        onDeleteForMe={deleteForMe}
-                        members={members}
-                        onRead={handleReadReceipt}
-                        readReceipts={readReceipts}
-                        onlineUserIds={online.map((u) => u.id)}
-                        onOpenThread={setThreadMessage}
-                        onReact={handleReact}
-                        threadCounts={threadCounts}
-                        onReply={setReplyTo}
-                        replyToData={replyToData}
-                        membersMap={membersMap}
-                        onDMUser={handleDMUser}
-                        onEdit={editMessage}
-                        onPin={pinMessage}
-                        onUnpin={unpinMessage}
-                        onOpenForward={setForwardMsg}
-                        pinnedMessages={currentRoom.pinnedMessages || []}
-                      />
+                channelView === 'members' ? (
+                  <ChannelMembersPage
+                    room={currentRoom}
+                    members={members}
+                    online={online}
+                    currentUserId={user?.id}
+                    onBack={() => setChannelView('chat')}
+                    onMemberUpdate={refreshMembers}
+                    onOpenProfile={(u) => setSelectedProfileUser(u)}
+                    onDMUser={handleDMUser}
+                  />
+                ) : (
+                  <>
+                    <div className="chat-area">
+                      {isPrivate && keyStatus !== 'ready' && keyStatus !== null && (
+                        <div className="encryption-notice">
+                          {keyStatus === 'waiting' ? 'Exchanging E2EE keys...' : 'Encryption key error'}
+                        </div>
+                      )}
+                      <div
+                        className="messages-container"
+                        ref={messagesContainerRef}
+                        onScroll={(e: React.UIEvent<HTMLDivElement>) => {
+                          if (e.currentTarget.scrollTop < 40) {
+                            loadOlderMessages();
+                          }
+                        }}
+                      >
+                        <MessageList
+                          messages={displayMessages}
+                          meId={user?.id}
+                          onDelete={deleteMessage}
+                          onDeleteForMe={deleteForMe}
+                          members={members}
+                          onRead={handleReadReceipt}
+                          readReceipts={readReceipts}
+                          onlineUserIds={online.map((u) => u.id)}
+                          onOpenThread={setThreadMessage}
+                          onReact={handleReact}
+                          threadCounts={threadCounts}
+                          onReply={setReplyTo}
+                          replyToData={replyToData}
+                          membersMap={membersMap}
+                          onDMUser={handleDMUser}
+                          onEdit={editMessage}
+                          onPin={pinMessage}
+                          onUnpin={unpinMessage}
+                          onOpenForward={setForwardMsg}
+                          pinnedMessages={currentRoom.pinnedMessages || []}
+                        />
 
+                      </div>
+                      <TypingIndicator typingUsers={typingUsers} />
+                      <MessageInput
+                        onSend={send}
+                        onTyping={handleTyping}
+                        onTextChange={setCurrentInput}
+                        replyTo={replyTo}
+                        onClearReply={() => setReplyTo(null)}
+                        membersMap={membersMap}
+                        slowMode={currentRoom.slowMode || 0}
+                      />
                     </div>
-                    <TypingIndicator typingUsers={typingUsers} />
-                    <MessageInput
-                      onSend={send}
-                      onTyping={handleTyping}
-                      onTextChange={setCurrentInput}
-                      replyTo={replyTo}
-                      onClearReply={() => setReplyTo(null)}
-                      membersMap={membersMap}
-                      slowMode={currentRoom.slowMode || 0}
-                    />
-                  </div>
-                  {showMembers && (
-                    <aside className="members-panel">
-                      <MemberList
-                        members={members}
-                        online={online}
+                    {threadMessage && (
+                      <ThreadPanel
+                        parentMessage={threadMessage}
                         roomId={currentRoom.id}
-                        currentUserId={user?.id}
-                        onMemberUpdate={refreshMembers}
-                        onOpenProfile={setSelectedProfileUser}
-                        onClose={() => setShowMembers(false)}
+                        meId={user?.id}
+                        isPrivate={isPrivate}
+                        onClose={() => setThreadMessage(null)}
                       />
-                      <PendingRequests
+                    )}
+                    {showAIPanel && (
+                      <AIPanel
                         roomId={currentRoom.id}
-                        isAdmin={members.some((m) => m.user === user?.id && (m.role === 'owner' || m.role === 'moderator'))}
-                        onRequestHandled={refreshMembers}
+                        onClose={() => setShowAIPanel(false)}
+                        onUseSuggestion={(text: string) => setCurrentInput(text)}
                       />
-                    </aside>
-                  )}
-                  {showPresence && (
-                    <aside className="members-panel">
-                      <PresenceMap presenceMap={presenceMap} currentUserId={user?.id} rooms={rooms} />
-                    </aside>
-                  )}
-                  {threadMessage && (
-                    <ThreadPanel
-                      parentMessage={threadMessage}
-                      roomId={currentRoom.id}
-                      meId={user?.id}
-                      isPrivate={isPrivate}
-                      onClose={() => setThreadMessage(null)}
-                    />
-                  )}
-                  {showAIPanel && (
-                    <AIPanel
-                      roomId={currentRoom.id}
-                      onClose={() => setShowAIPanel(false)}
-                      onUseSuggestion={(text: string) => setCurrentInput(text)}
-                    />
-                  )}
-                </>
+                    )}
+                  </>
+                )
               ) : (
                 <div className="empty-state">
                   <div className="empty-icon">

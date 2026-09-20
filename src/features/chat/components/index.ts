@@ -24,3 +24,4 @@ export { default as QuickSwitcherModal } from './QuickSwitcherModal.jsx';
 export { default as KeyboardShortcutsModal } from './KeyboardShortcutsModal.jsx';
 export { default as CallLogsPanel } from '../../calls/components/CallLogsPanel.jsx';
 export { default as CallLogsMainView } from '../../calls/components/CallLogsMainView.jsx';
+export { default as ChannelMembersPage } from './ChannelMembersPage';
