@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "node --watch-path=server --watch-path=server.js server.js",
     "dev:nodemon": "nodemon --watch server --watch server.js server.js",
-    "dev:clean": "rm -rf .next && node server.js",
     "build": "next build",
     "start": "NODE_ENV=production node server.js",
     "typecheck": "tsc --noEmit",

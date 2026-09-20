@@ -28,6 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [bootstrapped, setBootstrapped] = useState<boolean>(false);
 
   useEffect(() => {
+    let active = true;
     const token = getAccessToken();
     setAccessToken(token);
 
@@ -36,21 +37,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // Safety timeout: never hang on loading screen longer than 3 seconds
+    const safetyTimer = setTimeout(() => {
+      if (active) {
+        setBootstrapped(true);
+      }
+    }, 3000);
+
     api
-      .get<{ user: User }>('/auth/me')
+      .get<{ user: User }>('/auth/me', { timeout: 3000 })
       .then((r) => r.data)
       .then((data) => {
+        if (!active) return;
         setUser(data.user);
         setAccessToken(token);
         connectSocket(token);
       })
-      .catch(() => {
-        clearTokens();
-        clearAllCryptoKeys();
-        setAccessToken(null);
-        setUser(null);
+      .catch((err) => {
+        if (!active) return;
+        console.warn('Session verification notice:', err?.response?.data?.error || err.message);
+        // Only clear tokens if the server explicitly rejected the token as unauthorized (401)
+        if (err?.response?.status === 401) {
+          clearTokens();
+          clearAllCryptoKeys();
+          setAccessToken(null);
+          setUser(null);
+        }
       })
-      .finally(() => setBootstrapped(true));
+      .finally(() => {
+        clearTimeout(safetyTimer);
+        if (active) {
+          setBootstrapped(true);
+        }
+      });
+
+    return () => {
+      active = false;
+      clearTimeout(safetyTimer);
+    };
   }, []);
 
   function login({ accessToken: at, refreshToken: rt, user: u }: LoginParams) {
@@ -70,32 +94,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   if (!bootstrapped) {
     return (
-      <div
-        style={{
-          height: '100vh',
-          width: '100vw',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: '#0B0F19',
-          color: '#ffffff',
-          fontFamily: 'system-ui, -apple-system, sans-serif',
-        }}
-      >
-        <div
-          style={{
-            width: '40px',
-            height: '40px',
-            border: '3.5px solid #1E293B',
-            borderTopColor: '#0052FF',
-            borderRadius: '50%',
-            animation: 'spin 0.8s linear infinite',
-          }}
-        />
-        <p style={{ marginTop: '16px', fontSize: '13px', fontWeight: 600, color: '#94A3B8' }}>
-          Loading DropTalk...
-        </p>
+      <div className="lazy-suspense-fallback">
+        <div className="lazy-spinner" />
+        <span style={{ marginTop: '16px', fontSize: '13px', fontWeight: 600 }}>Loading DropTalk...</span>
       </div>
     );
   }

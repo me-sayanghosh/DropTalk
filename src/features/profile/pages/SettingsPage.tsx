@@ -447,7 +447,6 @@ export default function SettingsPage() {
             <span className="brand-dot" />
             <h2>Settings</h2>
           </div>
-          <span className="settings-user-badge">{user?.username ? `@${user.username}` : 'Member'}</span>
         </div>
 
         <nav className="settings-nav-list">

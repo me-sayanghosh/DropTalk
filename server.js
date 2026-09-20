@@ -35,6 +35,7 @@ import { attachSocket } from './server/src/shared/socket/index.js';
 import { reconcilePresence } from './server/src/features/presence/presence.service.js';
 
 import fs from 'fs';
+import { rm } from 'fs/promises';
 
 function ensureNextCommonJs() {
   const dirs = [
@@ -63,6 +64,18 @@ const dev = process.env.NODE_ENV !== 'production';
 const PORT = process.env.PORT || 4000;
 const hostname = process.env.HOSTNAME || 'localhost';
 
+// In dev mode, always wipe .next before Next.js compiles so that the
+// webpack runtime never references chunk IDs from a previous session.
+// This eliminates "Cannot find module './104.js'" after watch restarts.
+if (dev) {
+  try {
+    await rm(path.join(process.cwd(), '.next'), { recursive: true, force: true });
+    console.log('[server] cleared .next for fresh dev compilation');
+  } catch {
+    // ignore — .next may not exist on first run
+  }
+}
+
 const nextApp = next({ dev, hostname, port: PORT });
 const handle = nextApp.getRequestHandler();
 
@@ -89,10 +102,13 @@ app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 30,
+  max: dev ? 1000 : 100,
   message: { error: 'Too many attempts, please try again after 15 minutes' },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => {
+    return req.path === '/me' || req.path === '/refresh' || req.path.startsWith('/check-username');
+  },
 });
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/rooms', roomRoutes);
