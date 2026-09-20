@@ -1,12 +1,10 @@
 export const API_BASE: string =
   process.env.NEXT_PUBLIC_API_BASE ||
-  (typeof process !== 'undefined' && process.env?.VITE_API_BASE) ||
-  'http://localhost:4000/api';
+  (typeof window !== 'undefined' ? '/api' : 'http://localhost:4000/api');
 
 export const SERVER_URL: string =
   process.env.NEXT_PUBLIC_SERVER_URL ||
-  (typeof process !== 'undefined' && process.env?.VITE_SERVER_URL) ||
-  'http://localhost:4000';
+  (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:4000');
 
 export const GOOGLE_CLIENT_ID: string =
   process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
