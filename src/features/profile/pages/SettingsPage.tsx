@@ -442,11 +442,12 @@ export default function SettingsPage() {
 
       {/* 2. Middle Column: Settings Navigation Sidebar */}
       <aside className="sidebar settings-sidebar">
-        <div className="sidebar-header">
+        <div className="settings-sidebar-header">
           <div className="sidebar-brand">
             <span className="brand-dot" />
             <h2>Settings</h2>
           </div>
+          <span className="settings-user-badge">{user?.username ? `@${user.username}` : 'Member'}</span>
         </div>
 
         <nav className="settings-nav-list">
