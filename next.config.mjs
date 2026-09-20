@@ -1,3 +1,6 @@
+import fs from 'fs';
+import path from 'path';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: false,
@@ -13,13 +16,33 @@ const nextConfig = {
       },
     ],
   },
-  webpack: (config) => {
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      fs: false,
-      net: false,
-      tls: false,
-    };
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+      };
+    } else {
+      config.plugins.push({
+        apply(compiler) {
+          compiler.hooks.afterEmit.tap('EnsureCommonJSPackageJsonPlugin', (compilation) => {
+            try {
+              const outputPath = compilation.outputOptions.path;
+              if (outputPath) {
+                const pkgPath = path.join(outputPath, 'package.json');
+                if (!fs.existsSync(pkgPath)) {
+                  fs.writeFileSync(pkgPath, JSON.stringify({ type: 'commonjs' }, null, 2));
+                }
+              }
+            } catch {
+              // ignore
+            }
+          });
+        },
+      });
+    }
     return config;
   },
 };

@@ -34,6 +34,31 @@ import callRoutes from './server/src/features/calls/calls.routes.js';
 import { attachSocket } from './server/src/shared/socket/index.js';
 import { reconcilePresence } from './server/src/features/presence/presence.service.js';
 
+import fs from 'fs';
+
+function ensureNextCommonJs() {
+  const dirs = [
+    path.join(process.cwd(), '.next'),
+    path.join(process.cwd(), '.next', 'server'),
+    path.join(process.cwd(), '.next', 'server', 'app'),
+  ];
+  for (const dir of dirs) {
+    try {
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      const pkgPath = path.join(dir, 'package.json');
+      if (!fs.existsSync(pkgPath)) {
+        fs.writeFileSync(pkgPath, JSON.stringify({ type: 'commonjs' }, null, 2));
+      }
+    } catch {
+      // ignore
+    }
+  }
+}
+
+ensureNextCommonJs();
+
 const dev = process.env.NODE_ENV !== 'production';
 const PORT = process.env.PORT || 4000;
 const hostname = process.env.HOSTNAME || 'localhost';
@@ -42,6 +67,7 @@ const nextApp = next({ dev, hostname, port: PORT });
 const handle = nextApp.getRequestHandler();
 
 await nextApp.prepare();
+ensureNextCommonJs();
 
 const app = express();
 app.use(helmet({
@@ -82,6 +108,7 @@ app.use('/api/calls', callRoutes);
 
 // Next.js handles all other requests (pages, static assets, etc.)
 app.all('*', (req, res) => {
+  ensureNextCommonJs();
   return handle(req, res);
 });
 

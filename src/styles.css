@@ -6841,6 +6841,10 @@ kbd, .kbd-group kbd {
     height: 42px;
   }
 
+  .rail-btn.logout-btn {
+    display: none !important;
+  }
+
   /* ── 2. Single-Panel View Switching ── */
   .sidebar {
     width: 100% !important;
