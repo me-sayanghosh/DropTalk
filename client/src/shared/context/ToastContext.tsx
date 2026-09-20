@@ -43,7 +43,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             category: payload.category || payload.type || type,
             type: payload.type || type,
           }
-        : { id, message: payload, type };
+        : { id, message: typeof payload === 'string' ? payload : (payload as any)?.message || '', type };
 
     setToasts((prev) => [...prev, toastObj]);
 

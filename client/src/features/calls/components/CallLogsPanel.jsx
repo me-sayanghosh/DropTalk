@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { formatCardTime } from '../../../shared/utils/dateUtils.js';
-import { CallLogSkeleton } from '../../../shared/components/ui/SkeletonLoaders.jsx';
+import { CallLogSkeleton } from '../../../shared/components/ui/SkeletonLoaders';
 
 export default function CallLogsPanel({ logs = [], loading, onSelectLog, onStartCall, onClearHistory }) {
   const [search, setSearch] = useState('');

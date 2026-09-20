@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../../../shared/utils/api.js';
 import { formatBadgeCount, formatCardTime } from '../../../shared/utils/dateUtils.js';
-import { DMSkeleton } from '../../../shared/components/ui/SkeletonLoaders.jsx';
+import { DMSkeleton } from '../../../shared/components/ui/SkeletonLoaders';
 
 export default function DMPanel({ conversations, currentDM, onOpen, onSendRequest, userId, loading = false }) {
   const [search, setSearch] = useState('');

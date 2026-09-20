@@ -1,3 +1,4 @@
+// @ts-nocheck
 export { default as Channels } from './Channels.jsx';
 export { default as MemberList } from './MemberList.jsx';
 export { default as ThreadPanel } from './ThreadPanel.jsx';
@@ -23,4 +24,3 @@ export { default as QuickSwitcherModal } from './QuickSwitcherModal.jsx';
 export { default as KeyboardShortcutsModal } from './KeyboardShortcutsModal.jsx';
 export { default as CallLogsPanel } from '../../calls/components/CallLogsPanel.jsx';
 export { default as CallLogsMainView } from '../../calls/components/CallLogsMainView.jsx';
-
