@@ -1,8 +1,9 @@
 import React, { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, Bot, Zap, X, Loader2, Copy, Check, MessageSquare, FileText } from 'lucide-react';
+import { API_BASE } from '../../../shared/utils/constants';
 
-const API = import.meta.env.VITE_API_BASE || 'http://localhost:4000/api';
+const API = API_BASE;
 
 export default function AIPanel({ roomId, onClose, onUseSuggestion }) {
   const [summary, setSummary] = useState('');
