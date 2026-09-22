@@ -3,6 +3,9 @@ import mongoose from 'mongoose';
 let memoryServer = null;
 
 export async function connectDB(uri) {
+  if (mongoose.connection && mongoose.connection.readyState >= 1) {
+    return;
+  }
   mongoose.set('strictQuery', true);
 
   try {
@@ -13,7 +16,8 @@ export async function connectDB(uri) {
     console.warn('[db] falling back to in-memory MongoDB (mongodb-memory-server)...');
 
     try {
-      const { MongoMemoryServer } = await import('mongodb-memory-server');
+      const pkg = 'mongodb-memory-server';
+      const { MongoMemoryServer } = await import(/* webpackIgnore: true */ pkg);
       memoryServer = await MongoMemoryServer.create();
       const memUri = memoryServer.getUri();
       await mongoose.connect(memUri);

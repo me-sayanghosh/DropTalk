@@ -45,6 +45,23 @@ const nextConfig = {
     }
     return config;
   },
+  async rewrites() {
+    const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_SERVER_URL;
+    if (backendUrl) {
+      const cleanUrl = backendUrl.replace(/\/$/, '');
+      return [
+        {
+          source: '/api/:path*',
+          destination: `${cleanUrl}/api/:path*`,
+        },
+        {
+          source: '/uploads/:path*',
+          destination: `${cleanUrl}/uploads/:path*`,
+        },
+      ];
+    }
+    return [];
+  },
 };
 
 export default nextConfig;

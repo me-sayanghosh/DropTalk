@@ -14,10 +14,10 @@ export default function CallOverlay({
   onToggleMute,
   onToggleVideo,
   onToggleScreenShare,
-}) {
-  const localVideoRef = useRef(null);
-  const remoteVideoRef = useRef(null);
-  const containerRef = useRef(null);
+}: any) {
+  const localVideoRef = useRef<HTMLVideoElement | null>(null);
+  const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   const [callDuration, setCallDuration] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);

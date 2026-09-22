@@ -14,6 +14,28 @@ const isRealGoogleId =
   !GOOGLE_CLIENT_ID.includes('dummy') &&
   !GOOGLE_CLIENT_ID.includes('example');
 
+async function safeParseResponse(res: Response, fallbackError: string) {
+  const contentType = res.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) {
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      throw new Error(data?.error || `${fallbackError} (${res.status})`);
+    }
+    return data;
+  }
+
+  if (!res.ok) {
+    if (res.status === 404) {
+      throw new Error('Backend API endpoint not found (404). Please ensure the backend server is running and configured.');
+    }
+    if (res.status === 502 || res.status === 503) {
+      throw new Error(`Backend server is starting up or temporarily unavailable (${res.status}). Please try again shortly.`);
+    }
+    throw new Error(`${fallbackError} (status: ${res.status})`);
+  }
+  throw new Error('Server returned an unexpected non-JSON response.');
+}
+
 export default function JoinNow() {
   const [email, setEmail] = useState('');
   const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
@@ -59,8 +81,7 @@ export default function JoinNow() {
             googleId: googleUser.sub || '',
           }),
         });
-        const data = await backendRes.json();
-        if (!backendRes.ok) throw new Error(data.error || 'Google sign-in failed on server');
+        const data = await safeParseResponse(backendRes, 'Google sign-in failed on server');
 
         login({ accessToken: data.accessToken, refreshToken: data.refreshToken, user: data.user });
         if (data.user.needsUsername) {
@@ -104,8 +125,7 @@ export default function JoinNow() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to send OTP');
+      const data = await safeParseResponse(res, 'Failed to send OTP');
 
       setStep('otp');
       setResendCooldown(30);
@@ -177,8 +197,7 @@ export default function JoinNow() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp: code }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Verification failed');
+      const data = await safeParseResponse(res, 'Verification failed');
 
       login({ accessToken: data.accessToken, refreshToken: data.refreshToken, user: data.user });
       if (data.user.needsUsername) {
