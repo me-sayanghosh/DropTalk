@@ -102,7 +102,7 @@ router.post('/send', async (req, res) => {
     res.status(201).json({ room: room.toClient(), message: payload });
   } catch (err) {
     console.error('[dm] send error:', err.message);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -156,7 +156,7 @@ router.get('/conversations', async (req, res) => {
     res.json({ conversations: enriched });
   } catch (err) {
     console.error('[dm] list error:', err.message);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -194,7 +194,7 @@ router.post('/:roomId/accept', async (req, res) => {
     res.json({ room: room.toClient() });
   } catch (err) {
     console.error('[dm] accept error:', err.message);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -224,7 +224,7 @@ router.delete('/:roomId', async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     console.error('[dm] remove error:', err.message);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -279,7 +279,7 @@ router.get('/:roomId/messages', async (req, res) => {
     res.json({ messages: result });
   } catch (err) {
     console.error('[dm] messages error:', err.message);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

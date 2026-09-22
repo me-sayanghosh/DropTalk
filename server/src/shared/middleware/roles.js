@@ -21,7 +21,8 @@ export function requireRole(...allowedRoles) {
       req.roomMember = memberEntry;
       next();
     } catch (err) {
-      res.status(500).json({ error: err.message });
+      console.error('[roles] requireRole error:', err.message);
+      res.status(500).json({ error: 'Internal server error' });
     }
   };
 }
@@ -46,7 +47,8 @@ export function requireAtLeastRole(minRole) {
       req.roomMember = memberEntry;
       next();
     } catch (err) {
-      res.status(500).json({ error: err.message });
+      console.error('[roles] requireAtLeastRole error:', err.message);
+      res.status(500).json({ error: 'Internal server error' });
     }
   };
 }

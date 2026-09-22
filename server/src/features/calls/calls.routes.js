@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import mongoose from 'mongoose';
 import { CallLog } from './callLog.model.js';
-import { User } from '../auth/user.model.js';
 import { requireAuth } from '../../shared/middleware/auth.js';
 
 const router = Router();
@@ -14,7 +13,7 @@ router.use(requireAuth);
 router.get('/history', async (req, res) => {
   try {
     const userId = req.user.id;
-    let logs = await CallLog.find({
+    const logs = await CallLog.find({
       $or: [{ caller: userId }, { receiver: userId }],
     })
       .sort({ createdAt: -1 })
@@ -27,7 +26,7 @@ router.get('/history', async (req, res) => {
     res.json({ logs: clientLogs });
   } catch (err) {
     console.error('[calls] history error:', err.message);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -71,7 +70,7 @@ router.post('/log', async (req, res) => {
     res.status(201).json({ log: populated.toClient(callerId) });
   } catch (err) {
     console.error('[calls] log error:', err.message);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -88,7 +87,7 @@ router.delete('/history', async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     console.error('[calls] clear error:', err.message);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
