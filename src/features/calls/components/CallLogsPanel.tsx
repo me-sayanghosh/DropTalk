@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { formatCardTime } from '../../../shared/utils/dateUtils';
 import { CallLogSkeleton } from '../../../shared/components/ui/SkeletonLoaders';
 
-export default function CallLogsPanel({ logs = [], loading, onSelectLog, onStartCall, onClearHistory }) {
+export default function CallLogsPanel({ logs = [], loading, onSelectLog, onStartCall, onClearHistory }: any) {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all'); // 'all' | 'missed' | 'voice' | 'video'
 

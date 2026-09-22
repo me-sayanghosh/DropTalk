@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { formatCardTime } from '../../../shared/utils/dateUtils';
 import StartCallModal from './StartCallModal';
 
-export default function CallLogsMainView({ logs = [], selectedLog, onStartCall, onClearHistory, onBack }) {
+export default function CallLogsMainView({ logs = [], selectedLog, onStartCall, onClearHistory, onBack }: any) {
   const [showModal, setShowModal] = useState(false);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all'); // 'all' | 'missed' | 'voice' | 'video'

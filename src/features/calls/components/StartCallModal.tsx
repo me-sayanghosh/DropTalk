@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../../shared/utils/api';
 
-export default function StartCallModal({ isOpen, onClose, onStartCall }) {
+export default function StartCallModal({ isOpen, onClose, onStartCall }: any) {
   const [search, setSearch] = useState('');
-  const [contacts, setContacts] = useState([]);
+  const [contacts, setContacts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
