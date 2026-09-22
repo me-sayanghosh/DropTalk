@@ -109,8 +109,8 @@ export function registerRoomHandlers(socket, io, { joined }) {
         }
       }
 
-      room.members = room.members.filter((m) => m.user.toString() !== userId);
-      room.encryptedKeys = room.encryptedKeys.filter((ek) => ek.user.toString() !== userId);
+      room.members = room.members.filter((m) => m.user.toString() !== userId) as any;
+      room.encryptedKeys = room.encryptedKeys.filter((ek) => ek.user.toString() !== userId) as any;
       await room.save();
 
       io.to(roomId).emit('room:user-kicked', { roomId, userId, banned: !!ban });

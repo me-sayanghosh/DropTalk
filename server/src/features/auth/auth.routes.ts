@@ -13,9 +13,9 @@ import { parseExpiry, escapeRegex, generateAutoUsername } from '../../shared/uti
 const router = Router();
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || '');
 
-function signAccessToken(user) {
-  return jwt.sign({ sub: user._id.toString(), username: user.username }, process.env.JWT_SECRET, {
-    expiresIn: TOKEN_EXPIRY.access,
+function signAccessToken(user: any) {
+  return jwt.sign({ sub: user._id.toString(), username: user.username }, process.env.JWT_SECRET || 'secret', {
+    expiresIn: TOKEN_EXPIRY.access as any,
   });
 }
 
@@ -164,7 +164,7 @@ router.post('/google', async (req, res) => {
       });
       payload = ticket.getPayload();
     } else {
-      const decoded = jwt.decode(token);
+      const decoded: any = jwt.decode(token);
       if (!decoded || !decoded.email) throw new Error('Invalid Google Token');
       payload = decoded;
     }
@@ -326,7 +326,7 @@ router.get('/check-username/:username', requireAuth, async (req, res) => {
 router.put('/profile', requireAuth, async (req, res) => {
   try {
     const { name, username, profileImage } = req.body || {};
-    const update = {};
+    const update: Record<string, any> = {};
 
     if (name !== undefined) {
       update.name = name.trim();
@@ -389,7 +389,7 @@ router.put('/username', requireAuth, async (req, res) => {
 // GET /api/auth/users/search?q=query - Discover & search users
 router.get('/users/search', requireAuth, async (req, res) => {
   try {
-    const q = req.query.q?.trim();
+    const q = (req.query.q as string)?.trim();
     if (!q) {
       return res.json({ users: [] });
     }

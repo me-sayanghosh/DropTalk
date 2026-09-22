@@ -327,7 +327,7 @@ export function registerMessageHandlers(socket, io, { joined }) {
         if (userIdx >= 0) {
           reaction.users.splice(userIdx, 1);
           if (reaction.users.length === 0) {
-            msg.reactions = msg.reactions.filter((r) => r.emoji !== emoji);
+            msg.reactions = msg.reactions.filter((r) => r.emoji !== emoji) as any;
           }
         } else {
           reaction.users.push(socket.user.id);

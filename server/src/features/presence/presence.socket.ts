@@ -55,13 +55,13 @@ export function registerPresenceHandlers(socket, io, { joined }) {
   socket.on('presence:request-map', async (ack) => {
     try {
       const map = await getPresenceMap();
-      const enriched = {};
+      const enriched: Record<string, any> = {};
       for (const [userId, pres] of Object.entries(map)) {
-        const user = await User.findById(userId).select('username').lean();
-        enriched[userId] = { ...pres, username: user?.username || 'unknown' };
+        const user: any = await User.findById(userId).select('username').lean();
+        enriched[userId] = { ...(pres as any), username: user?.username || 'unknown' };
       }
       ack?.(enriched);
-    } catch (err) {
+    } catch (err: any) {
       console.error('[socket] presence:request-map error:', err.message);
       ack?.({});
     }

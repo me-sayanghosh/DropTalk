@@ -21,7 +21,7 @@ router.post('/:roomId/summarize', requireAuth, async (req, res) => {
       .populate('sender', 'username');
 
     const chatLog = messages.reverse().map(
-      (m) => `${m.sender?.username || 'unknown'}: ${m.text}`
+      (m: any) => `${m.sender?.username || 'unknown'}: ${m.text}`
     ).join('\n');
 
     const prompt = `Summarize the following chat conversation concisely. Highlight key topics, decisions, and action items. Be brief (under 200 words).\n\nChat log:\n${chatLog || '(empty chat)'}`;
@@ -61,7 +61,7 @@ router.post('/:roomId/suggest', requireAuth, async (req, res) => {
       .populate('sender', 'username');
 
     const context = recent.reverse().map(
-      (m) => `${m.sender?.username || 'unknown'}: ${m.text}`
+      (m: any) => `${m.sender?.username || 'unknown'}: ${m.text}`
     ).join('\n');
 
     const prompt = `You are an AI assistant inside a group chat. Given the recent conversation context and the user's incomplete message, suggest 3 short completion options (each under 30 words). Return ONLY a JSON array of 3 strings, nothing else.\n\nRecent context:\n${context}\n\nUser's message: ${message}`;
