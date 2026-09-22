@@ -1,9 +1,9 @@
-import { Message } from './message.model.js';
-import { Room } from '../rooms/room.model.js';
-import { User } from '../auth/user.model.js';
-import { checkSocketRateLimit } from '../../shared/middleware/rateLimit.js';
-import { removeTyping } from '../presence/presence.service.js';
-import { createNotification } from '../notifications/notifications.service.js';
+import { Message } from './message.model';
+import { Room } from '../rooms/room.model';
+import { User } from '../auth/user.model';
+import { checkSocketRateLimit } from '../../shared/middleware/rateLimit';
+import { removeTyping } from '../presence/presence.service';
+import { createNotification } from '../notifications/notifications.service';
 
 const slowModeMap = new Map();
 

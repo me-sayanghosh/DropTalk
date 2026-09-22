@@ -2,7 +2,7 @@ import Redis from 'ioredis';
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
 
-let redis;
+let redis: any;
 let usingFallback = false;
 
 /**
@@ -15,6 +15,12 @@ let usingFallback = false;
  * server boot and run locally when Redis is not installed.
  */
 class InMemoryRedis {
+  _kv: Map<any, any>;
+  _hash: Map<any, any>;
+  _set: Map<any, any>;
+  _zset: Map<any, any>;
+  _timers: Map<any, any>;
+
   constructor() {
     this._kv = new Map();      // key → value (string / number)
     this._hash = new Map();    // key → Map(field → value)

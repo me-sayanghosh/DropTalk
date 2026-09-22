@@ -1,10 +1,10 @@
-import { User } from '../auth/user.model.js';
+import { User } from '../auth/user.model';
 import {
   getPresenceMap,
   setTyping,
   removeTyping,
-} from './presence.service.js';
-import { setLastRead } from '../messages/readReceipts.service.js';
+} from './presence.service';
+import { setLastRead } from '../messages/readReceipts.service';
 
 export function registerPresenceHandlers(socket, io, { joined }) {
   socket.on('user:typing', async ({ roomId }) => {

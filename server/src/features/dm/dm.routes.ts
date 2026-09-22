@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import mongoose from 'mongoose';
-import { Room } from '../rooms/room.model.js';
-import { Message } from '../messages/message.model.js';
-import { User } from '../auth/user.model.js';
-import { requireAuth } from '../../shared/middleware/auth.js';
-import { getIO } from '../../shared/socket/index.js';
-import { createNotification } from '../notifications/notifications.service.js';
+import { Room } from '../rooms/room.model';
+import { Message } from '../messages/message.model';
+import { User } from '../auth/user.model';
+import { requireAuth } from '../../shared/middleware/auth';
+import { getIO } from '../../shared/socket/index';
+import { createNotification } from '../notifications/notifications.service';
 
 const router = Router();
 router.use(requireAuth);

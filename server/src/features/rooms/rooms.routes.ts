@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { Room } from './room.model.js';
-import { requireAuth } from '../../shared/middleware/auth.js';
-import { DEFAULT_ROOMS, ROOM_TYPES } from '../../shared/utils/constants.js';
+import { Room } from './room.model';
+import { requireAuth } from '../../shared/middleware/auth';
+import { DEFAULT_ROOMS, ROOM_TYPES } from '../../shared/utils/constants';
 
-import { Message } from '../messages/message.model.js';
+import { Message } from '../messages/message.model';
 
 const router = Router();
 
@@ -180,7 +180,7 @@ router.get('/:roomId/pending-requests', async (req, res) => {
 
     const requests = [];
     for (const r of room.pendingRequests) {
-      const { User } = await import('../auth/user.model.js');
+      const { User } = await import('../auth/user.model');
       const user = await User.findById(r.user).select('username').lean();
       requests.push({
         user: r.user.toString(),

@@ -2,6 +2,9 @@
  * High-performance Server-Side In-Memory Cache with TTL & Invalidation
  */
 class CacheService {
+  cache: Map<string, any>;
+  stats: { hits: number; misses: number; keys: number };
+
   constructor() {
     this.cache = new Map();
     this.stats = { hits: 0, misses: 0, keys: 0 };

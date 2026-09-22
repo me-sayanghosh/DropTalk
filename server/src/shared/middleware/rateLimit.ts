@@ -1,4 +1,4 @@
-import redis from '../config/redis.js';
+import redis from '../config/redis';
 
 export async function checkSocketRateLimit(userId, action, { windowMs = 60000, max = 30 } = {}) {
   const key = `ratelimit:socket:${action}:${userId}`;

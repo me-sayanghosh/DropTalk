@@ -1,6 +1,6 @@
-import { Notification } from './notification.model.js';
-import { User } from '../auth/user.model.js';
-import { getIO } from '../../shared/socket/index.js';
+import { Notification } from './notification.model';
+import { User } from '../auth/user.model';
+import { getIO } from '../../shared/socket/index';
 
 export async function createNotification({
   userId,

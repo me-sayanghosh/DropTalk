@@ -11,11 +11,11 @@ export {
   USERNAME_REGEX,
   USERNAME_MIN_LENGTH,
   USERNAME_MAX_LENGTH,
-} from './constants.js';
+} from './constants';
 
 export {
   parseExpiry,
   escapeRegex,
   generateKeyId,
   generateAutoUsername,
-} from './helpers.js';
+} from './helpers';

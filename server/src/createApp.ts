@@ -4,18 +4,18 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
 
-import { CORS_ORIGINS } from './shared/utils/constants.js';
-import authRoutes from './features/auth/auth.routes.js';
-import roomRoutes from './features/rooms/rooms.routes.js';
-import messageRoutes from './features/messages/messages.routes.js';
-import moderationRoutes from './features/moderation/moderation.routes.js';
-import threadRoutes from './features/messages/threads.routes.js';
-import keyRoutes from './features/keys/keys.routes.js';
-import aiRoutes from './features/ai/ai.routes.js';
-import dmRoutes from './features/dm/dm.routes.js';
-import notificationRoutes from './features/notifications/notifications.routes.js';
-import uploadRoutes from './features/upload/upload.routes.js';
-import callRoutes from './features/calls/calls.routes.js';
+import { CORS_ORIGINS } from './shared/utils/constants';
+import authRoutes from './features/auth/auth.routes';
+import roomRoutes from './features/rooms/rooms.routes';
+import messageRoutes from './features/messages/messages.routes';
+import moderationRoutes from './features/moderation/moderation.routes';
+import threadRoutes from './features/messages/threads.routes';
+import keyRoutes from './features/keys/keys.routes';
+import aiRoutes from './features/ai/ai.routes';
+import dmRoutes from './features/dm/dm.routes';
+import notificationRoutes from './features/notifications/notifications.routes';
+import uploadRoutes from './features/upload/upload.routes';
+import callRoutes from './features/calls/calls.routes';
 
 const dev = process.env.NODE_ENV !== 'production';
 

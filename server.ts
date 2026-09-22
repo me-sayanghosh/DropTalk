@@ -6,10 +6,10 @@ import path from 'path';
 import fs from 'fs';
 import { rm } from 'fs/promises';
 
-import { connectDB } from './server/src/shared/config/db.js';
-import { createApp } from './server/src/createApp.js';
-import { attachSocket } from './server/src/shared/socket/index.js';
-import { reconcilePresence } from './server/src/features/presence/presence.service.js';
+import { connectDB } from './server/src/shared/config/db';
+import { createApp } from './server/src/createApp';
+import { attachSocket } from './server/src/shared/socket/index';
+import { reconcilePresence } from './server/src/features/presence/presence.service';
 
 dns.setServers(['1.1.1.1', '8.8.8.8']);
 
@@ -44,7 +44,7 @@ function ensureNextCommonJs() {
 ensureNextCommonJs();
 
 const dev = process.env.NODE_ENV !== 'production';
-const PORT = process.env.PORT || 4000;
+const PORT = Number(process.env.PORT) || 4000;
 const hostname = process.env.HOSTNAME || 'localhost';
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/chatapp';
 

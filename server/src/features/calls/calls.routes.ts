@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import mongoose from 'mongoose';
-import { CallLog } from './callLog.model.js';
-import { requireAuth } from '../../shared/middleware/auth.js';
+import { CallLog } from './callLog.model';
+import { requireAuth } from '../../shared/middleware/auth';
 
 const router = Router();
 router.use(requireAuth);

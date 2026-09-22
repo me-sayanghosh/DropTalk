@@ -3,12 +3,12 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import { OAuth2Client } from 'google-auth-library';
-import { User } from './user.model.js';
-import { Otp } from './otp.model.js';
-import { requireAuth } from '../../shared/middleware/auth.js';
-import { sendOtpEmail } from '../../shared/utils/mailer.js';
-import { TOKEN_EXPIRY, USERNAME_REGEX, USERNAME_MIN_LENGTH, USERNAME_MAX_LENGTH } from '../../shared/utils/constants.js';
-import { parseExpiry, escapeRegex, generateAutoUsername } from '../../shared/utils/helpers.js';
+import { User } from './user.model';
+import { Otp } from './otp.model';
+import { requireAuth } from '../../shared/middleware/auth';
+import { sendOtpEmail } from '../../shared/utils/mailer';
+import { TOKEN_EXPIRY, USERNAME_REGEX, USERNAME_MIN_LENGTH, USERNAME_MAX_LENGTH } from '../../shared/utils/constants';
+import { parseExpiry, escapeRegex, generateAutoUsername } from '../../shared/utils/helpers';
 
 const router = Router();
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || '');

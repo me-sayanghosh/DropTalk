@@ -1,20 +1,20 @@
 import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { createAdapter } from '@socket.io/redis-adapter';
-import { User } from '../../features/auth/user.model.js';
-import redis, { usingFallback as redisUsingFallback } from '../config/redis.js';
+import { User } from '../../features/auth/user.model';
+import redis, { usingFallback as redisUsingFallback } from '../config/redis';
 import {
   setPresence,
   incrementPresence,
   decrementPresence,
   startHeartbeat,
-} from '../../features/presence/presence.service.js';
-import { registerRoomHandlers } from '../../features/rooms/rooms.socket.js';
-import { registerMessageHandlers } from '../../features/messages/messages.socket.js';
-import { registerPresenceHandlers } from '../../features/presence/presence.socket.js';
-import { registerKeyHandlers } from '../../features/keys/keys.socket.js';
-import { registerWebRTCHandlers } from './webrtc.socket.js';
-import { CORS_ORIGINS } from '../utils/constants.js';
+} from '../../features/presence/presence.service';
+import { registerRoomHandlers } from '../../features/rooms/rooms.socket';
+import { registerMessageHandlers } from '../../features/messages/messages.socket';
+import { registerPresenceHandlers } from '../../features/presence/presence.socket';
+import { registerKeyHandlers } from '../../features/keys/keys.socket';
+import { registerWebRTCHandlers } from './webrtc.socket';
+import { CORS_ORIGINS } from '../utils/constants';
 
 let ioInstance = null;
 
@@ -86,7 +86,7 @@ export function attachSocket(httpServer) {
         if (remaining === 0) {
           io.emit('presence:update', { userId: socket.user.id, status: 'offline', currentRoom: null });
         } else {
-          const { clearUserCurrentRoom } = await import('../../features/presence/presence.service.js');
+          const { clearUserCurrentRoom } = await import('../../features/presence/presence.service');
           clearUserCurrentRoom(socket.user.id).catch(() => {});
         }
       } catch (err) {

@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import { requireAuth } from '../../shared/middleware/auth.js';
-import { requireRole, requireAtLeastRole } from '../../shared/middleware/roles.js';
-import { Message } from '../messages/message.model.js';
-import { Room } from '../rooms/room.model.js';
-import { User } from '../auth/user.model.js';
-import { getIO } from '../../shared/socket/index.js';
+import { requireAuth } from '../../shared/middleware/auth';
+import { requireRole, requireAtLeastRole } from '../../shared/middleware/roles';
+import { Message } from '../messages/message.model';
+import { Room } from '../rooms/room.model';
+import { User } from '../auth/user.model';
+import { getIO } from '../../shared/socket/index';
 
 const router = Router();
 

@@ -2,10 +2,10 @@ import 'dotenv/config';
 import http from 'http';
 import dns from 'node:dns/promises';
 
-import { connectDB } from './shared/config/db.js';
-import { createApp } from './createApp.js';
-import { attachSocket } from './shared/socket/index.js';
-import { reconcilePresence } from './features/presence/presence.service.js';
+import { connectDB } from './shared/config/db';
+import { createApp } from './createApp';
+import { attachSocket } from './shared/socket/index';
+import { reconcilePresence } from './features/presence/presence.service';
 
 dns.setServers(['1.1.1.1', '8.8.8.8']);
 

@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { requireAuth } from '../../shared/middleware/auth.js';
-import { Notification } from './notification.model.js';
-import { User } from '../auth/user.model.js';
+import { requireAuth } from '../../shared/middleware/auth';
+import { Notification } from './notification.model';
+import { User } from '../auth/user.model';
 
 const router = Router();
 

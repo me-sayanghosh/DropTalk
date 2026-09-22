@@ -1,5 +1,5 @@
-import redis from '../../shared/config/redis.js';
-import { PRESENCE } from '../../shared/utils/constants.js';
+import redis from '../../shared/config/redis';
+import { PRESENCE } from '../../shared/utils/constants';
 
 const PRESENCE_KEY = 'presence';
 const ONLINE_SET = 'presence:online';
