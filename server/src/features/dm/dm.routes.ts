@@ -245,12 +245,12 @@ router.get('/:roomId/messages', async (req, res) => {
     });
     if (!room) return res.status(404).json({ error: 'DM not found' });
 
-    const query = { room: roomId, parentMessage: null };
-    if (after && mongoose.Types.ObjectId.isValid(after)) {
-      query._id = { $gt: new mongoose.Types.ObjectId(after) };
+    const query: any = { room: roomId, parentMessage: null };
+    if (after && mongoose.Types.ObjectId.isValid(after as string)) {
+      query._id = { $gt: new mongoose.Types.ObjectId(after as string) };
     }
 
-    const cap = Math.min(parseInt(limit) || 50, 500);
+    const cap = Math.min(parseInt(limit as string, 10) || 50, 500);
     const messages = await Message.find(query).sort({ createdAt: 1 }).limit(cap);
 
     // Filter deletedFor and enrich replyTo
@@ -259,7 +259,7 @@ router.get('/:roomId/messages', async (req, res) => {
     );
 
     const replyIds = filtered.map((m) => m.replyTo).filter(Boolean);
-    const replyDocs = replyIds.length
+    const replyDocs: any[] = replyIds.length
       ? await Message.find({ _id: { $in: replyIds } })
           .populate('sender', 'username')
           .lean()
@@ -267,7 +267,7 @@ router.get('/:roomId/messages', async (req, res) => {
     const replyMap = Object.fromEntries(
       replyDocs.map((r) => [
         r._id.toString(),
-        { text: r.text, senderUsername: r.sender?.username || 'Unknown' },
+        { text: r.text, senderUsername: (r.sender as any)?.username || 'Unknown' },
       ])
     );
 

@@ -52,7 +52,7 @@ router.get('/', async (req, res) => {
           lastMessage: lastMsg
             ? {
                 text: lastMsg.text || (lastMsg.attachments?.length ? 'Sent an attachment' : ''),
-                senderUsername: lastMsg.sender?.username || 'User',
+                senderUsername: (lastMsg.sender as any)?.username || 'User',
                 createdAt: lastMsg.createdAt,
               }
             : null,
@@ -96,7 +96,7 @@ router.post('/', async (req, res) => {
 
     if (roomType === 'ephemeral') {
       const minutes = typeof inactivityMinutes === 'number' && inactivityMinutes > 0 ? inactivityMinutes : 60;
-      doc.expiresAt = new Date(Date.now() + minutes * 60 * 1000);
+      (doc as any).expiresAt = new Date(Date.now() + minutes * 60 * 1000);
     }
 
     const room = await Room.create(doc);

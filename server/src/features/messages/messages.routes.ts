@@ -15,7 +15,7 @@ router.get('/:roomId/messages', async (req, res) => {
     const { after, before, limit } = req.query;
 
     const cacheKey = `msgs:${roomId}:${req.user.id}`;
-    if (!after && !before && (!limit || parseInt(limit, 10) === 50)) {
+    if (!after && !before && (!limit || parseInt(limit as string, 10) === 50)) {
       const cached = cacheService.get(cacheKey);
       if (cached) {
         return res.json({ messages: cached });
@@ -29,20 +29,20 @@ router.get('/:roomId/messages', async (req, res) => {
       if (!isMember) return res.status(403).json({ error: 'not a member of this private room' });
     }
 
-    const query = { room: roomId };
+    const query: any = { room: roomId };
     if (after) {
-      if (!mongoose.Types.ObjectId.isValid(after)) {
+      if (!mongoose.Types.ObjectId.isValid(after as string)) {
         return res.status(400).json({ error: 'invalid after parameter' });
       }
-      query._id = { $gt: new mongoose.Types.ObjectId(after) };
+      query._id = { $gt: new mongoose.Types.ObjectId(after as string) };
     } else if (before) {
-      if (!mongoose.Types.ObjectId.isValid(before)) {
+      if (!mongoose.Types.ObjectId.isValid(before as string)) {
         return res.status(400).json({ error: 'invalid before parameter' });
       }
-      query._id = { $lt: new mongoose.Types.ObjectId(before) };
+      query._id = { $lt: new mongoose.Types.ObjectId(before as string) };
     }
 
-    const cap = Math.min(parseInt(limit, 10) || 50, 500);
+    const cap = Math.min(parseInt(limit as string, 10) || 50, 500);
     // If before parameter is passed (loading older history), sort descending then reverse
     const sortDir = before ? -1 : 1;
     let messages = await Message.find(query).sort({ _id: sortDir }).limit(cap);
@@ -58,13 +58,13 @@ router.get('/:roomId/messages', async (req, res) => {
     });
 
     const replyToIds = filtered.filter(m => m.replyTo).map(m => m.replyTo);
-    let replyToMap = {};
+    let replyToMap: Record<string, any> = {};
     if (replyToIds.length > 0) {
       const replyToMsgs = await Message.find({ _id: { $in: replyToIds } }).populate('sender', 'username').lean();
       for (const rm of replyToMsgs) {
         replyToMap[rm._id.toString()] = {
           id: rm._id.toString(),
-          senderUsername: rm.sender?.username || 'unknown',
+          senderUsername: (rm.sender as any)?.username || 'unknown',
           text: rm.text ? rm.text.substring(0, 100) : '',
         };
       }
@@ -75,7 +75,7 @@ router.get('/:roomId/messages', async (req, res) => {
       replyToData: replyToMap[m._id.toString()] || null,
     }));
 
-    if (!after && !before && (!limit || parseInt(limit, 10) === 50)) {
+    if (!after && !before && (!limit || parseInt(limit as string, 10) === 50)) {
       cacheService.set(cacheKey, clientMsgs, 60);
     }
 
@@ -93,7 +93,7 @@ router.get('/:roomId/messages', async (req, res) => {
 router.get('/:roomId/messages/search', async (req, res) => {
   try {
     const { roomId } = req.params;
-    const q = req.query.q?.trim();
+    const q = (req.query.q as string)?.trim();
     if (!q) return res.json({ messages: [] });
 
     const room = await Room.findById(roomId);
@@ -122,9 +122,9 @@ router.get('/:roomId/messages/search', async (req, res) => {
       messages: filtered.map((m) => ({
         ...m.toClient(),
         sender: {
-          id: m.sender?._id?.toString() || m.sender?.toString(),
-          username: m.sender?.username || 'User',
-          profileImage: m.sender?.profileImage || '',
+          id: (m.sender as any)?._id?.toString() || (m.sender as any)?.toString(),
+          username: (m.sender as any)?.username || 'User',
+          profileImage: (m.sender as any)?.profileImage || '',
         },
       })),
     });
