@@ -30,6 +30,9 @@ const dev = process.env.NODE_ENV !== 'production';
 export function createApp({ disableCSP = false } = {}) {
   const app = express();
 
+  // Trust proxy headers (X-Forwarded-For) from Vercel / reverse proxies
+  // so express-rate-limit and other middleware read the real client IP.
+  app.set('trust proxy', 1);
   app.use(helmet({
     contentSecurityPolicy: disableCSP ? false : undefined,
     crossOriginResourcePolicy: { policy: 'cross-origin' },
