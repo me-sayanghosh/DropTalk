@@ -14,7 +14,7 @@ import { registerMessageHandlers } from '../../features/messages/messages.socket
 import { registerPresenceHandlers } from '../../features/presence/presence.socket';
 import { registerKeyHandlers } from '../../features/keys/keys.socket';
 import { registerWebRTCHandlers } from './webrtc.socket';
-import { CORS_ORIGINS } from '../utils/constants';
+import { CORS_ORIGINS, JWT_SECRET } from '../utils/constants';
 
 let ioInstance = null;
 
@@ -43,7 +43,7 @@ export function attachSocket(httpServer) {
     try {
       const token = socket.handshake.auth?.token;
       if (!token) return next(new Error('missing token'));
-      const payload = jwt.verify(token, process.env.JWT_SECRET);
+      const payload: any = jwt.verify(token, JWT_SECRET);
       const user = await User.findById(payload.sub);
       if (!user) return next(new Error('user not found'));
       socket.user = {

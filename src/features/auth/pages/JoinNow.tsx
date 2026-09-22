@@ -31,6 +31,15 @@ async function safeParseResponse(res: Response, fallbackError: string) {
     if (res.status === 502 || res.status === 503) {
       throw new Error(`Backend server is starting up or temporarily unavailable (${res.status}). Please try again shortly.`);
     }
+
+    const text = await res.text().catch(() => '');
+    if (text) {
+      // Strip any HTML markup if present
+      const clean = text.replace(/<[^>]*>?/gm, '').trim();
+      if (clean && clean.length < 300) {
+        throw new Error(`${fallbackError}: ${clean}`);
+      }
+    }
     throw new Error(`${fallbackError} (status: ${res.status})`);
   }
   throw new Error('Server returned an unexpected non-JSON response.');

@@ -7,7 +7,12 @@ export const DEFAULT_ROOMS = [
   { name: 'lounge', type: 'public' },
 ];
 
-export const CORS_ORIGINS = (origin, callback) => {
+export const JWT_SECRET = process.env.JWT_SECRET || 'droptalk_default_jwt_secret_dev_key';
+
+export const CORS_ORIGINS = (
+  origin: string | undefined,
+  callback: (err: Error | null, allow?: boolean) => void
+) => {
   if (!origin) return callback(null, true);
 
   const configured = process.env.CORS_ORIGIN
@@ -16,12 +21,31 @@ export const CORS_ORIGINS = (origin, callback) => {
 
   if (configured.includes(origin)) return callback(null, true);
 
-  // Allow all localhost, 127.0.0.1, and local private network origins on any port
-  if (/^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+)(:\d+)?$/.test(origin)) {
+  // Allow all localhost, 127.0.0.1, and local private network origins on any port (HTTP or HTTPS)
+  if (/^https?:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+)(:\d+)?$/.test(origin)) {
     return callback(null, true);
   }
 
-  callback(new Error(`Not allowed by CORS: ${origin}`));
+  // Allow any Vercel production or preview domain (*.vercel.app)
+  try {
+    const parsed = new URL(origin);
+    if (parsed.hostname.endsWith('.vercel.app') || parsed.hostname === 'vercel.app') {
+      return callback(null, true);
+    }
+  } catch {}
+
+  // Allow automatic Vercel system environment URL if set
+  if (process.env.VERCEL_URL && (origin === `https://${process.env.VERCEL_URL}` || origin === `http://${process.env.VERCEL_URL}`)) {
+    return callback(null, true);
+  }
+
+  // Allow NEXT_PUBLIC_SERVER_URL if set
+  if (process.env.NEXT_PUBLIC_SERVER_URL && origin === process.env.NEXT_PUBLIC_SERVER_URL.replace(/\/$/, '')) {
+    return callback(null, true);
+  }
+
+  // Disallow unrecognized cross-origin requests cleanly without throwing a 500 error
+  callback(null, false);
 };
 
 export const TOKEN_EXPIRY = {

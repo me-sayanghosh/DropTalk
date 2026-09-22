@@ -27,8 +27,9 @@ export default function SetUsername() {
         },
         body: JSON.stringify({ username }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'failed to set username');
+      const contentType = res.headers.get('content-type') || '';
+      const data = contentType.includes('application/json') ? await res.json().catch(() => null) : null;
+      if (!res.ok) throw new Error(data?.error || `Failed to set username (${res.status})`);
       setUser(data.user);
       router.push('/chat');
     } catch (e: any) {

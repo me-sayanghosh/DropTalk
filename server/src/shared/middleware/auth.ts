@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import { JWT_SECRET } from '../utils/constants';
 
 export function requireAuth(req: any, res: any, next: any) {
   const header = req.headers.authorization || '';
@@ -7,7 +8,7 @@ export function requireAuth(req: any, res: any, next: any) {
     return res.status(401).json({ error: 'Missing bearer token' });
   }
   try {
-    const payload: any = jwt.verify(token, process.env.JWT_SECRET || '');
+    const payload: any = jwt.verify(token, JWT_SECRET);
     req.user = { id: payload.sub, username: payload.username };
     next();
   } catch {

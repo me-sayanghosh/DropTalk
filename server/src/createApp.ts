@@ -70,5 +70,14 @@ export function createApp({ disableCSP = false } = {}) {
   app.use('/api/upload', uploadRoutes);
   app.use('/api/calls', callRoutes);
 
+  // Global Express error handler to guarantee JSON error output instead of HTML
+  app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    console.error('[server error]:', err?.message || err);
+    const status = (typeof err?.status === 'number' && err.status) || (typeof err?.statusCode === 'number' && err.statusCode) || 500;
+    res.status(status).json({
+      error: err?.message || 'Internal server error',
+    });
+  });
+
   return app;
 }
