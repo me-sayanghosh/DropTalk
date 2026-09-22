@@ -8,7 +8,7 @@ import { Otp } from './otp.model.js';
 import { requireAuth } from '../../shared/middleware/auth.js';
 import { sendOtpEmail } from '../../shared/utils/mailer.js';
 import { TOKEN_EXPIRY, USERNAME_REGEX, USERNAME_MIN_LENGTH, USERNAME_MAX_LENGTH } from '../../shared/utils/constants.js';
-import { parseExpiry, escapeRegex, generateAutoUsername } from '../../shared/utils/errors.js';
+import { parseExpiry, escapeRegex, generateAutoUsername } from '../../shared/utils/helpers.js';
 
 const router = Router();
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || '');
@@ -91,7 +91,8 @@ router.post('/send-otp', async (req, res) => {
       message: `Verification code sent to ${cleanEmail}`,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[auth] send-otp error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -144,7 +145,8 @@ router.post('/verify-otp', async (req, res) => {
 
     return res.json({ accessToken, refreshToken, user: user.toClient() });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[auth] verify-otp error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -199,7 +201,8 @@ router.post('/google', async (req, res) => {
 
     return res.json({ accessToken, refreshToken, user: user.toClient() });
   } catch (err) {
-    res.status(401).json({ error: err.message || 'Google authentication failed' });
+    console.error('[auth] google error:', err.message);
+    res.status(401).json({ error: 'Google authentication failed' });
   }
 });
 
@@ -238,7 +241,8 @@ router.post('/google-direct', async (req, res) => {
 
     return res.json({ accessToken, refreshToken, user: user.toClient() });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[auth] google-direct error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -274,7 +278,8 @@ router.post('/refresh', async (req, res) => {
 
     return res.status(401).json({ error: 'invalid refresh token' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[auth] refresh error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -286,7 +291,8 @@ router.post('/logout', requireAuth, async (req, res) => {
     }
     return res.json({ ok: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[auth] logout error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -296,7 +302,8 @@ router.get('/me', requireAuth, async (req, res) => {
     if (!user) return res.status(404).json({ error: 'not found' });
     return res.json({ user: user.toClient() });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[auth] me error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -311,7 +318,8 @@ router.get('/check-username/:username', requireAuth, async (req, res) => {
     const exists = await User.findOne({ username: usernameRegex, _id: { $ne: req.user.id } });
     return res.json({ available: !exists });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[auth] check-username error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -346,7 +354,8 @@ router.put('/profile', requireAuth, async (req, res) => {
 
     return res.json({ user: user.toClient() });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[auth] profile update error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -372,7 +381,8 @@ router.put('/username', requireAuth, async (req, res) => {
 
     return res.json({ user: user.toClient() });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[auth] username update error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -396,7 +406,8 @@ router.get('/users/search', requireAuth, async (req, res) => {
       users: users.map((u) => u.toClient()),
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[auth] user-search error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -418,7 +429,8 @@ router.put('/custom-status', requireAuth, async (req, res) => {
 
     return res.json({ ok: true, user: user.toClient() });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[auth] custom-status error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

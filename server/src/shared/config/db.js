@@ -8,7 +8,6 @@ export async function connectDB(uri) {
   try {
     await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
     console.log(`[db] connected: ${mongoose.connection.name}`);
-    console.log('mongodb connected successfully');
   } catch (err) {
     console.warn(`[db] could not connect to ${uri}: ${err.message}`);
     console.warn('[db] falling back to in-memory MongoDB (mongodb-memory-server)...');

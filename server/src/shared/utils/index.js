@@ -3,7 +3,6 @@ export {
   ROOM_TYPES,
   ROLES,
   DEFAULT_ROOMS,
-  RATE_LIMITS,
   CORS_ORIGINS,
   TOKEN_EXPIRY,
   PRESENCE,
@@ -19,4 +18,4 @@ export {
   escapeRegex,
   generateKeyId,
   generateAutoUsername,
-} from './errors.js';
+} from './helpers.js';
