@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 const ROOM_TYPES = [
   {
@@ -155,7 +155,7 @@ export default function CreateChannelModal({ onClose, onCreate }) {
                   key={t.id}
                   type="button"
                   className={`cc-type-card ${type === t.id ? 'selected' : ''}`}
-                  style={type === t.id ? { '--type-accent': t.color, '--type-accent-bg': t.bg, borderColor: t.color } : {}}
+                  style={type === t.id ? { '--type-accent': t.color, '--type-accent-bg': t.bg, borderColor: t.color } as React.CSSProperties : {}}
                   onClick={() => setType(t.id)}
                 >
                   <div className="cc-type-icon" style={{ background: t.bg, color: t.color }}>

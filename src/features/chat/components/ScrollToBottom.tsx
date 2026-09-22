@@ -1,6 +1,10 @@
-import { useState, useEffect, useCallback, forwardRef } from 'react';
+import { useState, useEffect, useCallback, forwardRef, RefObject } from 'react';
 
-const ScrollToBottom = forwardRef(function ScrollToBottom({ containerRef }, ref) {
+interface ScrollToBottomProps {
+  containerRef: RefObject<HTMLDivElement>;
+}
+
+const ScrollToBottom = forwardRef<HTMLButtonElement, ScrollToBottomProps>(function ScrollToBottom({ containerRef }, ref) {
   const [visible, setVisible] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 

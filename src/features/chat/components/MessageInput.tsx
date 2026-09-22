@@ -17,7 +17,7 @@ export default function MessageInput({ onSend, onTyping, onTextChange, replyTo, 
   const timerRef = useRef(null);
 
   // Build members list from membersMap: { id: username }
-  const membersList = Object.entries(membersMap || {}).map(([id, username]) => ({ id, username }));
+  const membersList = Object.entries(membersMap || {}).map(([id, username]) => ({ id, username: username as string }));
 
   // Filtered members matching the current @query
   const mentionMatches = mentionQuery !== null
@@ -61,7 +61,7 @@ export default function MessageInput({ onSend, onTyping, onTextChange, replyTo, 
   }
 
   async function uploadFilesList(filesList) {
-    const files = Array.from(filesList || []);
+    const files = Array.from(filesList || []) as File[];
     if (files.length === 0) return;
 
     setUploading(true);

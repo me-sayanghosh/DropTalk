@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, ReactNode } from 'react';
 import {
   SmilePlus,
   Reply,
@@ -11,18 +11,35 @@ import {
 import { formatDateSeparator } from '../../../shared/utils/dateUtils';
 import { getMediaUrl } from '../../../shared/utils';
 
+function MessageSkeleton({ count = 5 }: { count?: number }) {
+  return (
+    <>
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="msg-skeleton">
+          <div className="msg-skeleton-avatar" />
+          <div className="msg-skeleton-body">
+            <div className="msg-skeleton-name" />
+            <div className="msg-skeleton-line" />
+            <div className="msg-skeleton-line short" />
+          </div>
+        </div>
+      ))}
+    </>
+  );
+}
+
 /**
  * Parse message text and highlight @username mentions.
- * @param {string} text - raw message text
- * @param {string} myUsername - the current user's username (for self-highlight)
- * @param {Object} membersMap - { id: username } lookup
+ * @param text - raw message text
+ * @param myUsername - the current user's username (for self-highlight)
+ * @param membersMap - { id: username } lookup
  */
-function renderMentions(text, myUsername, membersMap) {
+function renderMentions(text: string, myUsername: string, membersMap: Record<string, string>): ReactNode {
   if (!text) return null;
   // Build a reverse map: username -> id
-  const byUsername = {};
+  const byUsername: Record<string, string> = {};
   for (const [id, uname] of Object.entries(membersMap || {})) {
-    byUsername[uname.toLowerCase()] = id;
+    byUsername[(uname as string).toLowerCase()] = id;
   }
 
   const parts = text.split(/(@\w+)/g);
