@@ -22,7 +22,8 @@ router.get('/', async (req, res) => {
       unreadCount,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[notifications] list error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -32,7 +33,8 @@ router.put('/read-all', async (req, res) => {
     await Notification.updateMany({ user: req.user.id, read: false }, { $set: { read: true } });
     res.json({ ok: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[notifications] read-all error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -46,7 +48,8 @@ router.put('/:id/read', async (req, res) => {
     await notif.save();
     res.json({ ok: true, notification: notif.toClient() });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[notifications] read error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -57,7 +60,8 @@ router.delete('/clear-all', async (req, res) => {
     await Notification.deleteMany({ user: req.user.id });
     res.json({ ok: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[notifications] clear-all error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -68,7 +72,8 @@ router.delete('/room/:roomId', async (req, res) => {
     await Notification.deleteMany({ user: req.user.id, roomId: req.params.roomId });
     res.json({ ok: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[notifications] room-clear error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -78,7 +83,8 @@ router.delete('/:id', async (req, res) => {
     await Notification.deleteOne({ _id: req.params.id, user: req.user.id });
     res.json({ ok: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[notifications] delete error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -100,7 +106,8 @@ router.put('/settings', async (req, res) => {
 
     res.json({ ok: true, user: user.toClient() });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[notifications] settings error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

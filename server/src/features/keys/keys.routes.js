@@ -25,7 +25,8 @@ router.post('/:roomId/keys', async (req, res) => {
     await room.save();
     res.json({ ok: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[keys] store error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -44,7 +45,8 @@ router.get('/:roomId/keys', async (req, res) => {
       .map((ek) => ({ key: ek.key, keyId: ek.keyId }));
     res.json({ encryptedKeys: myKeys });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[keys] fetch error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -65,7 +67,8 @@ router.get('/:roomId/keys/all', async (req, res) => {
 
     res.json({ keys });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[keys] fetch-all error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
