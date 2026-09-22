@@ -79,8 +79,6 @@ router.post('/send-otp', async (req, res) => {
     await Otp.deleteMany({ email: cleanEmail });
     await Otp.create({ email: cleanEmail, otpHash, expiresAt });
 
-    console.log(`\x1b[33m[OTP LOG]\x1b[0m Verification code for \x1b[36m${cleanEmail}\x1b[0m is: \x1b[1m\x1b[32m${otp}\x1b[0m`);
-
     // Dispatch email using Nodemailer
     try {
       await sendOtpEmail(cleanEmail, otp);
