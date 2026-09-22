@@ -7,10 +7,19 @@ import { requireAuth } from '../../shared/middleware/auth';
 
 const router = Router();
 
-// Ensure uploads directory exists
-const uploadsDir = path.join(process.cwd(), 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+// On Vercel serverless, the filesystem is read-only except /tmp.
+// Use /tmp/uploads on Vercel, otherwise use <cwd>/uploads for local dev.
+const isVercel = Boolean(process.env.VERCEL);
+const uploadsDir = isVercel
+  ? path.join('/tmp', 'uploads')
+  : path.join(process.cwd(), 'uploads');
+
+try {
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+} catch (err: any) {
+  console.warn(`[upload] Could not create uploads directory at ${uploadsDir}:`, err.message);
 }
 
 // Multer Disk Storage setup
