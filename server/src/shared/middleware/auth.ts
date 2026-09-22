@@ -1,13 +1,13 @@
 import jwt from 'jsonwebtoken';
 
-export function requireAuth(req, res, next) {
+export function requireAuth(req: any, res: any, next: any) {
   const header = req.headers.authorization || '';
   const [scheme, token] = header.split(' ');
   if (scheme !== 'Bearer' || !token) {
     return res.status(401).json({ error: 'Missing bearer token' });
   }
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    const payload: any = jwt.verify(token, process.env.JWT_SECRET || '');
     req.user = { id: payload.sub, username: payload.username };
     next();
   } catch {

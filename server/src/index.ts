@@ -23,7 +23,7 @@ const app = createApp();
 
 try {
   await connectDB(MONGODB_URI);
-} catch (err) {
+} catch (err: any) {
   console.error('[fatal] database connection failed:', err.message);
   process.exit(1);
 }
@@ -31,7 +31,7 @@ try {
 const server = http.createServer(app);
 const { close: closeSocket } = attachSocket(server);
 
-server.on('error', (err) => {
+server.on('error', (err: any) => {
   if (err.code === 'EADDRINUSE') {
     console.error(`[fatal] port ${PORT} is already in use`);
   } else {

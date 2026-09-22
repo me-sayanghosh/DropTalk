@@ -59,8 +59,8 @@ export function attachSocket(httpServer) {
     }
   });
 
-  io.on('connection', (socket) => {
-    const joined = new Set();
+  io.on('connection', (socket: any) => {
+    const joined = new Set<string>();
 
     // Join personal socket room so targeted events (mentions, DMs, notifications) work
     socket.join(`user:${socket.user.id}`);
@@ -89,7 +89,7 @@ export function attachSocket(httpServer) {
           const { clearUserCurrentRoom } = await import('../../features/presence/presence.service');
           clearUserCurrentRoom(socket.user.id).catch(() => {});
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('[socket] disconnect error:', err.message);
       }
     });
