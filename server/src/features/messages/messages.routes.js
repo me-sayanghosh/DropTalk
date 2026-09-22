@@ -84,7 +84,8 @@ router.get('/:roomId/messages', async (req, res) => {
       hasMore: filtered.length === cap,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[messages] fetch error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -128,7 +129,8 @@ router.get('/:roomId/messages/search', async (req, res) => {
       })),
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[messages] search error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -142,7 +144,8 @@ router.post('/backfill', requireAuth, async (req, res) => {
     const results = await backfillMessages(req.user.id, capped);
     res.json({ backfill: results });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[messages] backfill error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

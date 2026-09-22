@@ -7,30 +7,21 @@ export const DEFAULT_ROOMS = [
   { name: 'lounge', type: 'public' },
 ];
 
-export const RATE_LIMITS = {
-  message: { windowMs: 60000, max: 30 },
-  auth: { windowMs: 900000, max: 20 },
-};
+export const CORS_ORIGINS = (origin, callback) => {
+  if (!origin) return callback(null, true);
 
-export const isAllowedOrigin = (origin) => {
-  if (!origin) return true;
   const configured = process.env.CORS_ORIGIN
     ? process.env.CORS_ORIGIN.split(',').map((s) => s.trim())
     : ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:3000'];
-  if (configured.includes(origin)) return true;
+
+  if (configured.includes(origin)) return callback(null, true);
+
   // Allow all localhost, 127.0.0.1, and local private network origins on any port
   if (/^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+)(:\d+)?$/.test(origin)) {
-    return true;
+    return callback(null, true);
   }
-  return false;
-};
 
-export const CORS_ORIGINS = (origin, callback) => {
-  if (isAllowedOrigin(origin)) {
-    callback(null, true);
-  } else {
-    callback(new Error(`Not allowed by CORS: ${origin}`));
-  }
+  callback(new Error(`Not allowed by CORS: ${origin}`));
 };
 
 export const TOKEN_EXPIRY = {

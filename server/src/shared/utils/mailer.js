@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 
 let transporter = null;
+const isDev = process.env.NODE_ENV !== 'production';
 
 async function getTransporter() {
   if (transporter) return transporter;
@@ -18,7 +19,9 @@ async function getTransporter() {
       secure,
       auth: { user, pass },
     });
-    console.log(`[Mailer] Configured SMTP transporter for host: ${host}`);
+    if (isDev) {
+      console.log(`[Mailer] Configured SMTP transporter for host: ${host}`);
+    }
     return transporter;
   }
 
@@ -34,7 +37,9 @@ async function getTransporter() {
         pass: testAccount.pass,
       },
     });
-    console.log(`[Mailer] No custom SMTP credentials found. Created auto Ethereal test account: ${testAccount.user}`);
+    if (isDev) {
+      console.log(`[Mailer] No custom SMTP credentials found. Created auto Ethereal test account: ${testAccount.user}`);
+    }
     return transporter;
   } catch (err) {
     console.error('[Mailer] Failed to create test account:', err.message);
@@ -91,12 +96,13 @@ export async function sendOtpEmail(toEmail, otpCode) {
     html: htmlContent,
   });
 
-  console.log(`\x1b[32m[Mailer Success]\x1b[0m OTP Email delivered to \x1b[36m${toEmail}\x1b[0m (Message ID: ${info.messageId})`);
-
-  const previewUrl = nodemailer.getTestMessageUrl(info);
-  if (previewUrl) {
-    console.log(`\x1b[33m[Mailer Preview]\x1b[0m Ethereal Email Preview URL: \x1b[4m\x1b[36m${previewUrl}\x1b[0m`);
+  if (isDev) {
+    console.log(`\x1b[32m[Mailer Success]\x1b[0m OTP Email delivered to \x1b[36m${toEmail}\x1b[0m (Message ID: ${info.messageId})`);
+    const previewUrl = nodemailer.getTestMessageUrl(info);
+    if (previewUrl) {
+      console.log(`\x1b[33m[Mailer Preview]\x1b[0m Ethereal Email Preview URL: \x1b[4m\x1b[36m${previewUrl}\x1b[0m`);
+    }
   }
 
-  return { messageId: info.messageId, previewUrl };
+  return { messageId: info.messageId, previewUrl: nodemailer.getTestMessageUrl(info) };
 }

@@ -230,7 +230,13 @@ export default function ChannelMembersPage({
           <div className="cmp-members-grid">
             {filteredMembers.map((m) => {
               const isOnline = onlineIds.has(m.user);
-              const isSelf = m.user === currentUserId;
+              const myIdStr = currentUserId ? String(currentUserId) : '';
+              const memberUserIdStr = m.user
+                ? typeof m.user === 'object'
+                  ? String((m.user as any)._id || (m.user as any).id)
+                  : String(m.user)
+                : '';
+              const isSelf = !!(myIdStr && memberUserIdStr && myIdStr === memberUserIdStr);
               const canActOn = canModerate && !isSelf && m.role !== 'owner' &&
                 !(selfMember?.role === 'moderator' && m.role === 'moderator');
               const initial = (m.username || m.user || 'U')[0].toUpperCase();
@@ -294,11 +300,11 @@ export default function ChannelMembersPage({
 
                   {/* Right: Actions */}
                   <div className="cmp-member-actions">
-                    {!isSelf && onDMUser && (
+                    {!isSelf && onDMUser && memberUserIdStr && memberUserIdStr !== myIdStr && (
                       <button
                         type="button"
                         className="cmp-action-btn cmp-dm-btn"
-                        onClick={() => onDMUser(m.user, m.username)}
+                        onClick={() => onDMUser(memberUserIdStr, m.username)}
                         title={`Message @${m.username || 'user'} privately`}
                       >
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">

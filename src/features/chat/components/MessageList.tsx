@@ -1,19 +1,45 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, ReactNode } from 'react';
+import {
+  SmilePlus,
+  Reply,
+  Copy,
+  Check,
+  MoreHorizontal,
+  MessageSquare,
+  MessageCircle,
+} from 'lucide-react';
 import { formatDateSeparator } from '../../../shared/utils/dateUtils';
 import { getMediaUrl } from '../../../shared/utils';
 
+function MessageSkeleton({ count = 5 }: { count?: number }) {
+  return (
+    <>
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="msg-skeleton">
+          <div className="msg-skeleton-avatar" />
+          <div className="msg-skeleton-body">
+            <div className="msg-skeleton-name" />
+            <div className="msg-skeleton-line" />
+            <div className="msg-skeleton-line short" />
+          </div>
+        </div>
+      ))}
+    </>
+  );
+}
+
 /**
  * Parse message text and highlight @username mentions.
- * @param {string} text - raw message text
- * @param {string} myUsername - the current user's username (for self-highlight)
- * @param {Object} membersMap - { id: username } lookup
+ * @param text - raw message text
+ * @param myUsername - the current user's username (for self-highlight)
+ * @param membersMap - { id: username } lookup
  */
-function renderMentions(text, myUsername, membersMap) {
+function renderMentions(text: string, myUsername: string, membersMap: Record<string, string>): ReactNode {
   if (!text) return null;
   // Build a reverse map: username -> id
-  const byUsername = {};
+  const byUsername: Record<string, string> = {};
   for (const [id, uname] of Object.entries(membersMap || {})) {
-    byUsername[uname.toLowerCase()] = id;
+    byUsername[(uname as string).toLowerCase()] = id;
   }
 
   const parts = text.split(/(@\w+)/g);
@@ -137,6 +163,8 @@ export default function MessageList({
   const [lightboxData, setLightboxData] = useState(null); // { url, filename }
   const [editingId, setEditingId] = useState(null);
   const [editText, setEditText] = useState('');
+  const [activeReactionTrayId, setActiveReactionTrayId] = useState(null);
+  const [copiedMsgId, setCopiedMsgId] = useState(null);
   const ctxMenuRef = useRef(null);
   const toastTimerRef = useRef(null);
 
@@ -175,6 +203,24 @@ export default function MessageList({
       document.removeEventListener('keydown', handleEscape);
     };
   }, [contextMenuFor]);
+
+  useEffect(() => {
+    if (!activeReactionTrayId) return;
+    function handleTrayOutside(e) {
+      if (!e.target.closest('.msg-hover-reaction-tray') && !e.target.closest('.msg-hover-btn--react-toggle')) {
+        setActiveReactionTrayId(null);
+      }
+    }
+    function handleTrayEsc(e) {
+      if (e.key === 'Escape') setActiveReactionTrayId(null);
+    }
+    document.addEventListener('mousedown', handleTrayOutside);
+    document.addEventListener('keydown', handleTrayEsc);
+    return () => {
+      document.removeEventListener('mousedown', handleTrayOutside);
+      document.removeEventListener('keydown', handleTrayEsc);
+    };
+  }, [activeReactionTrayId]);
 
   function formatTime(dateStr) {
     if (!dateStr) return '';
@@ -284,7 +330,15 @@ export default function MessageList({
           showDateSep = true;
         }
 
-        const mine = m.senderId === meId || m.sender?.id === meId;
+        const myIdStr = meId ? String(meId) : '';
+        const senderIdStr = m.senderId
+          ? String(m.senderId)
+          : m.sender?._id
+          ? String(m.sender._id)
+          : m.sender?.id
+          ? String(m.sender.id)
+          : '';
+        const mine = !!(myIdStr && senderIdStr && myIdStr === senderIdStr);
         const who = getSenderName(m);
         const senderRole = getMemberRole(m.senderId);
         const readStatus = getReadStatus(m);
@@ -447,49 +501,145 @@ export default function MessageList({
             </div>
 
             {!m.deleted && (
-              <div className="msg-hover-actions">
+              <div
+                className={`msg-hover-actions ${activeReactionTrayId === m.id ? 'has-active-tray' : ''}`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Floating Quick Reaction Tray */}
+                {activeReactionTrayId === m.id && (
+                  <div className="msg-hover-reaction-tray" onClick={(e) => e.stopPropagation()}>
+                    {['👍', '❤️', '🔥', '😂', '🎉', '🚀', '👀', '💯'].map((emoji) => (
+                      <button
+                        key={emoji}
+                        className="msg-tray-emoji-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onReact?.(m.id, emoji);
+                          setActiveReactionTrayId(null);
+                        }}
+                        title={`React with ${emoji}`}
+                        type="button"
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Quick React 1: 👍 */}
                 <button
-                  className="msg-hover-btn"
-                  onClick={() => onReact?.(m.id, '👍')}
-                  title="React"
+                  className={`msg-hover-btn msg-hover-btn--emoji ${m.reactions?.find((r) => r.emoji === '👍')?.users?.includes(meId) ? 'reacted' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onReact?.(m.id, '👍');
+                  }}
+                  title="React with 👍"
+                  type="button"
                 >
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M4.5 7.5V14h1.6c.5 0 1-.3 1.2-.7l2.5-5.5c.2-.4.1-.8-.1-1.1-.2-.3-.5-.5-.9-.5H4.5zM9 2.5c0-.3.2-.5.5-.5s.5.2.5.5v3h1.5c.4 0 .8.3.9.7.1.3 0 .6-.2.9l-2 4H12V14h-3.5c-.5 0-1-.3-1.2-.7l-2.3-5.2V7.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M2.5 7.5H1.5c-.3 0-.5.2-.5.5v5c0 .3.2.5.5.5h1" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
+                  <span className="hover-emoji">👍</span>
                 </button>
+
+                {/* Quick React 2: ❤️ */}
+                <button
+                  className={`msg-hover-btn msg-hover-btn--emoji ${m.reactions?.find((r) => r.emoji === '❤️')?.users?.includes(meId) ? 'reacted' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onReact?.(m.id, '❤️');
+                  }}
+                  title="React with ❤️"
+                  type="button"
+                >
+                  <span className="hover-emoji">❤️</span>
+                </button>
+
+                {/* Emoji Tray Toggle (SmilePlus) */}
+                <button
+                  className={`msg-hover-btn msg-hover-btn--react-toggle ${activeReactionTrayId === m.id ? 'active' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveReactionTrayId((prev) => (prev === m.id ? null : m.id));
+                  }}
+                  title="More reactions"
+                  type="button"
+                >
+                  <SmilePlus size={15} strokeWidth={2.2} />
+                </button>
+
+                <div className="msg-hover-divider" />
+
+                {/* Reply Button */}
                 <button
                   className="msg-hover-btn"
-                  onClick={() => onReply?.(m)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onReply?.(m);
+                  }}
                   title="Reply"
+                  type="button"
                 >
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M6 5L3 8l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M3 8h7c2.2 0 3 1.5 3 3v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
+                  <Reply size={15} strokeWidth={2.2} />
                 </button>
-                {!mine && onDMUser && (
+
+                {/* Thread Reply Button */}
+                {onOpenThread && (
                   <button
-                    className="msg-hover-btn msg-hover-btn--dm"
-                    onClick={() => onDMUser(m.senderId, getSenderName(m))}
-                    title="Message privately"
+                    className="msg-hover-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenThread(m);
+                    }}
+                    title="Reply in thread"
+                    type="button"
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
-                      <path d="M19 8l2 2-2 2" /><path d="M21 10h-4" />
-                    </svg>
+                    <MessageSquare size={15} strokeWidth={2} />
                   </button>
                 )}
+
+                {/* Copy Text Button */}
+                {m.text && (
+                  <button
+                    className={`msg-hover-btn ${copiedMsgId === m.id ? 'msg-hover-btn--check' : ''}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigator.clipboard.writeText(m.text).catch(() => {});
+                      setCopiedMsgId(m.id);
+                      showToast('Copied');
+                      setTimeout(() => setCopiedMsgId((prev) => (prev === m.id ? null : prev)), 1400);
+                    }}
+                    title={copiedMsgId === m.id ? 'Copied!' : 'Copy text'}
+                    type="button"
+                  >
+                    {copiedMsgId === m.id ? (
+                      <Check size={14} strokeWidth={2.5} />
+                    ) : (
+                      <Copy size={14} strokeWidth={2} />
+                    )}
+                  </button>
+                )}
+
+                {/* Private Message Button */}
+                {!mine && onDMUser && senderIdStr && senderIdStr !== myIdStr && (
+                  <button
+                    className="msg-hover-btn msg-hover-btn--dm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDMUser(senderIdStr, getSenderName(m));
+                    }}
+                    title={`Message @${getSenderName(m)} privately`}
+                    type="button"
+                  >
+                    <MessageCircle size={15} strokeWidth={2} />
+                  </button>
+                )}
+
+                {/* More Options Button */}
                 <button
                   className="msg-hover-btn"
                   onClick={(e) => openContextMenu(e, m)}
-                  title="More"
+                  title="More options"
+                  type="button"
                 >
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                    <circle cx="8" cy="3" r="1.5"/>
-                    <circle cx="8" cy="8" r="1.5"/>
-                    <circle cx="8" cy="13" r="1.5"/>
-                  </svg>
+                  <MoreHorizontal size={16} strokeWidth={2.2} />
                 </button>
               </div>
             )}

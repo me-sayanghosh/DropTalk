@@ -1,12 +1,11 @@
 import 'dotenv/config';
 import http from 'http';
 import dns from 'node:dns/promises';
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 
-import { CORS_ORIGINS } from './shared/utils/constants.js';
+import { connectDB } from './shared/config/db.js';
+import { createApp } from './createApp.js';
+import { attachSocket } from './shared/socket/index.js';
+import { reconcilePresence } from './features/presence/presence.service.js';
 
 dns.setServers(['1.1.1.1', '8.8.8.8']);
 
@@ -17,60 +16,10 @@ process.on('unhandledRejection', (reason) => {
   console.error('[fatal] unhandled rejection:', reason);
 });
 
-import { connectDB } from './shared/config/db.js';
-import authRoutes from './features/auth/auth.routes.js';
-import roomRoutes from './features/rooms/rooms.routes.js';
-import messageRoutes from './features/messages/messages.routes.js';
-import moderationRoutes from './features/moderation/moderation.routes.js';
-import threadRoutes from './features/messages/threads.routes.js';
-import keyRoutes from './features/keys/keys.routes.js';
-import aiRoutes from './features/ai/ai.routes.js';
-import dmRoutes from './features/dm/dm.routes.js';
-import path from 'path';
-import notificationRoutes from './features/notifications/notifications.routes.js';
-import uploadRoutes from './features/upload/upload.routes.js';
-import callRoutes from './features/calls/calls.routes.js';
-import { attachSocket } from './shared/socket/index.js';
-import { reconcilePresence } from './features/presence/presence.service.js';
-
-const app = express();
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: 'cross-origin' },
-  crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
-}));
-app.use(cors({
-  origin: CORS_ORIGINS,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-}));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
-
-app.get('/api/health', (_req, res) => res.json({ ok: true }));
-
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 30,
-  message: { error: 'Too many attempts, please try again after 15 minutes' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-app.use('/api/auth', authLimiter, authRoutes);
-app.use('/api/rooms', roomRoutes);
-app.use('/api/rooms', messageRoutes);
-app.use('/api/rooms', moderationRoutes);
-app.use('/api/rooms', threadRoutes);
-app.use('/api/rooms', keyRoutes);
-app.use('/api/rooms', aiRoutes);
-app.use('/api/dm', dmRoutes);
-app.use('/api/notifications', notificationRoutes);
-app.use('/api/upload', uploadRoutes);
-app.use('/api/calls', callRoutes);
-
 const PORT = process.env.PORT || 4000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/chatapp';
+
+const app = createApp();
 
 try {
   await connectDB(MONGODB_URI);

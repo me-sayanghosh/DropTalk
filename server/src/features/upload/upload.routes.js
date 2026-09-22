@@ -29,7 +29,7 @@ const allowedMimeTypes = [
   'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
   'application/pdf', 'text/plain',
   'audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/webm',
-  'video/mp4', 'video/webm'
+  'video/mp4', 'video/webm',
 ];
 
 const fileFilter = (req, file, cb) => {
@@ -50,7 +50,7 @@ function getFileType(mimeType, filename) {
   if (mimeType.startsWith('image/')) return 'image';
   if (mimeType.startsWith('video/')) return 'video';
   if (mimeType.startsWith('audio/')) return 'audio';
-  
+
   const ext = path.extname(filename).toLowerCase();
   if (['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'].includes(ext)) return 'image';
   if (['.mp4', '.webm', '.mov', '.avi', '.mkv'].includes(ext)) return 'video';
@@ -61,7 +61,7 @@ function getFileType(mimeType, filename) {
 
 router.use(requireAuth);
 
-// POST /api/upload - Single or multiple file upload
+// POST /api/upload - Single file upload
 router.post('/', upload.single('file'), (req, res) => {
   try {
     if (!req.file) {
@@ -82,7 +82,8 @@ router.post('/', upload.single('file'), (req, res) => {
       },
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[upload] single error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -103,7 +104,8 @@ router.post('/multiple', upload.array('files', 5), (req, res) => {
 
     res.json({ ok: true, attachments });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[upload] multiple error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

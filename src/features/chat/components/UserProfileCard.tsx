@@ -1,8 +1,9 @@
-export default function UserProfileCard({ user, isOnline, onClose, onStartDM, onMention }) {
+export default function UserProfileCard({ user, isOnline, onClose, onStartDM, onMention, currentUserId }) {
   if (!user) return null;
 
   const initial = (user.username || 'U')[0].toUpperCase();
   const name = user.name || user.username;
+  const isSelf = currentUserId && (String(user.id || user._id) === String(currentUserId));
 
   return (
     <div className="user-card-backdrop" onClick={onClose}>
@@ -45,7 +46,7 @@ export default function UserProfileCard({ user, isOnline, onClose, onStartDM, on
 
           {/* Action buttons */}
           <div className="user-card-actions">
-            {onStartDM && (
+            {onStartDM && !isSelf && (
               <button
                 className="user-card-btn primary"
                 onClick={() => {

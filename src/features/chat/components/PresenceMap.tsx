@@ -1,7 +1,22 @@
-export default function PresenceMap({ presenceMap, currentUserId, rooms = [] }) {
+interface PresenceEntry {
+  currentRoom?: string;
+  username?: string;
+  [key: string]: unknown;
+}
+
+interface Room {
+  id: string;
+  name: string;
+}
+
+export default function PresenceMap({ presenceMap, currentUserId, rooms = [] }: {
+  presenceMap: Record<string, PresenceEntry>;
+  currentUserId: string;
+  rooms?: Room[];
+}) {
   const entries = Object.entries(presenceMap).filter(([userId]) => userId !== currentUserId);
 
-  const roomNameMap = {};
+  const roomNameMap: Record<string, string> = {};
   for (const r of rooms) {
     roomNameMap[r.id] = r.name;
   }
@@ -15,7 +30,7 @@ export default function PresenceMap({ presenceMap, currentUserId, rooms = [] }) 
     );
   }
 
-  const grouped = {};
+  const grouped: Record<string, Array<{ userId: string } & PresenceEntry>> = {};
   for (const [userId, pres] of entries) {
     const room = pres.currentRoom || 'lobby';
     if (!grouped[room]) grouped[room] = [];

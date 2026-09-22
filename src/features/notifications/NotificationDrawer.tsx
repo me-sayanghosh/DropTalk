@@ -12,7 +12,7 @@ export default function NotificationDrawer({
   onSelectNotification,
 }) {
   const [filter, setFilter] = useState('all'); // 'all' | 'unread'
-  const [permStatus, setPermStatus] = useState(() => (typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'denied'));
+  const [permStatus, setPermStatus] = useState<NotificationPermission | 'unsupported'>(() => (typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'denied'));
 
   if (!isOpen) return null;
 

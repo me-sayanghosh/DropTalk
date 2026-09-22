@@ -56,6 +56,7 @@ export function registerRoomHandlers(socket, io, { joined }) {
       ack?.({ ok: true, online, members, roomType: room.type });
       io.to(roomId).emit('room:online', { roomId, online, members });
     } catch (err) {
+      console.error('[socket] room:join error:', err.message);
       ack?.({ ok: false, error: err.message });
       socket.emit('error', { message: err.message });
     }
@@ -79,6 +80,7 @@ export function registerRoomHandlers(socket, io, { joined }) {
 
       ack?.({ ok: true });
     } catch (err) {
+      console.error('[socket] room:leave error:', err.message);
       ack?.({ ok: false, error: err.message });
     }
   });
@@ -126,6 +128,7 @@ export function registerRoomHandlers(socket, io, { joined }) {
 
       ack?.({ ok: true, banned: !!ban });
     } catch (err) {
+      console.error('[socket] room:kick error:', err.message);
       ack?.({ ok: false, error: err.message });
       socket.emit('error', { message: err.message });
     }
@@ -158,6 +161,7 @@ export function registerRoomHandlers(socket, io, { joined }) {
 
       ack?.({ ok: true });
     } catch (err) {
+      console.error('[socket] room:request-join error:', err.message);
       ack?.({ ok: false, error: err.message });
     }
   });
@@ -205,6 +209,7 @@ export function registerRoomHandlers(socket, io, { joined }) {
 
       ack?.({ ok: true });
     } catch (err) {
+      console.error('[socket] room:grant-join error:', err.message);
       ack?.({ ok: false, error: err.message });
     }
   });
@@ -230,6 +235,7 @@ export function registerRoomHandlers(socket, io, { joined }) {
 
       ack?.({ ok: true });
     } catch (err) {
+      console.error('[socket] room:deny-join error:', err.message);
       ack?.({ ok: false, error: err.message });
     }
   });

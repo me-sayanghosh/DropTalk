@@ -1,14 +1,15 @@
 import 'dotenv/config';
 import http from 'http';
 import dns from 'node:dns/promises';
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
-import path from 'path';
 import next from 'next';
+import path from 'path';
+import fs from 'fs';
+import { rm } from 'fs/promises';
 
-import { CORS_ORIGINS } from './server/src/shared/utils/constants.js';
+import { connectDB } from './server/src/shared/config/db.js';
+import { createApp } from './server/src/createApp.js';
+import { attachSocket } from './server/src/shared/socket/index.js';
+import { reconcilePresence } from './server/src/features/presence/presence.service.js';
 
 dns.setServers(['1.1.1.1', '8.8.8.8']);
 
@@ -18,24 +19,6 @@ process.on('uncaughtException', (err) => {
 process.on('unhandledRejection', (reason) => {
   console.error('[fatal] unhandled rejection:', reason);
 });
-
-import { connectDB } from './server/src/shared/config/db.js';
-import authRoutes from './server/src/features/auth/auth.routes.js';
-import roomRoutes from './server/src/features/rooms/rooms.routes.js';
-import messageRoutes from './server/src/features/messages/messages.routes.js';
-import moderationRoutes from './server/src/features/moderation/moderation.routes.js';
-import threadRoutes from './server/src/features/messages/threads.routes.js';
-import keyRoutes from './server/src/features/keys/keys.routes.js';
-import aiRoutes from './server/src/features/ai/ai.routes.js';
-import dmRoutes from './server/src/features/dm/dm.routes.js';
-import notificationRoutes from './server/src/features/notifications/notifications.routes.js';
-import uploadRoutes from './server/src/features/upload/upload.routes.js';
-import callRoutes from './server/src/features/calls/calls.routes.js';
-import { attachSocket } from './server/src/shared/socket/index.js';
-import { reconcilePresence } from './server/src/features/presence/presence.service.js';
-
-import fs from 'fs';
-import { rm } from 'fs/promises';
 
 function ensureNextCommonJs() {
   const dirs = [
@@ -63,6 +46,7 @@ ensureNextCommonJs();
 const dev = process.env.NODE_ENV !== 'production';
 const PORT = process.env.PORT || 4000;
 const hostname = process.env.HOSTNAME || 'localhost';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/chatapp';
 
 // In dev mode, always wipe .next before Next.js compiles so that the
 // webpack runtime never references chunk IDs from a previous session.
@@ -82,53 +66,14 @@ const handle = nextApp.getRequestHandler();
 await nextApp.prepare();
 ensureNextCommonJs();
 
-const app = express();
-app.use(helmet({
-  contentSecurityPolicy: false,
-  crossOriginResourcePolicy: { policy: 'cross-origin' },
-  crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
-}));
-app.use(cors({
-  origin: CORS_ORIGINS,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-}));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+// Build shared Express app (CSP disabled so Next.js can manage its own headers)
+const app = createApp({ disableCSP: true });
 
-app.get('/api/health', (_req, res) => res.json({ ok: true }));
-
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: dev ? 1000 : 100,
-  message: { error: 'Too many attempts, please try again after 15 minutes' },
-  standardHeaders: true,
-  legacyHeaders: false,
-  skip: (req) => {
-    return req.path === '/me' || req.path === '/refresh' || req.path.startsWith('/check-username');
-  },
-});
-app.use('/api/auth', authLimiter, authRoutes);
-app.use('/api/rooms', roomRoutes);
-app.use('/api/rooms', messageRoutes);
-app.use('/api/rooms', moderationRoutes);
-app.use('/api/rooms', threadRoutes);
-app.use('/api/rooms', keyRoutes);
-app.use('/api/rooms', aiRoutes);
-app.use('/api/dm', dmRoutes);
-app.use('/api/notifications', notificationRoutes);
-app.use('/api/upload', uploadRoutes);
-app.use('/api/calls', callRoutes);
-
-// Next.js handles all other requests (pages, static assets, etc.)
+// Next.js handles all non-API requests (pages, static assets, etc.)
 app.all('*', (req, res) => {
   ensureNextCommonJs();
   return handle(req, res);
 });
-
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/chatapp';
 
 try {
   await connectDB(MONGODB_URI);

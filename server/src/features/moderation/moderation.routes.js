@@ -3,6 +3,7 @@ import { requireAuth } from '../../shared/middleware/auth.js';
 import { requireRole, requireAtLeastRole } from '../../shared/middleware/roles.js';
 import { Message } from '../messages/message.model.js';
 import { Room } from '../rooms/room.model.js';
+import { User } from '../auth/user.model.js';
 import { getIO } from '../../shared/socket/index.js';
 
 const router = Router();
@@ -52,7 +53,8 @@ router.post('/:roomId/members/:userId/kick', requireAtLeastRole('moderator'), as
 
     res.json({ ok: true, kicked: userId, banned: !!ban });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[moderation] kick error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -75,7 +77,8 @@ router.post('/:roomId/members/:userId/mute', requireAtLeastRole('moderator'), as
 
     res.json({ ok: true, userId, muted: target.muted });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[moderation] mute error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -97,7 +100,8 @@ router.post('/:roomId/members/:userId/role', requireRole('owner'), async (req, r
 
     res.json({ ok: true, userId, role });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[moderation] role error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -122,7 +126,8 @@ router.delete('/:roomId/messages/:messageId', requireAtLeastRole('moderator'), a
 
     res.json({ ok: true, messageId });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[moderation] delete-message error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -138,7 +143,8 @@ router.post('/:roomId/messages/:messageId/report', async (req, res) => {
 
     res.json({ ok: true, messageId });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[moderation] report error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -148,7 +154,6 @@ router.get('/:roomId/members', async (req, res) => {
     const room = await Room.findById(roomId);
     if (!room) return res.status(404).json({ error: 'room not found' });
 
-    const { User } = await import('../auth/user.model.js');
     const userIds = room.members.map((m) => m.user);
     const users = await User.find({ _id: { $in: userIds } }).select('username').lean();
     const usernameMap = new Map(users.map((u) => [u._id.toString(), u.username]));
@@ -163,7 +168,8 @@ router.get('/:roomId/members', async (req, res) => {
 
     res.json({ members });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[moderation] members error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -200,7 +206,8 @@ router.post('/:roomId/ban/:userId', requireAtLeastRole('moderator'), async (req,
 
     res.json({ ok: true, banned: userId });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[moderation] ban error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -217,26 +224,28 @@ router.post('/:roomId/unban/:userId', requireAtLeastRole('moderator'), async (re
 
     res.json({ ok: true, unbanned: userId });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[moderation] unban error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 router.get('/:roomId/banned', requireAtLeastRole('moderator'), async (req, res) => {
   try {
     const room = req.room;
-    const banned = [];
-    for (const b of (room.bannedUsers || [])) {
-      const { User } = await import('../auth/user.model.js');
-      const user = await User.findById(b.user).select('username').lean();
-      banned.push({
-        user: b.user.toString(),
-        username: user?.username || 'unknown',
-        bannedAt: b.bannedAt,
-      });
-    }
+    const userIds = (room.bannedUsers || []).map((b) => b.user);
+    const users = await User.find({ _id: { $in: userIds } }).select('username').lean();
+    const usernameMap = new Map(users.map((u) => [u._id.toString(), u.username]));
+
+    const banned = (room.bannedUsers || []).map((b) => ({
+      user: b.user.toString(),
+      username: usernameMap.get(b.user.toString()) || 'unknown',
+      bannedAt: b.bannedAt,
+    }));
+
     res.json({ banned });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[moderation] banned-list error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
