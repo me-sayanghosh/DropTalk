@@ -3,6 +3,8 @@ import { useAuth } from '../../../shared/context/AuthContext';
 import {
   getSocket,
   sendOffline,
+  sendRoomMessage,
+  isSocketConnected,
   setLastSeenMessage,
   getLastSeenMessages,
   onReconnect,
@@ -36,6 +38,7 @@ export interface MentionAlert {
 export default function useChat() {
   const { user, logout } = useAuth();
   const [rooms, setRooms] = useState<Room[]>(() => cacheManager.getRoomsCache() || []);
+  const [roomsLoading, setRoomsLoading] = useState<boolean>(() => (cacheManager.getRoomsCache() || []).length === 0);
   const [currentRoom, setCurrentRoom] = useState<Room | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [online, setOnline] = useState<any[]>([]);
@@ -78,6 +81,11 @@ export default function useChat() {
     currentRoomRef.current = currentRoom?.id || null;
   }, [currentRoom]);
 
+  const messagesRef = useRef<Message[]>(messages);
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
   const isPrivate = currentRoom?.type === 'private';
   const hasKey = isPrivate && currentRoom?.id ? !!getRoomKey(currentRoom.id) : false;
 
@@ -115,7 +123,10 @@ export default function useChat() {
           selectRoom(firstMemberRoom || fetchedRooms[0]);
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        setRoomsLoading(false);
+      });
   }, []);
 
   useEffect(() => {
@@ -281,9 +292,14 @@ export default function useChat() {
           }));
         } else {
           setMessages((prev) => {
+            const hasClientMatch = message.clientMsgId && prev.some((m) => m.clientMsgId === message.clientMsgId);
+            if (hasClientMatch) {
+              return prev.map((m) => (m.clientMsgId === message.clientMsgId ? message : m));
+            }
             if (prev.some((m) => m.id === message.id)) return prev;
             return [...prev, message];
           });
+          cacheManager.appendRoomMessage(roomId, message);
           if (currentRoomRef.current && getRoomKey(currentRoomRef.current) && message.text) {
             maybeDecrypt(currentRoomRef.current, message);
           }
@@ -592,6 +608,16 @@ export default function useChat() {
           }
         });
       }
+
+      // Always fetch members via HTTP so user list is populated even without WebSockets
+      api
+        .get(`/rooms/${room.id}/members`)
+        .then((resp) => {
+          if (resp.data?.members) {
+            setMembers(resp.data.members);
+          }
+        })
+        .catch(() => {});
     } catch (e) {
       console.warn('Failed to load room messages:', e);
     }
@@ -681,14 +707,131 @@ export default function useChat() {
     if (socket && socket.connected) {
       socket.emit('room:join', { roomId: currentRoom.id });
     }
-    sendOffline('message:send', payload);
+
+    // 1. Optimistic message rendering
+    const tempId = `temp-${clientMsgId}`;
+    const optimisticMsg: Message = {
+      id: tempId,
+      room: currentRoom.id,
+      roomId: currentRoom.id,
+      text: textToSend,
+      sender: {
+        id: userRef.current?.id || '',
+        username: userRef.current?.username || 'You',
+        profileImage: userRef.current?.profileImage,
+      } as any,
+      senderId: userRef.current?.id,
+      senderUsername: userRef.current?.username || 'You',
+      attachments: attachments || [],
+      clientMsgId,
+      status: 'sending',
+      createdAt: new Date().toISOString(),
+      reactions: [],
+    };
+    if (replyTo) {
+      optimisticMsg.replyTo = replyTo.id;
+      optimisticMsg.replyToData = replyTo;
+    }
+
+    setMessages((prev) => [...prev, optimisticMsg]);
+    cacheManager.appendRoomMessage(currentRoom.id, optimisticMsg);
+
+    if (text && textToSend !== text) {
+      setDecryptedMessages((prev) => ({ ...prev, [tempId]: text }));
+    }
+
     setReplyTo(null);
     if (isTypingRef.current) {
       const s = getSocket();
       if (s) s.emit('user:stopped-typing', { roomId: currentRoom.id });
       isTypingRef.current = false;
     }
+
+    // 2. Dual-transport delivery (Socket.IO with timeout -> HTTP REST API)
+    try {
+      const confirmedMsg = await sendRoomMessage(payload);
+      if (confirmedMsg) {
+        setMessages((prev) => {
+          const hasClientMatch = confirmedMsg.clientMsgId && prev.some((m) => m.clientMsgId === confirmedMsg.clientMsgId);
+          if (hasClientMatch) {
+            return prev.map((m) => (m.clientMsgId === confirmedMsg.clientMsgId ? confirmedMsg : m));
+          }
+          const hasTempMatch = prev.some((m) => m.id === tempId);
+          if (hasTempMatch) {
+            return prev.map((m) => (m.id === tempId ? confirmedMsg : m));
+          }
+          if (prev.some((m) => m.id === confirmedMsg.id)) return prev;
+          return [...prev, confirmedMsg];
+        });
+        cacheManager.appendRoomMessage(currentRoom.id, confirmedMsg);
+        if (text && textToSend !== text) {
+          setDecryptedMessages((prev) => ({ ...prev, [confirmedMsg.id]: text }));
+        }
+        setLastSeenMessage(currentRoom.id, confirmedMsg.id);
+      }
+    } catch (err) {
+      console.error('[useChat] Failed to deliver message:', err);
+      setMessages((prev) =>
+        prev.map((m) => (m.id === tempId || m.clientMsgId === clientMsgId ? { ...m, status: 'failed' } : m))
+      );
+    }
   }
+
+  // Polling fallback when WebSockets are disconnected or unavailable (e.g. Vercel serverless)
+  useEffect(() => {
+    if (!currentRoom) return;
+    const roomId = currentRoom.id;
+
+    const interval = setInterval(async () => {
+      // If socket is actively connected, real-time events handle messages
+      if (isSocketConnected()) return;
+
+      try {
+        const currentMsgs = messagesRef.current;
+        const validMsgs = currentMsgs.filter((m) => m && !m.id?.startsWith('temp-'));
+        const lastMsg = validMsgs[validMsgs.length - 1];
+        const afterQuery = lastMsg?.id ? `?after=${lastMsg.id}` : '';
+        const res = await api.get(`/rooms/${roomId}/messages${afterQuery}`);
+        const incoming: Message[] = res.data.messages || [];
+
+        if (incoming.length > 0) {
+          setMessages((prev) => {
+            const incomingClientIds = new Set(incoming.map((m) => m.clientMsgId).filter(Boolean));
+            // Replace any optimistic messages
+            const updated = prev.map((m) => {
+              if (m.clientMsgId && incomingClientIds.has(m.clientMsgId)) {
+                return incoming.find((im) => im.clientMsgId === m.clientMsgId) || m;
+              }
+              return m;
+            });
+
+            const updatedIds = new Set(updated.map((m) => m.id));
+            const newToAdd = incoming.filter((im) => !updatedIds.has(im.id));
+            if (newToAdd.length === 0) return updated;
+            return [...updated, ...newToAdd];
+          });
+
+          // Decrypt if private room
+          if (getRoomKey(roomId)) {
+            for (const msg of incoming) {
+              if (!msg.deleted && msg.text) {
+                maybeDecrypt(roomId, msg);
+              }
+            }
+          }
+
+          const newest = incoming[incoming.length - 1];
+          if (newest) {
+            setLastSeenMessage(roomId, newest.id);
+          }
+        }
+      } catch {
+        // Polling silent fallback
+      }
+    }, 3500);
+
+    return () => clearInterval(interval);
+  }, [currentRoom?.id]);
 
   function handleTyping() {
     if (!currentRoom) return;
@@ -827,6 +970,7 @@ export default function useChat() {
     user,
     logout,
     rooms,
+    roomsLoading,
     setRooms,
     currentRoom,
     messages,

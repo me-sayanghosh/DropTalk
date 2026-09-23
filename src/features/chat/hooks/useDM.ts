@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../../shared/context/AuthContext';
-import { getSocket } from '../../../shared/utils';
+import { getSocket, sendDMMessageHttp, isSocketConnected } from '../../../shared/utils';
 import { cacheManager } from '../../../shared/utils/cacheManager';
 import { API_BASE, STORAGE_KEYS } from '../../../shared/utils/constants';
 import { Room, Message, DMConversation } from '../../../types';
@@ -19,6 +19,11 @@ export default function useDM() {
   const [loading, setLoading] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const socketRef = useRef<any>(null);
+
+  const dmMessagesRef = useRef<Message[]>(dmMessages);
+  useEffect(() => {
+    dmMessagesRef.current = dmMessages;
+  }, [dmMessages]);
 
   // Fetch all DM conversations
   const fetchConversations = useCallback(async () => {
@@ -108,35 +113,83 @@ export default function useDM() {
     }
   }, [fetchConversations]);
 
-  // Send a message in an accepted DM via the normal message socket
+  // Send a message in an accepted DM via dual transport (Socket.IO + HTTP fallback) with optimistic UI
   const sendDMMessage = useCallback(
-    (text: string) => {
+    async (text: string) => {
       if (!currentDM || !text.trim()) return;
-      const roomIdStr = (currentDM.id || currentDM._id)?.toString();
-      const socket = getSocket();
+      const roomIdStr = (currentDM.id || (currentDM as any)._id)?.toString();
       const clientMsgId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`;
-      socket?.emit(
-        'message:send',
-        { roomId: roomIdStr, text: text.trim(), clientMsgId },
-        (ack: any) => {
-          if (ack?.ok && ack.message) {
-            setDmMessages((prev) => {
-              if (prev.some((m) => m.id === ack.message.id || m._id === ack.message.id)) return prev;
-              return [...prev, ack.message];
-            });
-            // Update lastMessage in conversations
-            setConversations((prev) =>
-              prev.map((c) =>
-                (c.id?.toString() === roomIdStr || c._id?.toString() === roomIdStr)
-                  ? { ...c, lastMessage: { text: ack.message.text, createdAt: ack.message.createdAt } }
-                  : c
-              )
-            );
-          }
-        }
+      const tempId = `temp-${clientMsgId}`;
+
+      // 1. Optimistic message rendering
+      const optimisticMsg: Message = {
+        id: tempId,
+        room: roomIdStr,
+        roomId: roomIdStr,
+        text: text.trim(),
+        sender: {
+          id: user?.id || '',
+          username: user?.username || 'You',
+          profileImage: user?.profileImage,
+        } as any,
+        senderId: user?.id,
+        senderUsername: user?.username || 'You',
+        attachments: [],
+        clientMsgId,
+        status: 'sending',
+        createdAt: new Date().toISOString(),
+      };
+
+      setDmMessages((prev) => [...prev, optimisticMsg]);
+
+      // Optimistically update lastMessage preview in conversations list
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id?.toString() === roomIdStr || c._id?.toString() === roomIdStr
+            ? { ...c, lastMessage: { text: text.trim(), createdAt: optimisticMsg.createdAt } }
+            : c
+        )
       );
+
+      // 2. Dual-transport delivery (Socket.IO with timeout -> HTTP REST API)
+      try {
+        const confirmedMsg = await sendDMMessageHttp(roomIdStr, {
+          text: text.trim(),
+          clientMsgId,
+        });
+
+        if (confirmedMsg) {
+          setDmMessages((prev) => {
+            const hasClientMatch = confirmedMsg.clientMsgId && prev.some((m) => m.clientMsgId === confirmedMsg.clientMsgId);
+            if (hasClientMatch) {
+              return prev.map((m) => (m.clientMsgId === confirmedMsg.clientMsgId ? confirmedMsg : m));
+            }
+            const hasTempMatch = prev.some((m) => m.id === tempId);
+            if (hasTempMatch) {
+              return prev.map((m) => (m.id === tempId ? confirmedMsg : m));
+            }
+            if (prev.some((m) => m.id === confirmedMsg.id || (m as any)._id === confirmedMsg.id)) return prev;
+            return [...prev, confirmedMsg];
+          });
+
+          cacheManager.appendRoomMessage(roomIdStr, confirmedMsg);
+
+          setConversations((prev) =>
+            prev.map((c) =>
+              c.id?.toString() === roomIdStr || c._id?.toString() === roomIdStr
+                ? { ...c, lastMessage: { text: confirmedMsg.text, createdAt: confirmedMsg.createdAt } }
+                : c
+            )
+          );
+        }
+      } catch (err) {
+        console.error('[useDM] Failed to deliver DM:', err);
+        setDmMessages((prev) =>
+          prev.map((m) => (m.id === tempId || m.clientMsgId === clientMsgId ? { ...m, status: 'failed' } : m))
+        );
+      }
     },
-    [currentDM]
+    [currentDM, user]
   );
 
   // Accept a DM request
@@ -188,7 +241,7 @@ export default function useDM() {
     socketRef.current = socket;
 
     function onMessageNew({ roomId, message }: { roomId: string; message: Message }) {
-      const activeDmId = (currentDM?.id || currentDM?._id)?.toString();
+      const activeDmId = (currentDM?.id || (currentDM as any)?._id)?.toString();
       const targetRoomId = roomId?.toString();
 
       // Update conversation list preview
@@ -200,12 +253,16 @@ export default function useDM() {
         )
       );
 
-      // If viewing this DM, append message dynamically
+      // If viewing this DM, append or replace message dynamically
       if (activeDmId && targetRoomId === activeDmId) {
         setDmMessages((prev) => {
-          if (prev.some((m) => m.id === message.id || m._id === message.id)) return prev;
+          if (message.clientMsgId && prev.some((m) => m.clientMsgId === message.clientMsgId)) {
+            return prev.map((m) => (m.clientMsgId === message.clientMsgId ? message : m));
+          }
+          if (prev.some((m) => m.id === message.id || (m as any)._id === message.id)) return prev;
           return [...prev, message];
         });
+        cacheManager.appendRoomMessage(targetRoomId, message);
       }
     }
 
@@ -254,6 +311,61 @@ export default function useDM() {
   // Initial load
   useEffect(() => {
     if (user) fetchConversations();
+  }, [user, fetchConversations]);
+
+  // Polling fallback when WebSockets are disconnected (e.g. Vercel serverless)
+  useEffect(() => {
+    const activeDmId = (currentDM?.id || (currentDM as any)?._id)?.toString();
+    if (!activeDmId) return;
+
+    const interval = setInterval(async () => {
+      if (isSocketConnected()) return;
+
+      try {
+        const currentMsgs = dmMessagesRef.current;
+        const validMsgs = currentMsgs.filter((m) => m && !m.id?.startsWith('temp-'));
+        const lastMsg = validMsgs[validMsgs.length - 1];
+        const afterQuery = lastMsg?.id ? `?after=${lastMsg.id}` : '';
+        const res = await fetch(`${API_BASE}/dm/${activeDmId}/messages${afterQuery}`, {
+          headers: { ...authHeader() },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const incoming: Message[] = data.messages || [];
+
+        if (incoming.length > 0) {
+          setDmMessages((prev) => {
+            const incomingClientIds = new Set(incoming.map((m) => m.clientMsgId).filter(Boolean));
+            const updated = prev.map((m) => {
+              if (m.clientMsgId && incomingClientIds.has(m.clientMsgId)) {
+                return incoming.find((im) => im.clientMsgId === m.clientMsgId) || m;
+              }
+              return m;
+            });
+
+            const updatedIds = new Set(updated.map((m) => m.id));
+            const newToAdd = incoming.filter((im) => !updatedIds.has(im.id));
+            if (newToAdd.length === 0) return updated;
+            return [...updated, ...newToAdd];
+          });
+        }
+      } catch {
+        // Polling silent fallback
+      }
+    }, 3500);
+
+    return () => clearInterval(interval);
+  }, [currentDM]);
+
+  // Periodically refresh conversations when socket is not connected
+  useEffect(() => {
+    if (!user) return;
+    const interval = setInterval(() => {
+      if (!isSocketConnected()) {
+        fetchConversations();
+      }
+    }, 10000);
+    return () => clearInterval(interval);
   }, [user, fetchConversations]);
 
   return {

@@ -42,10 +42,27 @@ messageSchema.index({ room: 1, parentMessage: 1, createdAt: 1 });
 messageSchema.index({ clientMsgId: 1 }, { unique: true, sparse: true, partialFilterExpression: { clientMsgId: { $ne: null } } });
 
 messageSchema.methods.toClient = function () {
+  const isPopulated = this.sender && typeof this.sender === 'object' && this.sender._id;
+  const senderId = isPopulated
+    ? this.sender._id.toString()
+    : this.sender?.toString
+    ? this.sender.toString()
+    : String(this.sender || '');
+  const senderUsername = isPopulated ? (this.sender.username || null) : null;
+  const senderObj = isPopulated
+    ? {
+        id: senderId,
+        username: this.sender.username || 'User',
+        profileImage: this.sender.profileImage || '',
+      }
+    : undefined;
+
   return {
     id: this._id.toString(),
     roomId: this.room.toString(),
-    senderId: this.sender.toString ? this.sender.toString() : this.sender,
+    senderId,
+    sender: senderObj,
+    senderUsername,
     clientMsgId: this.clientMsgId || null,
     text: this.text || '',
     attachments: this.attachments || [],

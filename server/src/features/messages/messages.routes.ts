@@ -2,10 +2,26 @@ import { Router } from 'express';
 import mongoose from 'mongoose';
 import { Message } from './message.model';
 import { Room } from '../rooms/room.model';
+import { User } from '../auth/user.model';
 import { requireAuth } from '../../shared/middleware/auth';
 import { cacheService } from '../../shared/cache/cache.service';
+import { getIO } from '../../shared/socket/index';
+import { checkSocketRateLimit } from '../../shared/middleware/rateLimit';
+import { createNotification } from '../notifications/notifications.service';
 
 const router = Router();
+const slowModeMap = new Map();
+
+function parseMentions(text: string) {
+  const matches = text.match(/@(\w+)/g) || [];
+  return [...new Set(matches.map((m) => m.slice(1).toLowerCase()))];
+}
+
+async function resolveMentionIds(usernames: string[], senderId: string) {
+  if (usernames.length === 0) return [];
+  const users = await User.find({ username: { $in: usernames } }).select('_id').lean();
+  return users.map((u) => u._id).filter((id) => id.toString() !== senderId);
+}
 
 router.use(requireAuth);
 
@@ -43,10 +59,19 @@ router.get('/:roomId/messages', async (req, res) => {
     }
 
     const cap = Math.min(parseInt(limit as string, 10) || 50, 500);
-    // If before parameter is passed (loading older history), sort descending then reverse
-    const sortDir = before ? -1 : 1;
-    let messages = await Message.find(query).sort({ _id: sortDir }).limit(cap);
-    if (before) {
+    let messages;
+    if (after) {
+      // Polling new messages: return chronologically ascending
+      messages = await Message.find(query)
+        .populate('sender', 'username profileImage')
+        .sort({ _id: 1 })
+        .limit(cap);
+    } else {
+      // Initial load or loading older: fetch newest first, then reverse for chronological order
+      messages = await Message.find(query)
+        .populate('sender', 'username profileImage')
+        .sort({ _id: -1 })
+        .limit(cap);
       messages = messages.reverse();
     }
 
@@ -57,7 +82,7 @@ router.get('/:roomId/messages', async (req, res) => {
       return true;
     });
 
-    const replyToIds = filtered.filter(m => m.replyTo).map(m => m.replyTo);
+    const replyToIds = filtered.filter((m) => m.replyTo).map((m) => m.replyTo);
     let replyToMap: Record<string, any> = {};
     if (replyToIds.length > 0) {
       const replyToMsgs = await Message.find({ _id: { $in: replyToIds } }).populate('sender', 'username').lean();
@@ -83,9 +108,187 @@ router.get('/:roomId/messages', async (req, res) => {
       messages: clientMsgs,
       hasMore: filtered.length === cap,
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error('[messages] fetch error:', err.message);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /api/rooms/:roomId/messages - Send a message via REST API (Full WebSocket fallback)
+router.post('/:roomId/messages', async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { text = '', attachments = [], clientMsgId, replyTo, parentMessage, forwardedFrom } = req.body || {};
+    const trimmedText = typeof text === 'string' ? text.trim() : '';
+
+    if (!roomId || (!trimmedText && (!attachments || attachments.length === 0))) {
+      return res.status(400).json({ error: 'message text or attachment required' });
+    }
+
+    const allowed = await checkSocketRateLimit(req.user.id, 'message', { windowMs: 60000, max: 60 });
+    if (!allowed) return res.status(429).json({ error: 'rate limit exceeded, slow down' });
+
+    const room = await Room.findById(roomId);
+    if (!room) return res.status(404).json({ error: 'room not found' });
+
+    let member = room.members.find((m) => m.user.toString() === req.user.id);
+    if (!member) {
+      if (room.type === 'public') {
+        room.members.push({ user: req.user.id, role: 'member', joinedAt: new Date(), muted: false });
+        await room.save();
+        member = room.members.find((m) => m.user.toString() === req.user.id);
+      } else {
+        return res.status(403).json({ error: 'not a member of this room' });
+      }
+    }
+
+    if (member && member.muted) {
+      return res.status(403).json({ error: 'you are muted in this room' });
+    }
+
+    if (room.slowMode > 0 && member && member.role !== 'owner' && member.role !== 'moderator') {
+      const slowKey = `${roomId}:${req.user.id}`;
+      const lastSent = slowModeMap.get(slowKey);
+      const now = Date.now();
+      if (lastSent && now - lastSent < room.slowMode * 1000) {
+        const remainingSec = Math.ceil((room.slowMode * 1000 - (now - lastSent)) / 1000);
+        return res.status(429).json({
+          error: `Slow mode active. Please wait ${remainingSec} seconds before sending another message.`,
+        });
+      }
+      slowModeMap.set(slowKey, now);
+    }
+
+    if (room.isDM && room.dmStatus === 'pending') {
+      if (room.dmInitiator?.toString() !== req.user.id) {
+        return res.status(403).json({ error: 'DM request is pending acceptance' });
+      }
+      const existingCount = await Message.countDocuments({ room: roomId });
+      if (existingCount > 0) {
+        return res.status(403).json({ error: 'Wait for the recipient to accept your DM request' });
+      }
+    }
+
+    if (clientMsgId) {
+      const existing = await Message.findOne({ clientMsgId }).populate('sender', 'username profileImage').lean();
+      if (existing) {
+        const payload = {
+          ...existing,
+          id: (existing as any)._id.toString(),
+          roomId: (existing as any).room.toString(),
+          senderId: (existing as any).sender?._id?.toString() || (existing as any).sender.toString(),
+          sender: {
+            id: (existing as any).sender?._id?.toString() || req.user.id,
+            username: (existing as any).sender?.username || req.user.username,
+          },
+          senderUsername: (existing as any).sender?.username || req.user.username,
+        };
+        return res.json({ ok: true, message: payload });
+      }
+    }
+
+    // Resolve @mentions
+    const mentionedUsernames = parseMentions(trimmedText);
+    const mentionIds = await resolveMentionIds(mentionedUsernames, req.user.id);
+
+    const msg = await Message.create({
+      room: roomId,
+      sender: req.user.id,
+      text: trimmedText,
+      attachments: Array.isArray(attachments) ? attachments : [],
+      clientMsgId: clientMsgId || null,
+      replyTo: replyTo || null,
+      parentMessage: parentMessage || null,
+      forwardedFrom: forwardedFrom || null,
+      mentions: mentionIds,
+    });
+
+    const payload = {
+      ...msg.toClient(),
+      sender: { id: req.user.id, username: req.user.username },
+      senderUsername: req.user.username,
+      replyTo: msg.replyTo ? msg.replyTo.toString() : null,
+    };
+
+    // Invalidate room cache
+    cacheService.delete(`msgs:${roomId}:*`);
+
+    // Broadcast via Socket.IO if attached
+    const io = getIO();
+    if (io) {
+      io.to(roomId).emit('message:new', { roomId, message: payload });
+      if (parentMessage) {
+        io.to(roomId).emit('message:thread-reply', {
+          roomId,
+          parentMessageId: parentMessage,
+          reply: payload,
+        });
+      }
+
+      const memberIds = (room.members || [])
+        .map((m) => (m.user ? m.user.toString() : ''))
+        .filter((id) => id && id !== req.user.id);
+      const mentionIdStrings = new Set(mentionIds.map((id) => id.toString()));
+
+      for (const memberId of memberIds) {
+        io.to(`user:${memberId}`).emit('message:new', { roomId, message: payload });
+
+        if (!mentionIdStrings.has(memberId)) {
+          createNotification({
+            userId: memberId,
+            actorId: req.user.id,
+            type: room.isDM ? 'dm' : 'channel',
+            title: room.isDM ? `New DM from @${req.user.username}` : `#${room.name}: @${req.user.username}`,
+            message: trimmedText ? trimmedText.substring(0, 100) : 'Sent an attachment',
+            link: '/chat',
+            roomId,
+            messageId: msg._id,
+          }).catch((e) => console.error('[notification] error:', e.message));
+        }
+      }
+
+      for (const mentionedId of mentionIds) {
+        io.to(`user:${mentionedId.toString()}`).emit('message:mention', {
+          roomId,
+          messageId: msg._id.toString(),
+          fromUsername: req.user.username,
+          text: trimmedText.substring(0, 120),
+          roomName: room.name,
+        });
+        createNotification({
+          userId: mentionedId,
+          actorId: req.user.id,
+          type: 'mention',
+          title: `@${req.user.username} mentioned you in #${room.name}`,
+          message: trimmedText.substring(0, 100),
+          link: '/chat',
+          roomId,
+          messageId: msg._id,
+        }).catch((e) => console.error('[mention notification] error:', e.message));
+      }
+    }
+
+    res.status(201).json({ ok: true, message: payload });
+  } catch (err: any) {
+    if (err.code === 11000 && req.body?.clientMsgId) {
+      const existing = await Message.findOne({ clientMsgId: req.body.clientMsgId }).populate('sender', 'username profileImage').lean();
+      if (existing) {
+        const payload = {
+          ...existing,
+          id: (existing as any)._id.toString(),
+          roomId: (existing as any).room.toString(),
+          senderId: (existing as any).sender?._id?.toString() || (existing as any).sender.toString(),
+          sender: {
+            id: (existing as any).sender?._id?.toString() || req.user.id,
+            username: (existing as any).sender?.username || req.user.username,
+          },
+          senderUsername: (existing as any).sender?.username || req.user.username,
+        };
+        return res.json({ ok: true, message: payload });
+      }
+    }
+    console.error('[messages] post error:', err.message);
+    res.status(500).json({ error: err.message || 'Internal server error' });
   }
 });
 

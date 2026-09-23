@@ -258,10 +258,16 @@ export default function MessageList({
   }
 
   function getSenderName(msg) {
+    if (msg.senderUsername) {
+      return msg.senderUsername;
+    }
+    if (msg.sender?.username) {
+      return msg.sender.username;
+    }
     if (membersMap && msg.senderId && membersMap[msg.senderId]) {
       return membersMap[msg.senderId];
     }
-    return msg.sender?.username || 'Unknown';
+    return 'Unknown';
   }
 
   function getReplyToSender(msg) {
@@ -477,7 +483,17 @@ export default function MessageList({
             <div className="msg-footer">
               <span className="msg-time">{formatTime(m.createdAt)}</span>
               {m.reported && <span className="msg-reported">{'\u26A0'} reported</span>}
-              {mine && readStatus && (
+              {mine && m.status === 'sending' && (
+                <span className="read-receipt sending" title="Sending..." style={{ opacity: 0.7, fontSize: '0.75rem' }}>
+                  ⏳
+                </span>
+              )}
+              {mine && m.status === 'failed' && (
+                <span className="read-receipt failed text-red-500 font-bold" title="Failed to deliver">
+                  ⚠️
+                </span>
+              )}
+              {mine && (!m.status || m.status === 'sent') && readStatus && (
                 <span className={`read-receipt ${readStatus}`} title={readStatus}>
                   {readStatus === 'sent' && (
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">

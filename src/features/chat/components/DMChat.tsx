@@ -70,9 +70,13 @@ export default function DMChat({ room, messages, userId, onAccept, onRemove, onS
     );
   }
 
-  const partnerName = messages.find((m) => m.senderId !== userId)?.sender?.username
-    || room.partner?.username
-    || 'User';
+  const partnerName =
+    room.partner?.username ||
+    messages.find((m) => {
+      const sId = m.senderId ? String(m.senderId) : m.sender?._id ? String(m.sender._id) : m.sender?.id ? String(m.sender.id) : '';
+      return sId && sId !== String(userId);
+    })?.sender?.username ||
+    'User';
 
   return (
     <div className="dm-chat">
@@ -184,9 +188,17 @@ export default function DMChat({ room, messages, userId, onAccept, onRemove, onS
               lastDateLabel = dateLabel;
               showDateSep = true;
             }
-            const mine = m.senderId === userId;
+            const myIdStr = userId ? String(userId) : '';
+            const senderIdStr = m.senderId
+              ? String(m.senderId)
+              : m.sender?._id
+              ? String(m.sender._id)
+              : m.sender?.id
+              ? String(m.sender.id)
+              : '';
+            const mine = !!(myIdStr && senderIdStr && myIdStr === senderIdStr);
             return (
-              <div key={m.id} style={{ display: 'contents' }}>
+              <div key={m.id || m._id || m.clientMsgId} style={{ display: 'contents' }}>
                 {showDateSep && (
                   <div className="date-separator">
                     <span>{dateLabel}</span>
@@ -216,7 +228,11 @@ export default function DMChat({ room, messages, userId, onAccept, onRemove, onS
                   </>
                 )}
               </div>
-              <span className="dm-msg-time">{formatTime(m.createdAt)}</span>
+              <span className="dm-msg-time">
+                {formatTime(m.createdAt)}
+                {mine && m.status === 'sending' && ' · ⏳'}
+                {mine && m.status === 'failed' && ' · ⚠️'}
+              </span>
             </div>
           </div>
             );
