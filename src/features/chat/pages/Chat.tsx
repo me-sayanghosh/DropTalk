@@ -27,7 +27,7 @@ export default function Chat() {
   const showToast = toastCtx?.showToast;
   const [notifFilter, setNotifFilter] = useState('all');
   const {
-    user, logout, rooms, currentRoom, displayMessages, online, members,
+    user, logout, rooms, roomsLoading, currentRoom, displayMessages, online, members,
     showMembers, setShowMembers, showPresence, setShowPresence,
     typingUsers, presenceMap, readReceipts, threadMessage, setThreadMessage,
     threadCounts, keyStatus, currentInput, setCurrentInput,
@@ -450,6 +450,7 @@ export default function Chat() {
             mentionAlerts={mentionAlerts}
             onMarkAsRead={markRoomAsRead}
             onClearChat={clearRoomMessages}
+            loading={roomsLoading}
           />
         )}
       </aside>
@@ -721,6 +722,12 @@ export default function Chat() {
                     )}
                   </>
                 )
+              ) : roomsLoading ? (
+                <div className="empty-state">
+                  <div className="lazy-spinner" />
+                  <h3 style={{ marginTop: '1.25rem' }}>LAUNCHING CHANNELS</h3>
+                  <p>CONNECTING TO WORKSPACE // PLEASE WAIT</p>
+                </div>
               ) : (
                 <div className="empty-state">
                   <div className="empty-icon">

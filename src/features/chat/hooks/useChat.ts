@@ -38,6 +38,7 @@ export interface MentionAlert {
 export default function useChat() {
   const { user, logout } = useAuth();
   const [rooms, setRooms] = useState<Room[]>(() => cacheManager.getRoomsCache() || []);
+  const [roomsLoading, setRoomsLoading] = useState<boolean>(() => (cacheManager.getRoomsCache() || []).length === 0);
   const [currentRoom, setCurrentRoom] = useState<Room | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [online, setOnline] = useState<any[]>([]);
@@ -122,7 +123,10 @@ export default function useChat() {
           selectRoom(firstMemberRoom || fetchedRooms[0]);
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        setRoomsLoading(false);
+      });
   }, []);
 
   useEffect(() => {
@@ -966,6 +970,7 @@ export default function useChat() {
     user,
     logout,
     rooms,
+    roomsLoading,
     setRooms,
     currentRoom,
     messages,

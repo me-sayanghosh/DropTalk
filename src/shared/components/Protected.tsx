@@ -19,8 +19,14 @@ export function Protected({ children }: { children: ReactNode }) {
   if (!user) {
     return (
       <div className="lazy-suspense-fallback">
-        <div className="lazy-spinner" />
-        <span>Authenticating...</span>
+        <div className="bauhaus-loading-shapes" style={{ marginBottom: '1.25rem' }}>
+          <span className="shape-circle" />
+          <span className="shape-square" />
+          <span className="shape-triangle" />
+        </div>
+        <span style={{ fontSize: '13px', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+          AUTHENTICATING SECURE SESSION…
+        </span>
       </div>
     );
   }
@@ -28,8 +34,14 @@ export function Protected({ children }: { children: ReactNode }) {
   if (user.needsUsername) {
     return (
       <div className="lazy-suspense-fallback">
-        <div className="lazy-spinner" />
-        <span>Setting up account...</span>
+        <div className="bauhaus-loading-shapes" style={{ marginBottom: '1.25rem' }}>
+          <span className="shape-circle" />
+          <span className="shape-square" />
+          <span className="shape-triangle" />
+        </div>
+        <span style={{ fontSize: '13px', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+          SETTING UP ACCOUNT…
+        </span>
       </div>
     );
   }
