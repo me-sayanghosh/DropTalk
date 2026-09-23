@@ -31,18 +31,35 @@ function enqueueOffline(event: string, data: any): void {
   setOfflineQueue(queue);
 }
 
+export function isSocketConnected(): boolean {
+  return Boolean(socket && socket.connected);
+}
+
 function flushOfflineQueue(): void {
-  if (!socket || !socket.connected) return;
   const queue = getOfflineQueue();
   if (queue.length === 0) return;
 
   const sorted = queue.sort((a, b) => a.timestamp - b.timestamp);
+  const remaining: OfflineQueueItem[] = [];
+
   for (const item of sorted) {
-    socket.emit(item.event, item.data, (resp: any) => {
-      if (!resp?.ok) console.warn('offline queue send failed:', item.event, resp?.error);
-    });
+    if (socket && socket.connected) {
+      socket.emit(item.event, item.data, (resp: any) => {
+        if (!resp?.ok) console.warn('offline queue send failed:', item.event, resp?.error);
+      });
+    } else if (item.event === 'message:send' && item.data?.roomId) {
+      // Drain via HTTP when socket is not available
+      api
+        .post(`/rooms/${item.data.roomId}/messages`, item.data)
+        .catch((err) => {
+          console.warn('HTTP offline queue flush failed:', err.message);
+          remaining.push(item);
+        });
+    } else {
+      remaining.push(item);
+    }
   }
-  setOfflineQueue([]);
+  setOfflineQueue(remaining);
 }
 
 export function sendOffline(event: string, data: any): void {
@@ -53,9 +70,99 @@ export function sendOffline(event: string, data: any): void {
         enqueueOffline(event, data);
       }
     });
+  } else if (event === 'message:send' && data?.roomId) {
+    // Send via HTTP REST fallback instead of silently stalling in queue
+    api
+      .post(`/rooms/${data.roomId}/messages`, data)
+      .catch((err) => {
+        console.warn('HTTP fallback send failed, queuing offline:', err.message);
+        enqueueOffline(event, data);
+      });
   } else {
     enqueueOffline(event, data);
   }
+}
+
+/**
+ * Dual-transport sender for Room messages:
+ * Tries Socket.IO first with 2.5s timeout, falls back to HTTP REST API.
+ */
+export async function sendRoomMessage(payload: any): Promise<any> {
+  const currentSocket = getSocket();
+  if (currentSocket && currentSocket.connected) {
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const timeout = setTimeout(() => {
+        if (!settled) {
+          settled = true;
+          api
+            .post(`/rooms/${payload.roomId}/messages`, payload)
+            .then((res) => resolve(res.data?.message || res.data))
+            .catch(reject);
+        }
+      }, 2500);
+
+      currentSocket.emit('message:send', payload, (resp: any) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeout);
+        if (resp?.ok && resp?.message) {
+          resolve(resp.message);
+        } else if (resp?.error) {
+          reject(new Error(resp.error));
+        } else {
+          api
+            .post(`/rooms/${payload.roomId}/messages`, payload)
+            .then((res) => resolve(res.data?.message || res.data))
+            .catch(reject);
+        }
+      });
+    });
+  }
+
+  const res = await api.post(`/rooms/${payload.roomId}/messages`, payload);
+  return res.data?.message || res.data;
+}
+
+/**
+ * Dual-transport sender for Direct Messages:
+ * Tries Socket.IO first with 2.5s timeout, falls back to HTTP REST API.
+ */
+export async function sendDMMessageHttp(roomId: string, payload: any): Promise<any> {
+  const currentSocket = getSocket();
+  if (currentSocket && currentSocket.connected) {
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const timeout = setTimeout(() => {
+        if (!settled) {
+          settled = true;
+          api
+            .post(`/dm/${roomId}/messages`, payload)
+            .then((res) => resolve(res.data?.message || res.data))
+            .catch(reject);
+        }
+      }, 2500);
+
+      currentSocket.emit('message:send', { roomId, ...payload }, (resp: any) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeout);
+        if (resp?.ok && resp?.message) {
+          resolve(resp.message);
+        } else if (resp?.error) {
+          reject(new Error(resp.error));
+        } else {
+          api
+            .post(`/dm/${roomId}/messages`, payload)
+            .then((res) => resolve(res.data?.message || res.data))
+            .catch(reject);
+        }
+      });
+    });
+  }
+
+  const res = await api.post(`/dm/${roomId}/messages`, payload);
+  return res.data?.message || res.data;
 }
 
 function getLastSeenMap(): Record<string, string> {

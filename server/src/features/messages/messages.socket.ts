@@ -4,6 +4,7 @@ import { User } from '../auth/user.model';
 import { checkSocketRateLimit } from '../../shared/middleware/rateLimit';
 import { removeTyping } from '../presence/presence.service';
 import { createNotification } from '../notifications/notifications.service';
+import { cacheService } from '../../shared/cache/cache.service';
 
 const slowModeMap = new Map();
 
@@ -106,8 +107,13 @@ export function registerMessageHandlers(socket, io, { joined }) {
       const payload = {
         ...msg.toClient(),
         sender: { id: socket.user.id, username: socket.user.username },
+        senderUsername: socket.user.username,
         replyTo: msg.replyTo ? msg.replyTo.toString() : null,
       };
+
+      // Invalidate room messages cache
+      cacheService.delete(`msgs:${roomId}:*`);
+
       io.to(roomId).emit('message:new', { roomId, message: payload });
 
       // Notify each member of the room via their personal socket room
@@ -210,6 +216,8 @@ export function registerMessageHandlers(socket, io, { joined }) {
       msg.text = '';
       await msg.save();
 
+      cacheService.delete(`msgs:${roomId}:*`);
+
       io.to(roomId).emit('message:deleted', { roomId, messageId });
       ack?.({ ok: true });
     } catch (err) {
@@ -293,6 +301,7 @@ export function registerMessageHandlers(socket, io, { joined }) {
       });
 
       const payload = { ...msg.toClient(), sender: { id: socket.user.id, username: socket.user.username }, replyTo: msg.replyTo ? msg.replyTo.toString() : null };
+      cacheService.delete(`msgs:${roomId}:*`);
       io.to(roomId).emit('message:new', { roomId, message: payload });
       io.to(roomId).emit('message:thread-reply', {
         roomId,
@@ -338,6 +347,8 @@ export function registerMessageHandlers(socket, io, { joined }) {
 
       await msg.save();
 
+      cacheService.delete(`msgs:${roomId}:*`);
+
       const reactions = msg.reactions.map((r) => ({
         emoji: r.emoji,
         users: r.users.map((u) => u.toString()),
@@ -366,6 +377,8 @@ export function registerMessageHandlers(socket, io, { joined }) {
       msg.edited = true;
       msg.editedAt = new Date();
       await msg.save();
+
+      cacheService.delete(`msgs:${roomId}:*`);
 
       const payload = {
         messageId: msg._id.toString(),

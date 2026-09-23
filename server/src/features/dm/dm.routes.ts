@@ -251,7 +251,19 @@ router.get('/:roomId/messages', async (req, res) => {
     }
 
     const cap = Math.min(parseInt(limit as string, 10) || 50, 500);
-    const messages = await Message.find(query).sort({ createdAt: 1 }).limit(cap);
+    let messages;
+    if (after) {
+      messages = await Message.find(query)
+        .populate('sender', 'username profileImage')
+        .sort({ _id: 1 })
+        .limit(cap);
+    } else {
+      messages = await Message.find(query)
+        .populate('sender', 'username profileImage')
+        .sort({ _id: -1 })
+        .limit(cap);
+      messages = messages.reverse();
+    }
 
     // Filter deletedFor and enrich replyTo
     const filtered = messages.filter(
@@ -277,9 +289,126 @@ router.get('/:roomId/messages', async (req, res) => {
     }));
 
     res.json({ messages: result });
-  } catch (err) {
+  } catch (err: any) {
     console.error('[dm] messages error:', err.message);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * POST /api/dm/:roomId/messages
+ * Send a message in an accepted DM via HTTP (WebSocket fallback).
+ */
+router.post('/:roomId/messages', async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const userId = req.user.id;
+    const { text = '', attachments = [], clientMsgId, replyTo } = req.body || {};
+    const trimmedText = typeof text === 'string' ? text.trim() : '';
+
+    if (!roomId || (!trimmedText && (!attachments || attachments.length === 0))) {
+      return res.status(400).json({ error: 'message text or attachment required' });
+    }
+
+    const room = await Room.findOne({
+      _id: roomId,
+      isDM: true,
+      'members.user': userId,
+    });
+    if (!room) return res.status(404).json({ error: 'DM not found' });
+
+    if (room.dmStatus === 'pending') {
+      if (room.dmInitiator?.toString() !== userId) {
+        return res.status(403).json({ error: 'DM request is pending acceptance' });
+      }
+      const existingCount = await Message.countDocuments({ room: roomId });
+      if (existingCount > 0) {
+        return res.status(403).json({ error: 'Wait for the recipient to accept your DM request' });
+      }
+    }
+
+    if (clientMsgId) {
+      const existing = await Message.findOne({ clientMsgId }).populate('sender', 'username profileImage').lean();
+      if (existing) {
+        const payload = {
+          ...existing,
+          id: (existing as any)._id.toString(),
+          roomId: (existing as any).room.toString(),
+          senderId: (existing as any).sender?._id?.toString() || (existing as any).sender.toString(),
+          sender: {
+            id: (existing as any).sender?._id?.toString() || userId,
+            username: (existing as any).sender?.username || req.user.username,
+          },
+          senderUsername: (existing as any).sender?.username || req.user.username,
+        };
+        return res.json({ ok: true, message: payload });
+      }
+    }
+
+    const msg = await Message.create({
+      room: roomId,
+      sender: userId,
+      text: trimmedText,
+      attachments: Array.isArray(attachments) ? attachments : [],
+      clientMsgId: clientMsgId || null,
+      replyTo: replyTo || null,
+    });
+
+    const payload = {
+      ...msg.toClient(),
+      sender: { id: userId, username: req.user.username },
+      senderUsername: req.user.username,
+    };
+
+    const io = getIO();
+    const roomIdStr = room._id.toString();
+    io?.to(roomIdStr).emit('message:new', {
+      roomId: roomIdStr,
+      message: payload,
+    });
+
+    // Notify partner
+    const partnerMember = room.members.find((m) => m.user.toString() !== userId);
+    if (partnerMember) {
+      const partnerId = partnerMember.user.toString();
+      io?.to(`user:${partnerId}`).emit('message:new', {
+        roomId: roomIdStr,
+        message: payload,
+      });
+
+      createNotification({
+        userId: partnerId,
+        actorId: userId,
+        type: 'dm',
+        title: `New DM from @${req.user.username}`,
+        message: trimmedText ? trimmedText.substring(0, 100) : 'Sent an attachment',
+        link: '/chat',
+        roomId: room._id,
+        messageId: msg._id,
+      }).catch((e) => console.error('[dm notification] error:', e.message));
+    }
+
+    res.status(201).json({ ok: true, message: payload });
+  } catch (err: any) {
+    if (err.code === 11000 && req.body?.clientMsgId) {
+      const existing = await Message.findOne({ clientMsgId: req.body.clientMsgId }).populate('sender', 'username profileImage').lean();
+      if (existing) {
+        const payload = {
+          ...existing,
+          id: (existing as any)._id.toString(),
+          roomId: (existing as any).room.toString(),
+          senderId: (existing as any).sender?._id?.toString() || (existing as any).sender.toString(),
+          sender: {
+            id: (existing as any).sender?._id?.toString() || req.user.id,
+            username: (existing as any).sender?.username || req.user.username,
+          },
+          senderUsername: (existing as any).sender?.username || req.user.username,
+        };
+        return res.json({ ok: true, message: payload });
+      }
+    }
+    console.error('[dm] post message error:', err.message);
+    res.status(500).json({ error: err.message || 'Internal server error' });
   }
 });
 

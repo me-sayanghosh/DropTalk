@@ -108,7 +108,9 @@ export interface Message {
   id: string;
   _id?: string;
   room: string;
+  roomId?: string;
   sender: User | string;
+  senderId?: string;
   senderUsername?: string;
   senderName?: string;
   senderProfileImage?: string;
@@ -131,6 +133,7 @@ export interface Message {
   forwardedFrom?: ForwardedFrom;
   mentions?: string[];
   reactions?: Reaction[];
+  status?: 'sending' | 'sent' | 'delivered' | 'read' | 'failed' | string;
   createdAt?: string;
   updatedAt?: string;
   encrypted?: boolean;

@@ -26,10 +26,23 @@ export const CORS_ORIGINS = (
     return callback(null, true);
   }
 
-  // Allow any Vercel production or preview domain (*.vercel.app)
+  if (process.env.CORS_ORIGIN === '*' || process.env.NODE_ENV !== 'production') {
+    return callback(null, true);
+  }
+
+  // Allow common deployment platforms (Vercel, Render, Railway, Fly, Netlify)
   try {
     const parsed = new URL(origin);
-    if (parsed.hostname.endsWith('.vercel.app') || parsed.hostname === 'vercel.app') {
+    const host = parsed.hostname;
+    if (
+      host.endsWith('.vercel.app') ||
+      host === 'vercel.app' ||
+      host.endsWith('.onrender.com') ||
+      host.endsWith('.railway.app') ||
+      host.endsWith('.up.railway.app') ||
+      host.endsWith('.fly.dev') ||
+      host.endsWith('.netlify.app')
+    ) {
       return callback(null, true);
     }
   } catch {}
