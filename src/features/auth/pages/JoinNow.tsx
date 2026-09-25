@@ -2,9 +2,10 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useGoogleLogin } from '@react-oauth/google';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, ArrowRight, ShieldCheck, KeyRound, RotateCcw, CheckCircle2 } from 'lucide-react';
+import { Mail, ArrowRight, ArrowLeft, ShieldCheck, KeyRound, RotateCcw, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../../../shared/context/AuthContext';
 import { API_BASE, GOOGLE_CLIENT_ID } from '../../../shared/utils/constants';
 
@@ -241,6 +242,14 @@ export default function JoinNow() {
       <div className="bauhaus-auth-bg-square" />
       <div className="bauhaus-auth-bg-triangle" />
 
+      {/* Top Back Navigation */}
+      <div className="bauhaus-auth-nav-container">
+        <Link href="/" className="bauhaus-auth-top-back" title="Return to Homepage">
+          <ArrowLeft size={15} strokeWidth={2.5} />
+          <span>BACK TO HOME</span>
+        </Link>
+      </div>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -464,6 +473,19 @@ export default function JoinNow() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Back to Home Section */}
+        <div className="bauhaus-auth-back-section">
+          <div className="bauhaus-divider">
+            <div className="bauhaus-divider-line" />
+            <span className="bauhaus-divider-text">OR</span>
+            <div className="bauhaus-divider-line" />
+          </div>
+          <Link href="/" className="bauhaus-back-home-btn">
+            <ArrowLeft size={15} strokeWidth={2.5} />
+            <span>BACK TO HOME</span>
+          </Link>
+        </div>
           </>
         )}
       </motion.div>
