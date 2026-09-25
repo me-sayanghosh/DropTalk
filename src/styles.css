@@ -4800,11 +4800,16 @@ button {
   color: var(--color-black);
   transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
   text-align: left;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
-.settings-nav-item:hover {
-  background: var(--bg-canvas);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+@media (hover: hover) and (pointer: fine) {
+  .settings-nav-item:hover {
+    background: var(--bg-canvas);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
 }
 .settings-nav-item:active {
   transform: translate(2px, 2px);
@@ -4825,10 +4830,20 @@ button {
 .settings-nav-logout {
   border-color: var(--color-red);
   color: var(--color-red);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
-.settings-nav-logout:hover {
+@media (hover: hover) and (pointer: fine) {
+  .settings-nav-logout:hover {
+    background: var(--color-red);
+    color: #FFFFFF;
+  }
+}
+.settings-nav-logout:active {
   background: var(--color-red);
   color: #FFFFFF;
+  transform: translate(2px, 2px);
+  box-shadow: none;
 }
 
 /* Main Content Panel */
@@ -7312,6 +7327,8 @@ kbd, .kbd-group kbd {
     margin-right: 8px;
     flex-shrink: 0;
     transition: all 0.1s ease;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
   .mobile-back-btn:active {
     transform: translate(2px, 2px);
