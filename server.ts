@@ -70,9 +70,15 @@ ensureNextCommonJs();
 const app = createApp({ disableCSP: true });
 
 // Next.js handles all non-API requests (pages, static assets, etc.)
-app.all('*', (req, res) => {
-  ensureNextCommonJs();
-  return handle(req, res);
+app.all('*', async (req, res) => {
+  try {
+    await handle(req, res);
+  } catch (err) {
+    console.error('[next] request handler error:', (err as Error)?.message || err);
+    if (!res.headersSent) {
+      res.status(500).end('Internal Server Error');
+    }
+  }
 });
 
 try {

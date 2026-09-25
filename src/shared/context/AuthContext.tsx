@@ -29,7 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [bootstrapped, setBootstrapped] = useState<boolean>(false);
 
   useEffect(() => {
-    let active = true;
+    let isSubscribed = true;
     const token = getAccessToken();
     setAccessToken(token);
 
@@ -38,43 +38,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Safety timeout: never hang on loading screen longer than 3 seconds
+    // Safety fallback: maximum 1.5 seconds loading screen
     const safetyTimer = setTimeout(() => {
-      if (active) {
-        setBootstrapped(true);
-      }
-    }, 3000);
+      setBootstrapped(true);
+    }, 1500);
 
     api
-      .get<{ user: User }>('/auth/me', { timeout: 3000 })
+      .get<{ user: User }>('/auth/me', { timeout: 2500 })
       .then((r) => r.data)
       .then((data) => {
-        if (!active) return;
-        setUser(data.user);
-        setAccessToken(token);
-        connectSocket(token);
+        if (!isSubscribed) return;
+        if (data?.user) {
+          setUser(data.user);
+          setAccessToken(token);
+          connectSocket(token);
+        }
       })
       .catch((err) => {
-        if (!active) return;
-        console.warn('Session verification notice:', err?.response?.data?.error || err.message);
-        // Only clear tokens if the server explicitly rejected the token as unauthorized (401)
+        console.warn('[auth] session verification notice:', err?.response?.data?.error || err.message);
         if (err?.response?.status === 401) {
           clearTokens();
           clearAllCryptoKeys();
-          setAccessToken(null);
-          setUser(null);
+          if (isSubscribed) {
+            setAccessToken(null);
+            setUser(null);
+          }
         }
       })
       .finally(() => {
         clearTimeout(safetyTimer);
-        if (active) {
-          setBootstrapped(true);
-        }
+        setBootstrapped(true);
       });
 
     return () => {
-      active = false;
-      clearTimeout(safetyTimer);
+      isSubscribed = false;
     };
   }, []);
 
