@@ -51,8 +51,14 @@ export function createApp({ disableCSP = false } = {}) {
   app.use('/uploads', express.static(
     process.env.VERCEL ? '/tmp/uploads' : path.join(process.cwd(), 'uploads')
   ));
+  app.use(express.static(path.join(process.cwd(), 'public')));
 
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
+
+  // Silently handle Chrome DevTools auto-discovery probe so it does not spam 404s in console
+  app.get('/.well-known/appspecific/com.chrome.devtools.json', (_req, res) => {
+    res.status(204).end();
+  });
 
   const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,

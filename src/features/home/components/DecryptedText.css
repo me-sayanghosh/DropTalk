@@ -1,0 +1,136 @@
+.cipher-text-container {
+  display: inline-flex;
+  align-items: baseline;
+  position: relative;
+  white-space: nowrap;
+  user-select: none;
+  cursor: pointer;
+}
+
+.cipher-text-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.cipher-char-wrapper {
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.cipher-char {
+  display: inline-block;
+  position: relative;
+  transition: color 0.15s ease, opacity 0.15s ease;
+  vertical-align: baseline;
+}
+
+.cipher-char.is-scrambling {
+  min-width: 0.58em;
+  text-align: center;
+  color: #1040C0;
+  opacity: 0.82;
+  filter: brightness(1.25);
+  text-shadow: 0 0 10px rgba(16, 64, 192, 0.4);
+}
+
+[data-theme="dark"] .cipher-char.is-scrambling {
+  color: #3B82F6;
+  text-shadow: 0 0 12px rgba(59, 130, 246, 0.55);
+}
+
+/* Leading cipher decoder character (active decryption head) */
+.cipher-char.is-lead {
+  color: #F0C020 !important; /* Bauhaus Yellow */
+  opacity: 1 !important;
+  text-shadow: 0 0 14px rgba(240, 192, 32, 0.8) !important;
+  filter: brightness(1.3) !important;
+}
+
+/* Successfully decrypted and locked character */
+.cipher-char.is-resolved {
+  color: var(--color-blue, #1040C0);
+  opacity: 1;
+}
+
+/* Snap-lock flash animation when a character resolves */
+.cipher-char.just-locked {
+  animation: cipher-lock-flash 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes cipher-lock-flash {
+  0% {
+    transform: scale(1.15);
+    color: #F0C020; /* Bauhaus Yellow flash */
+    text-shadow: 0 0 12px rgba(240, 192, 32, 0.7);
+  }
+  45% {
+    transform: scale(1.04);
+    color: #3B82F6;
+  }
+  100% {
+    transform: scale(1);
+    color: var(--color-blue, #1040C0);
+    text-shadow: none;
+  }
+}
+
+/* Smooth shrink for characters collapsing when moving from a longer word to shorter word */
+.cipher-char.is-collapsing {
+  opacity: 0;
+  max-width: 0;
+  transform: scale(0.6);
+  pointer-events: none;
+  overflow: hidden;
+  transition: opacity 0.2s ease, max-width 0.25s ease, transform 0.2s ease;
+}
+
+/* Expanding character slot when word grows */
+.cipher-char.is-entering {
+  animation: cipher-slot-enter 0.2s ease forwards;
+}
+
+@keyframes cipher-slot-enter {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  100% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+}
+
+/* Subtle trailing terminal block cursor */
+.cipher-cursor {
+  display: inline-block;
+  margin-left: 3px;
+  font-weight: 300;
+  font-size: 0.88em;
+  color: var(--color-blue, #1040C0);
+  vertical-align: baseline;
+  user-select: none;
+  transition: color 0.15s ease, opacity 0.15s ease;
+}
+
+.cipher-cursor.is-active {
+  color: #F0C020;
+  text-shadow: 0 0 10px rgba(240, 192, 32, 0.6);
+  opacity: 1;
+}
+
+.cipher-cursor.is-idle {
+  animation: cipher-cursor-blink 1s steps(2, start) infinite;
+  opacity: 0.7;
+}
+
+@keyframes cipher-cursor-blink {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 0; }
+}
