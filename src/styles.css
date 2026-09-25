@@ -251,6 +251,7 @@ button {
   align-items: center;
   gap: 12px;
   text-decoration: none;
+  flex-shrink: 0;
 }
 
 .bauhaus-logo-shapes {
@@ -319,6 +320,12 @@ button {
   display: flex;
   align-items: center;
   gap: 1rem;
+  flex-shrink: 0;
+}
+
+.bauhaus-nav-actions .bauhaus-btn {
+  width: auto;
+  white-space: nowrap;
 }
 
 /* Hero Section */
@@ -7822,14 +7829,66 @@ kbd, .kbd-group kbd {
     flex-direction: column;
     width: 100%;
   }
-  .bauhaus-btn {
+  .bauhaus-cta-actions .bauhaus-btn {
     width: 100%;
     justify-content: center;
   }
+
+  /* Bauhaus Landing Navigation Mobile */
+  .bauhaus-nav {
+    padding: 0.75rem 1rem;
+  }
+  .bauhaus-logo {
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .bauhaus-logo-text {
+    font-size: 1.15rem;
+  }
+  .bauhaus-nav-actions {
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+  .bauhaus-nav-actions .bauhaus-btn.sm {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+  }
 }
 
-
 @media (max-width: 480px) {
+  .bauhaus-nav {
+    padding: 0.6rem 0.75rem;
+  }
+  .bauhaus-logo {
+    gap: 6px;
+  }
+  .bauhaus-logo-shapes .b-circle,
+  .bauhaus-logo-shapes .b-square {
+    width: 11px;
+    height: 11px;
+  }
+  .bauhaus-logo-shapes .b-triangle {
+    border-left-width: 6px;
+    border-right-width: 6px;
+    border-bottom-width: 11px;
+  }
+  .bauhaus-logo-text {
+    font-size: 1rem;
+    letter-spacing: -0.02em;
+  }
+  .bauhaus-nav-actions {
+    gap: 6px;
+  }
+  .bauhaus-nav-actions .bauhaus-btn.sm {
+    padding: 5px 8px;
+    font-size: 0.7rem;
+    gap: 4px;
+  }
+  .bauhaus-nav-actions .bauhaus-btn.sm svg {
+    width: 13px;
+    height: 13px;
+  }
+
   .msg {
     max-width: 92% !important;
   }
