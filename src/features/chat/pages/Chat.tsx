@@ -351,6 +351,8 @@ export default function Chat() {
             userId={user?.id}
             loading={dmLoading}
             onOpenSearch={() => setShowQuickSwitcher(true)}
+            onOpenNotifications={() => { router.push('/notifications'); setNavRailTab('notifications'); setMobileActiveView('chat'); }}
+            unreadNotifCount={unreadCount}
           />
         ) : (
           <Channels
@@ -363,6 +365,8 @@ export default function Chat() {
             pendingRooms={pendingRooms}
             onOpenCreate={() => setShowCreateModal(true)}
             onOpenSearch={() => setShowQuickSwitcher(true)}
+            onOpenNotifications={() => { router.push('/notifications'); setNavRailTab('notifications'); setMobileActiveView('chat'); }}
+            unreadNotifCount={unreadCount}
             unreadCounts={unreadCounts}
             mentionAlerts={mentionAlerts}
             onMarkAsRead={markRoomAsRead}
