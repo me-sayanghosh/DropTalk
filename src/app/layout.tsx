@@ -59,6 +59,44 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+        {/* Auto-recover from stale chunks or server restarts */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                function tryReload() {
+                  try {
+                    var key = '__droptalk_stale_chunk_reload__';
+                    var last = sessionStorage.getItem(key);
+                    var now = Date.now();
+                    if (!last || now - Number(last) > 8000) {
+                      sessionStorage.setItem(key, String(now));
+                      window.location.reload();
+                    }
+                  } catch (e) {}
+                }
+
+                // Catch script/link tag load failures (404/MIME errors) in capture phase
+                window.addEventListener('error', function(e) {
+                  if (e.target && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK')) {
+                    var src = e.target.src || e.target.href || '';
+                    if (src.indexOf('/_next/static/') !== -1) {
+                      tryReload();
+                    }
+                  }
+                }, true);
+
+                // Catch dynamic import ChunkLoadErrors
+                window.addEventListener('unhandledrejection', function(e) {
+                  var reason = e.reason && (e.reason.message || String(e.reason));
+                  if (reason && (reason.indexOf('ChunkLoadError') !== -1 || reason.indexOf('Loading chunk') !== -1)) {
+                    tryReload();
+                  }
+                });
+              })();
+            `,
+          }}
+        />
       </head>
       <body>
         <Providers>{children}</Providers>
