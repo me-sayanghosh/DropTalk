@@ -3776,8 +3776,8 @@ button {
   text-transform: uppercase;
 }
 
-/* Panel 4: Side Panels (AI Copilot, Members, Threads) */
-.members-panel, .thread-panel, .ai-panel {
+/* Panel 4: Side Panels (Members, Threads) */
+.members-panel, .thread-panel {
   width: 340px;
   min-width: 300px;
   max-width: 380px;
@@ -3830,69 +3830,6 @@ button {
 .panel-close-btn:active {
   transform: translate(2px, 2px);
   box-shadow: none;
-}
-
-.ai-panel-header {
-  padding: 1rem 1.25rem;
-  background: var(--color-red);
-  color: #FFFFFF;
-  border-bottom: 4px solid var(--color-black);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.ai-panel-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 1.1rem;
-  font-weight: 900;
-  color: #FFFFFF;
-}
-.ai-panel-title h3 {
-  margin: 0;
-  color: #FFFFFF;
-}
-
-.ai-close-btn {
-  width: 28px;
-  height: 28px;
-  background: #FFFFFF;
-  color: #121212;
-  border: 2px solid var(--color-black);
-  box-shadow: var(--shadow-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-.ai-close-btn:active { transform: translate(2px, 2px); box-shadow: none; }
-
-.ai-panel-content {
-  flex: 1;
-  padding: 1.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-  overflow-y: auto;
-}
-
-.ai-section {
-  background: var(--bg-canvas);
-  border: 3px solid var(--color-black);
-  box-shadow: var(--shadow-sm);
-  padding: 1.2rem;
-}
-
-.ai-section-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 900;
-  font-size: 0.85rem;
-  margin-bottom: 0.8rem;
-  text-transform: uppercase;
 }
 
 /* DMChat View */
@@ -7266,7 +7203,7 @@ kbd, .kbd-group kbd {
   .bauhaus-footer-grid {
     grid-template-columns: 1fr;
   }
-  .members-panel, .thread-panel, .ai-panel {
+  .members-panel, .thread-panel {
     width: 300px;
   }
 }
@@ -7442,8 +7379,8 @@ kbd, .kbd-group kbd {
     justify-content: center;
   }
 
-  /* ── 4. Fullscreen Mobile Side Panels (Thread, Members, AI) ── */
-  .members-panel, .thread-panel, .ai-panel {
+  /* ── 4. Fullscreen Mobile Side Panels (Thread, Members) ── */
+  .members-panel, .thread-panel {
     position: fixed !important;
     inset: 0 !important;
     width: 100% !important;

@@ -6,12 +6,10 @@ import { formatBadgeCount } from '../utils/dateUtils';
 
 export interface NavRailProps {
   activeTab?: 'chat' | 'dm' | 'calls' | 'notifications' | 'settings';
-  showAIPanel?: boolean;
   unreadCount?: number;
   pendingCount?: number;
   onCreateChannel?: () => void;
   onNotificationsClick?: () => void;
-  onAIToggle?: () => void;
   onCallsClick?: () => void;
   onChannelsClick?: () => void;
   onDMClick?: () => void;
@@ -22,12 +20,10 @@ export interface NavRailProps {
 
 export const NavRail: React.FC<NavRailProps> = ({
   activeTab,
-  showAIPanel = false,
   unreadCount = 0,
   pendingCount = 0,
   onCreateChannel,
   onNotificationsClick,
-  onAIToggle,
   onCallsClick,
   onChannelsClick,
   onDMClick,
@@ -39,7 +35,6 @@ export const NavRail: React.FC<NavRailProps> = ({
 
   const handleCreate = onCreateChannel || (() => router.push('/channels?openCreate=true'));
   const handleNotif = onNotificationsClick || (() => router.push('/notifications'));
-  const handleAI = onAIToggle || (() => router.push('/channels?openAI=true'));
   const handleCalls = onCallsClick || (() => router.push('/calls'));
   const handleChannels = onChannelsClick || (() => router.push('/channels'));
   const handleDM = onDMClick || (() => router.push('/dm'));
@@ -80,19 +75,6 @@ export const NavRail: React.FC<NavRailProps> = ({
 
       {/* Middle Section */}
       <div className="rail-middle">
-        {/* AI Copilot */}
-        <button
-          className={`rail-btn ${showAIPanel ? 'active' : ''}`}
-          onClick={handleAI}
-          title="AI Copilot"
-          aria-label="AI Copilot"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
-            <path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/>
-          </svg>
-        </button>
-
         {/* Calls */}
         <button
           className={`rail-btn ${activeTab === 'calls' ? 'active' : ''}`}
