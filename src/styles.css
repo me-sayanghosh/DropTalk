@@ -363,10 +363,12 @@ button {
 }
 
 .bauhaus-hero-title {
-  font-size: clamp(2.5rem, 5.5vw, 4.8rem);
+  font-size: clamp(3.2rem, 6.5vw, 5.2rem);
   font-weight: 900;
-  line-height: 0.92;
+  line-height: 0.93;
+  letter-spacing: -0.035em;
   margin-bottom: 1.5rem;
+  text-transform: uppercase;
 }
 
 .bauhaus-hero-highlight {
@@ -7807,34 +7809,7 @@ kbd, .kbd-group kbd {
 }
 
 @media (max-width: 640px) {
-  .bauhaus-features-grid {
-    grid-template-columns: 1fr;
-  }
-  .bauhaus-steps-grid {
-    grid-template-columns: 1fr;
-  }
-  .bauhaus-stats-grid {
-    grid-template-columns: 1fr;
-  }
-  .bauhaus-hero {
-    padding: 2rem 1rem 3rem;
-  }
-  .bauhaus-hero-title {
-    font-size: 2.2rem;
-  }
-  .bauhaus-hero-lead {
-    font-size: 1rem;
-  }
-  .bauhaus-cta-actions {
-    flex-direction: column;
-    width: 100%;
-  }
-  .bauhaus-cta-actions .bauhaus-btn {
-    width: 100%;
-    justify-content: center;
-  }
-
-  /* Bauhaus Landing Navigation Mobile */
+  /* ── 1. Navbar Mobile ── */
   .bauhaus-nav {
     padding: 0.75rem 1rem;
   }
@@ -7852,6 +7827,375 @@ kbd, .kbd-group kbd {
   .bauhaus-nav-actions .bauhaus-btn.sm {
     padding: 6px 12px;
     font-size: 0.75rem;
+  }
+
+  /* ── 2. Hero Section ── */
+  .bauhaus-hero {
+    padding: 2.25rem 1rem 2.5rem;
+  }
+  .bauhaus-hero-grid {
+    gap: 2rem;
+  }
+  .bauhaus-stamp {
+    font-size: 0.72rem;
+    padding: 3px 8px;
+    margin-bottom: 0.85rem;
+  }
+  .bauhaus-hero-title {
+    font-size: clamp(2.6rem, 9.5vw, 3.5rem);
+    line-height: 0.95;
+    letter-spacing: -0.035em;
+    margin-bottom: 1rem;
+  }
+  .bauhaus-hero-lead {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-bottom: 1.35rem;
+  }
+  .bauhaus-hero-cta-group {
+    flex-direction: column;
+    width: 100%;
+    gap: 0.65rem;
+    margin-bottom: 1.5rem;
+  }
+  .bauhaus-hero-cta-group .bauhaus-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 18px;
+    font-size: 0.85rem;
+  }
+  .bauhaus-specs-bar {
+    gap: 0.85rem;
+    padding-top: 1rem;
+  }
+  .bauhaus-spec-item {
+    font-size: 0.72rem;
+    gap: 6px;
+  }
+  .bauhaus-art-poster {
+    height: 260px;
+    border-width: 3px;
+    box-shadow: var(--shadow-md);
+  }
+  .bauhaus-art-circle {
+    width: 140px;
+    height: 140px;
+    top: -30px;
+    right: -20px;
+    border-width: 3px;
+  }
+  .bauhaus-art-square {
+    width: 110px;
+    height: 110px;
+    bottom: -30px;
+    left: -20px;
+    border-width: 3px;
+  }
+  .bauhaus-art-triangle {
+    border-left-width: 50px;
+    border-right-width: 50px;
+    border-bottom-width: 80px;
+    top: 30px;
+    left: 10px;
+  }
+  .bauhaus-art-badge-1 {
+    top: 12px;
+    left: 12px;
+    padding: 5px 8px;
+    border-width: 2px;
+  }
+  .bauhaus-art-badge-1 .b-num {
+    font-size: 1.1rem;
+  }
+  .bauhaus-art-badge-1 .b-lbl {
+    font-size: 0.58rem;
+  }
+  .bauhaus-art-badge-2 {
+    bottom: 12px;
+    right: 12px;
+    padding: 5px 8px;
+    border-width: 2px;
+  }
+  .bauhaus-art-badge-2 .b-lbl {
+    font-size: 0.65rem;
+  }
+  .bauhaus-art-center-card {
+    width: 180px;
+    padding: 0.85rem;
+    border-width: 3px;
+  }
+  .b-center-header {
+    font-size: 0.72rem;
+    padding-bottom: 4px;
+    margin-bottom: 6px;
+  }
+  .b-line {
+    height: 8px;
+  }
+
+  /* ── 3. Stats Band: 2x2 Grid ── */
+  .bauhaus-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    divide-x: none !important;
+  }
+  .bauhaus-stat-cell {
+    padding: 1.25rem 0.75rem;
+    border-right: none;
+  }
+  .bauhaus-stat-cell:nth-child(odd) {
+    border-right: 3px solid var(--color-black);
+  }
+  .bauhaus-stat-cell:nth-child(1),
+  .bauhaus-stat-cell:nth-child(2) {
+    border-bottom: 3px solid var(--color-black);
+  }
+  .bauhaus-stat-val {
+    font-size: 1.75rem;
+    margin-bottom: 3px;
+  }
+  .bauhaus-stat-label {
+    font-size: 0.72rem;
+    letter-spacing: 0.05em;
+  }
+  .bauhaus-stat-sub {
+    font-size: 0.66rem;
+    margin-top: 2px;
+  }
+
+  /* ── 4. General Section Wrappers ── */
+  .bauhaus-section {
+    padding: 2.75rem 1rem;
+  }
+  .bauhaus-section-header {
+    margin: 0 auto 1.75rem;
+  }
+  .bauhaus-section-tag {
+    font-size: 0.7rem;
+    padding: 3px 8px;
+    margin-bottom: 0.5rem;
+  }
+  .bauhaus-section-title {
+    font-size: 1.55rem;
+    line-height: 1.08;
+    margin-bottom: 0.5rem;
+  }
+  .bauhaus-section-subtitle {
+    font-size: 0.85rem;
+    line-height: 1.45;
+  }
+
+  /* ── 5. Features Grid ── */
+  .bauhaus-features-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  .bauhaus-card {
+    padding: 1.15rem 1rem;
+    border-width: 3px;
+    box-shadow: var(--shadow-md);
+  }
+  .bauhaus-card:hover {
+    transform: none;
+    box-shadow: var(--shadow-md);
+  }
+  .bauhaus-card-art {
+    height: 80px;
+    margin-bottom: 0.85rem;
+    border-width: 2px;
+  }
+  .bauhaus-card-art svg {
+    max-height: 60px;
+    max-width: 140px;
+  }
+  .bauhaus-card-meta {
+    gap: 8px;
+    margin-bottom: 0.4rem;
+  }
+  .bauhaus-icon-box {
+    width: 30px;
+    height: 30px;
+    border-width: 2px;
+  }
+  .bauhaus-card-title {
+    font-size: 0.95rem;
+  }
+  .bauhaus-card-desc {
+    font-size: 0.82rem;
+    line-height: 1.4;
+  }
+
+  /* ── 6. Steps Section ── */
+  .bauhaus-steps-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  .bauhaus-step-card {
+    padding: 1.75rem 1rem 1rem;
+    border-width: 3px;
+    box-shadow: var(--shadow-md);
+  }
+  .bauhaus-step-connector {
+    display: none;
+  }
+  .bauhaus-diamond-wrap {
+    top: -16px;
+    left: 16px;
+  }
+  .bauhaus-diamond {
+    width: 34px;
+    height: 34px;
+    border-width: 2px;
+  }
+  .bauhaus-diamond-text {
+    font-size: 0.85rem;
+  }
+  .bauhaus-step-title {
+    font-size: 0.95rem;
+    margin-bottom: 0.35rem;
+  }
+  .bauhaus-step-desc {
+    font-size: 0.82rem;
+    line-height: 1.4;
+  }
+
+  /* ── 7. Security Band ── */
+  .bauhaus-security-band {
+    padding: 2.75rem 1rem;
+    border-width: 3px;
+  }
+  .bauhaus-security-grid {
+    grid-template-columns: 1fr;
+    gap: 1.75rem;
+  }
+  .bauhaus-security-title {
+    font-size: 1.55rem;
+    line-height: 1.08;
+    margin-bottom: 0.75rem;
+  }
+  .bauhaus-security-desc {
+    font-size: 0.86rem;
+    line-height: 1.45;
+    margin-bottom: 1.25rem;
+  }
+  .bauhaus-security-list {
+    gap: 0.65rem;
+  }
+  .bauhaus-security-item {
+    font-size: 0.82rem;
+    gap: 8px;
+  }
+  .bauhaus-shield-frame {
+    padding: 1.25rem 0.75rem;
+    border-width: 3px;
+    box-shadow: var(--shadow-md);
+  }
+
+  /* ── 8. Mock Chat Demo ── */
+  .bauhaus-mock-chat {
+    border-width: 3px;
+    box-shadow: var(--shadow-md);
+  }
+  .bauhaus-mock-header {
+    padding: 8px 12px;
+  }
+  .bauhaus-mock-title {
+    font-size: 0.75rem;
+  }
+  .bauhaus-mock-badge {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+  }
+  .bauhaus-mock-channel-bar {
+    padding: 8px 12px;
+  }
+  .bauhaus-channel-tag {
+    font-size: 0.8rem;
+  }
+  .bauhaus-mock-feed {
+    padding: 12px 10px;
+    min-height: 180px;
+  }
+  .bauhaus-mock-input-row {
+    padding: 6px 8px;
+  }
+  .bauhaus-mock-input-field {
+    font-size: 0.75rem;
+    padding: 6px 8px;
+  }
+  .bauhaus-mock-send-btn {
+    padding: 0 10px;
+    font-size: 0.75rem;
+  }
+
+  /* ── 9. CTA Band ── */
+  .bauhaus-cta-band {
+    padding: 2.75rem 1rem;
+    border-width: 3px;
+  }
+  .bauhaus-cta-title {
+    font-size: 1.6rem;
+    line-height: 1.08;
+    margin-bottom: 0.75rem;
+  }
+  .bauhaus-cta-sub {
+    font-size: 0.88rem;
+    line-height: 1.45;
+    margin-bottom: 1.5rem;
+  }
+  .bauhaus-cta-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  .bauhaus-cta-actions .bauhaus-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 18px;
+    font-size: 0.85rem;
+  }
+
+  /* ── 10. Footer ── */
+  .bauhaus-footer {
+    padding: 2.5rem 1rem 1.5rem;
+  }
+  .bauhaus-footer-grid {
+    grid-template-columns: 1fr;
+    gap: 1.75rem;
+    margin-bottom: 1.75rem;
+  }
+  .bauhaus-footer-brand {
+    margin-bottom: 0;
+  }
+  .bauhaus-footer-title {
+    font-size: 1.2rem;
+    margin: 8px 0 6px;
+  }
+  .bauhaus-footer-tagline {
+    font-size: 0.82rem;
+    line-height: 1.4;
+  }
+  .bauhaus-footer-links {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem 1rem;
+  }
+  .bauhaus-footer-col:nth-child(3) {
+    grid-column: span 2;
+  }
+  .bauhaus-footer-col h4 {
+    font-size: 0.78rem;
+    margin-bottom: 0.65rem;
+  }
+  .bauhaus-footer-col a {
+    font-size: 0.8rem;
+    margin-bottom: 0.45rem;
+  }
+  .bauhaus-footer-bottom {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.85rem;
+    padding-top: 1.25rem;
+  }
+  .bauhaus-footer-copy {
+    font-size: 0.72rem;
   }
 }
 
@@ -7889,6 +8233,43 @@ kbd, .kbd-group kbd {
     height: 13px;
   }
 
+  .bauhaus-hero {
+    padding: 1.75rem 0.75rem 2rem;
+  }
+  .bauhaus-hero-title {
+    font-size: clamp(2.35rem, 9.5vw, 2.85rem);
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+  }
+  .bauhaus-hero-lead {
+    font-size: 0.84rem;
+  }
+  .bauhaus-art-poster {
+    height: 220px;
+  }
+  .bauhaus-art-center-card {
+    width: 160px;
+    padding: 0.75rem;
+  }
+  .bauhaus-art-badge-1 .b-num {
+    font-size: 1rem;
+  }
+  .bauhaus-stat-val {
+    font-size: 1.5rem;
+  }
+  .bauhaus-section {
+    padding: 2.25rem 0.75rem;
+  }
+  .bauhaus-section-title {
+    font-size: 1.4rem;
+  }
+  .bauhaus-security-title {
+    font-size: 1.4rem;
+  }
+  .bauhaus-cta-title {
+    font-size: 1.45rem;
+  }
+
   .msg {
     max-width: 92% !important;
   }
@@ -7901,9 +8282,6 @@ kbd, .kbd-group kbd {
   }
   .composer-wrapper {
     margin: 0.25rem 0.25rem 0.5rem 0.25rem;
-  }
-  .bauhaus-hero-title {
-    font-size: 1.85rem;
   }
 }
 

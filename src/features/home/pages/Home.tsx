@@ -6,7 +6,7 @@ import { motion, useInView } from 'framer-motion';
 import {
   Lock,
   MessageSquare,
-  Sparkles,
+  Radio,
   GitBranch,
   SmilePlus,
   Shield,
@@ -47,7 +47,7 @@ const staggerContainer = {
 const FEATURES = [
   { icon: Lock, illustration: E2EEIllustration, shape: 'circle', color: '#D02020', title: 'End-to-End Encryption', desc: 'RSA-OAEP and AES-GCM keep your private room messages sealed from the server.' },
   { icon: MessageSquare, illustration: RealTimeIllustration, shape: 'square', color: '#1040C0', title: 'Real-Time Messaging', desc: 'Messages delivered instantly over WebSockets with automatic offline queue and backfill.' },
-  { icon: Sparkles, illustration: AIAssistantIllustration, shape: 'triangle', color: '#F0C020', title: 'AI Copilot Assistant', desc: 'Gemini-powered chat summarization and smart reply suggestions at your fingertips.' },
+  { icon: Radio, illustration: AIAssistantIllustration, shape: 'triangle', color: '#F0C020', title: 'Audio & Video Calls', desc: 'Peer-to-peer WebRTC voice and video calls with encrypted low-latency streams.' },
   { icon: GitBranch, illustration: ThreadRepliesIllustration, shape: 'circle', color: '#1040C0', title: 'Thread Replies', desc: 'Keep conversations organized with side-panel threaded discussions on any message.' },
   { icon: SmilePlus, illustration: ReactionsIllustration, shape: 'square', color: '#F0C020', title: 'Message Reactions', desc: 'React with emoji to any message. Toggle reactions with a single click.' },
   { icon: Shield, illustration: ModerationIllustration, shape: 'triangle', color: '#D02020', title: 'Role-Based Moderation', desc: 'Owner and moderator roles with kick, ban, mute, and promote controls.' },
@@ -60,7 +60,7 @@ const STEPS = [
   { num: '01', title: 'CREATE ACCOUNT', desc: 'Sign up with email or Google direct. Pick your handle.' },
   { num: '02', title: 'JOIN OR LAUNCH ROOMS', desc: 'Browse public spaces, request private access, or start your own channel.' },
   { num: '03', title: 'COMMUNICATE IN REAL TIME', desc: 'Instant WebSocket delivery with automatic AES-GCM 256-bit cryptography.' },
-  { num: '04', title: 'SUMMARIZE WITH AI', desc: 'Catch up on hundreds of messages in seconds using the integrated AI copilot.' },
+  { num: '04', title: 'STAY CONNECTED', desc: 'Catch up on threaded discussions, offline queues, and encrypted voice calls.' },
 ];
 
 const STATS = [
@@ -251,7 +251,7 @@ export default function Home() {
 
             <p className="bauhaus-hero-lead">
               A high-velocity messaging workspace engineered with end-to-end RSA/AES cryptography,
-              instant WebSockets, structured threads, and built-in AI copilot analysis.
+              instant WebSockets, structured threads, and modular constructivist channels.
             </p>
 
             <div className="bauhaus-hero-cta-group">
@@ -276,7 +276,7 @@ export default function Home() {
               </div>
               <div className="bauhaus-spec-item">
                 <span className="spec-dot" style={{ backgroundColor: '#F0C020' }} />
-                <span>GEMINI COPILOT</span>
+                <span>WEBRTC CALLS</span>
               </div>
             </div>
           </div>
@@ -488,7 +488,7 @@ export default function Home() {
               <Link href="/join">Channels</Link>
               <Link href="/join">Direct Messages</Link>
               <Link href="/join">Audio / Video Calls</Link>
-              <Link href="/join">AI Copilot</Link>
+              <Link href="/join">Settings &amp; Security</Link>
             </div>
             <div className="bauhaus-footer-col">
               <h4>SECURITY</h4>
