@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import Link from 'next/link';
 import { motion, useInView } from 'framer-motion';
 import {
@@ -15,6 +15,8 @@ import {
   KeyRound,
   ArrowRight,
   Check,
+  Plus,
+  Minus,
 } from 'lucide-react';
 import SlotReelText from '../components/SlotReelText';
 import {
@@ -83,6 +85,29 @@ const SECURITY_ITEMS = [
   'RSA-OAEP key exchange + AES-GCM encryption for private rooms',
   'Banned-user enforcement at the server and socket level',
   'Per-socket heartbeat presence with automatic stale-session cleanup',
+];
+
+const FAQS = [
+  {
+    q: 'What makes DropTalk different from Slack or Discord?',
+    a: 'Unlike centralized corporate platforms that log conversations for advertising, AI scraping, and telemetry, DropTalk is engineered with client-side cryptographic keys (RSA-OAEP + AES-GCM 256-bit). Form follows function: zero cognitive clutter, brutalist speed, and verifiable mathematical privacy.',
+  },
+  {
+    q: 'How does End-to-End Encryption (E2EE) work in DropTalk?',
+    a: 'Cryptographic keys are generated directly in your web browser or client sandbox using the Web Crypto API. In private channels, messages are encrypted before touching the network. Even DropTalk servers cannot read or decrypt your private communications.',
+  },
+  {
+    q: 'Can I make audio and video calls on DropTalk?',
+    a: 'Yes. DropTalk features native peer-to-peer WebRTC voice and video channels. Media streams are transmitted directly between peers with encrypted low latency and zero middleman recording.',
+  },
+  {
+    q: 'Is DropTalk free to use for teams and individuals?',
+    a: 'Yes, DropTalk is free for creating accounts, launching public channels, establishing private encrypted rooms, and making real-time calls with zero subscription barriers.',
+  },
+  {
+    q: 'Does DropTalk store offline messages?',
+    a: 'DropTalk includes an offline synchronization engine. If your connection drops, outgoing messages queue locally and automatically reconcile upon reconnecting with zero lost packets.',
+  },
 ];
 
 function FeatureCard({ feature, index }: { feature: any; index: number }) {
@@ -199,6 +224,107 @@ function MockChatDemo() {
   );
 }
 
+function FaqSection() {
+  const [openIdx, setOpenIdx] = useState<number | null>(0);
+
+  const toggle = (idx: number) => {
+    setOpenIdx((prev) => (prev === idx ? null : idx));
+  };
+
+  return (
+    <section id="faq" className="bauhaus-section border-t-4">
+      <div className="bauhaus-section-header">
+        <div className="bauhaus-section-tag">
+          <span>06 // ARCHITECTURAL INTEL</span>
+        </div>
+        <h2 className="bauhaus-section-title">FREQUENTLY ASKED QUESTIONS</h2>
+        <p className="bauhaus-section-subtitle">
+          Everything you need to know about DropTalk encryption, architecture, and team workflows.
+        </p>
+      </div>
+
+      <div style={{ maxWidth: '820px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {FAQS.map((faq, idx) => {
+          const isOpen = openIdx === idx;
+          const accentColor = idx % 3 === 0 ? '#D02020' : idx % 3 === 1 ? '#1040C0' : '#F0C020';
+          return (
+            <div
+              key={idx}
+              style={{
+                border: '3px solid #121212',
+                backgroundColor: '#FFFFFF',
+                boxShadow: isOpen ? `6px 6px 0px ${accentColor}` : '4px 4px 0px #121212',
+                transition: 'box-shadow 0.15s ease',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => toggle(idx)}
+                style={{
+                  width: '100%',
+                  padding: '1.25rem 1.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  textAlign: 'left',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                }}
+                aria-expanded={isOpen}
+              >
+                <span
+                  style={{
+                    fontSize: '1.05rem',
+                    fontWeight: 800,
+                    letterSpacing: '0.01em',
+                    color: '#121212',
+                    paddingRight: '1rem',
+                  }}
+                >
+                  {faq.q}
+                </span>
+                <span
+                  style={{
+                    flexShrink: 0,
+                    width: '32px',
+                    height: '32px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: isOpen ? accentColor : '#F0F0F0',
+                    color: isOpen && accentColor === '#F0C020' ? '#121212' : isOpen ? '#FFFFFF' : '#121212',
+                    border: '2px solid #121212',
+                    fontWeight: 900,
+                  }}
+                >
+                  {isOpen ? <Minus size={18} strokeWidth={3} /> : <Plus size={18} strokeWidth={3} />}
+                </span>
+              </button>
+              {isOpen && (
+                <div
+                  style={{
+                    padding: '0 1.5rem 1.5rem 1.5rem',
+                    borderTop: '2px dashed #E0E0E0',
+                    paddingTop: '1rem',
+                    fontSize: '0.95rem',
+                    lineHeight: '1.65',
+                    color: '#444444',
+                    fontWeight: 500,
+                  }}
+                >
+                  {faq.a}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 export default function Home() {
   return (
     <div className="bauhaus-app">
@@ -268,15 +394,15 @@ export default function Home() {
             <div className="bauhaus-specs-bar">
               <div className="bauhaus-spec-item">
                 <span className="spec-dot" style={{ backgroundColor: '#D02020' }} />
-                <span>E2EE RSA-OAEP</span>
+                <span>ENCRYPTION</span>
               </div>
               <div className="bauhaus-spec-item">
                 <span className="spec-dot" style={{ backgroundColor: '#1040C0' }} />
-                <span>WEBSOCKET SYNC</span>
+                <span>SYNC</span>
               </div>
               <div className="bauhaus-spec-item">
                 <span className="spec-dot" style={{ backgroundColor: '#F0C020' }} />
-                <span>WEBRTC CALLS</span>
+                <span>CALLS</span>
               </div>
             </div>
           </div>
@@ -437,7 +563,10 @@ export default function Home() {
         <MockChatDemo />
       </section>
 
-      {/* ── 7. Final Call to Action (Bauhaus Yellow Block) ── */}
+      {/* ── 7. Architectural Intel (FAQ Section) ── */}
+      <FaqSection />
+
+      {/* ── 8. Final Call to Action (Bauhaus Yellow Block) ── */}
       <section className="bauhaus-cta-band">
         {/* Decorative corner geometric shapes */}
         <div className="bauhaus-cta-decor-circle" />
@@ -446,7 +575,7 @@ export default function Home() {
 
         <div className="bauhaus-cta-content">
           <div className="bauhaus-stamp bauhaus-stamp-dark">
-            <span className="bauhaus-stamp-num">06 //</span>
+            <span className="bauhaus-stamp-num">07 //</span>
             <span className="bauhaus-stamp-text">GET STARTED</span>
           </div>
 
@@ -488,6 +617,7 @@ export default function Home() {
               <Link href="/join">Channels</Link>
               <Link href="/join">Direct Messages</Link>
               <Link href="/join">Audio / Video Calls</Link>
+              <a href="#faq">FAQ</a>
               <Link href="/join">Settings &amp; Security</Link>
             </div>
             <div className="bauhaus-footer-col">

@@ -1,7 +1,7 @@
 {
   "name": "DropTalk — Constructivist Workspace Messaging",
   "short_name": "DropTalk",
-  "description": "A feature-based modular real-time chat application with E2EE, Gemini AI summaries, WebRTC calls, and presence tracking.",
+  "description": "Secure constructivist team messaging workspace engineered with end-to-end RSA/AES encryption, instant WebSockets, and WebRTC calls.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0E1015",
