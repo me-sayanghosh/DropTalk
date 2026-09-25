@@ -1,7 +1,6 @@
 export { default as Channels } from './Channels';
 export { default as MemberList } from './MemberList';
 export { default as ThreadPanel } from './ThreadPanel';
-export { default as AIPanel } from './AIPanel';
 export { default as SuggestionsBar } from './SuggestionsBar';
 export { default as PendingRequests } from './PendingRequests';
 export { default as PresenceMap } from './PresenceMap';

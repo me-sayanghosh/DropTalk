@@ -40,7 +40,7 @@ const DEFAULT_LISTS = ['General', 'Work', 'Projects', 'Development', 'Random'];
 
 export default function Channels({
   rooms, current, onSelect, onLeave, onRequestJoin,
-  memberRooms, pendingRooms, onOpenCreate, unreadCounts, mentionAlerts,
+  memberRooms, pendingRooms, onOpenCreate, onOpenSearch, unreadCounts, mentionAlerts,
   onMarkAsRead, onClearChat, loading = false,
 }) {
   const [collapsedCategories, setCollapsedCategories] = useState({});
@@ -399,13 +399,29 @@ export default function Channels({
     <div className="room-list-container">
       <div className="room-list-header">
         <h2>Channels</h2>
-        <button
-          className="create-room-btn"
-          onClick={onOpenCreate}
-          title="New Channel"
-        >
-          +
-        </button>
+        <div className="room-list-header-actions">
+          <button
+            type="button"
+            className="header-search-btn"
+            onClick={onOpenSearch}
+            title="Search Channels &amp; DMs (Ctrl + K)"
+            aria-label="Search Channels"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            className="create-room-btn"
+            onClick={onOpenCreate}
+            title="New Channel"
+            aria-label="New Channel"
+          >
+            +
+          </button>
+        </div>
       </div>
 
       <div className="category-accordion-list">

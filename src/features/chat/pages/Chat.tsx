@@ -9,7 +9,7 @@ import {
   PendingRequests, MessageList, MessageInput,
   DMPanel, DMChat, CreateChannelModal, UserProfileCard, ForwardModal, MessageSearchModal,
   PinnedMessagesModal, ChannelSettingsModal, CallOverlay, QuickSwitcherModal, KeyboardShortcutsModal,
-  CallLogsPanel, CallLogsMainView, AIPanel, ChannelMembersPage,
+  CallLogsPanel, CallLogsMainView, ChannelMembersPage,
 } from '../components';
 import NotificationDrawer from '../../notifications/NotificationDrawer';
 import { useNotifications } from '../../notifications/useNotifications';
@@ -95,7 +95,6 @@ export default function Chat() {
   const [navRailTab, setNavRailTab] = useState<'calls' | 'notifications' | 'dm' | 'chat'>(getInitialTab);
   const [channelView, setChannelView] = useState<'chat' | 'members'>('chat');
   const [dmRequestToast, setDmRequestToast] = useState<string | null>(null);
-  const [showAIPanel, setShowAIPanel] = useState(false);
   const [mobileActiveView, setMobileActiveView] = useState<'sidebar' | 'chat'>(getInitialMobileView);
 
   // Reset channel view to chat whenever room changes
@@ -127,9 +126,6 @@ export default function Chat() {
     }
     if (searchParams.get('openSearch') === 'true') {
       setShowQuickSwitcher(true);
-    }
-    if (searchParams.get('openAI') === 'true') {
-      setShowAIPanel(true);
     }
   }, [pathname, searchParams]);
 
@@ -315,12 +311,10 @@ export default function Chat() {
       {/* 1. Left-most Nav Rail */}
       <NavRail
         activeTab={navRailTab}
-        showAIPanel={showAIPanel}
         unreadCount={unreadCount}
         pendingCount={pendingCount}
         onCreateChannel={() => { setShowCreateModal(true); setNavRailTab('chat'); setMobileActiveView('sidebar'); }}
         onNotificationsClick={() => { router.push('/notifications'); setNavRailTab('notifications'); setMobileActiveView('chat'); }}
-        onAIToggle={() => setShowAIPanel(!showAIPanel)}
         onCallsClick={() => { router.push('/calls'); setNavRailTab('calls'); setMobileActiveView('chat'); }}
         onChannelsClick={() => { router.push('/channels'); setNavRailTab('chat'); setMobileActiveView('sidebar'); }}
         onDMClick={() => { router.push('/dm'); setNavRailTab('dm'); setMobileActiveView('sidebar'); }}
@@ -356,6 +350,7 @@ export default function Chat() {
             onSendRequest={(toUserId: string) => handleDMUser(toUserId)}
             userId={user?.id}
             loading={dmLoading}
+            onOpenSearch={() => setShowQuickSwitcher(true)}
           />
         ) : (
           <Channels
@@ -367,6 +362,7 @@ export default function Chat() {
             memberRooms={memberRooms}
             pendingRooms={pendingRooms}
             onOpenCreate={() => setShowCreateModal(true)}
+            onOpenSearch={() => setShowQuickSwitcher(true)}
             unreadCounts={unreadCounts}
             mentionAlerts={mentionAlerts}
             onMarkAsRead={markRoomAsRead}
@@ -632,13 +628,6 @@ export default function Chat() {
                         meId={user?.id}
                         isPrivate={isPrivate}
                         onClose={() => setThreadMessage(null)}
-                      />
-                    )}
-                    {showAIPanel && (
-                      <AIPanel
-                        roomId={currentRoom.id}
-                        onClose={() => setShowAIPanel(false)}
-                        onUseSuggestion={(text: string) => setCurrentInput(text)}
                       />
                     )}
                   </>

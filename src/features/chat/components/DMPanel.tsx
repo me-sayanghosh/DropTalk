@@ -3,11 +3,20 @@ import { api } from '../../../shared/utils/api';
 import { formatBadgeCount, formatCardTime } from '../../../shared/utils/dateUtils';
 import { DMSkeleton } from '../../../shared/components/ui/SkeletonLoaders';
 
-export default function DMPanel({ conversations, currentDM, onOpen, onSendRequest, userId, loading = false }) {
+export default function DMPanel({
+  conversations,
+  currentDM,
+  onOpen,
+  onSendRequest,
+  userId,
+  loading = false,
+  onOpenSearch,
+}) {
   const [search, setSearch] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const searchTimeoutRef = useRef(null);
+  const searchInputRef = useRef(null);
 
   useEffect(() => {
     if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
@@ -115,6 +124,20 @@ export default function DMPanel({ conversations, currentDM, onOpen, onSendReques
     <div className="dm-panel">
       <div className="dm-panel-header">
         <h2>Direct Messages</h2>
+        <div className="dm-panel-header-actions">
+          <button
+            type="button"
+            className="header-search-btn"
+            onClick={onOpenSearch || (() => searchInputRef.current?.focus())}
+            title="Search Members &amp; Conversations (Ctrl + K)"
+            aria-label="Search Direct Messages"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       <div className="dm-search-bar">
@@ -122,6 +145,7 @@ export default function DMPanel({ conversations, currentDM, onOpen, onSendReques
           <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
         <input
+          ref={searchInputRef}
           placeholder="Search members or start DM..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}

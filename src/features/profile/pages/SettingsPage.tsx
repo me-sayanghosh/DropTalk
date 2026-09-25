@@ -23,9 +23,15 @@ export default function SettingsPage() {
   const { unreadCount } = useNotifications(user);
   const { pendingCount } = useDM();
 
-  const activeSection = ['profile', 'appearance', 'privacy', 'notifications', 'shortcuts', 'help'].includes(sectionParam)
-    ? sectionParam
-    : 'profile';
+  const VALID_SECTIONS = ['profile', 'appearance', 'privacy', 'notifications', 'shortcuts', 'help'];
+  const initialSection = VALID_SECTIONS.includes(sectionParam) ? sectionParam : 'profile';
+  const [activeSection, setActiveSection] = useState<string>(initialSection);
+
+  useEffect(() => {
+    if (sectionParam && VALID_SECTIONS.includes(sectionParam)) {
+      setActiveSection(sectionParam);
+    }
+  }, [sectionParam]);
 
   // State for Profile
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -335,6 +341,34 @@ export default function SettingsPage() {
     typeof window !== 'undefined' && window.innerWidth <= 768 ? 'sidebar' : 'chat'
   );
 
+  // Sync mobile view and activeSection on browser back/forward buttons & swipe gestures
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+      const pathParts = window.location.pathname.split('/');
+      const sec = pathParts[2];
+      if (sec && VALID_SECTIONS.includes(sec)) {
+        setActiveSection(sec);
+      }
+      if (isMobile) {
+        if (e.state?.view) {
+          setMobileActiveView(e.state.view);
+        } else {
+          setMobileActiveView('sidebar');
+        }
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [VALID_SECTIONS]);
+
+  // Ensure initial history state has current view info
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.history.state?.view === undefined) {
+      window.history.replaceState({ section: activeSection, view: mobileActiveView }, '');
+    }
+  }, []);
+
   const sectionTitles: Record<string, string> = {
     profile: 'Profile Settings',
     appearance: 'Appearance & Theme',
@@ -344,9 +378,15 @@ export default function SettingsPage() {
     help: 'Help & Feedback',
   };
 
-  const handleSelectSection = (secPath: string) => {
-    router.push(secPath);
+  const handleSelectSection = (secOrPath: string) => {
+    const sec = secOrPath.replace('/settings/', '').trim();
+    if (VALID_SECTIONS.includes(sec)) {
+      setActiveSection(sec);
+    }
     setMobileActiveView('chat');
+    if (typeof window !== 'undefined') {
+      window.history.pushState({ section: sec, view: 'chat' }, '', `/settings/${sec}`);
+    }
   };
 
   return (
@@ -358,7 +398,10 @@ export default function SettingsPage() {
         pendingCount={pendingCount}
         onSettingsClick={() => {
           setMobileActiveView('sidebar');
-          router.push('/settings/profile');
+          setActiveSection('profile');
+          if (typeof window !== 'undefined') {
+            window.history.pushState({ section: 'profile', view: 'sidebar' }, '', '/settings/profile');
+          }
         }}
         onLogout={logout}
       />
@@ -376,7 +419,7 @@ export default function SettingsPage() {
           <button
             type="button"
             className={`settings-nav-item ${activeSection === 'profile' ? 'active' : ''}`}
-            onClick={() => handleSelectSection('/settings/profile')}
+            onClick={() => handleSelectSection('profile')}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -388,7 +431,7 @@ export default function SettingsPage() {
           <button
             type="button"
             className={`settings-nav-item ${activeSection === 'appearance' ? 'active' : ''}`}
-            onClick={() => handleSelectSection('/settings/appearance')}
+            onClick={() => handleSelectSection('appearance')}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="5" />
@@ -403,7 +446,7 @@ export default function SettingsPage() {
           <button
             type="button"
             className={`settings-nav-item ${activeSection === 'privacy' ? 'active' : ''}`}
-            onClick={() => handleSelectSection('/settings/privacy')}
+            onClick={() => handleSelectSection('privacy')}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
@@ -415,7 +458,7 @@ export default function SettingsPage() {
           <button
             type="button"
             className={`settings-nav-item ${activeSection === 'notifications' ? 'active' : ''}`}
-            onClick={() => handleSelectSection('/settings/notifications')}
+            onClick={() => handleSelectSection('notifications')}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -427,7 +470,7 @@ export default function SettingsPage() {
           <button
             type="button"
             className={`settings-nav-item ${activeSection === 'shortcuts' ? 'active' : ''}`}
-            onClick={() => handleSelectSection('/settings/shortcuts')}
+            onClick={() => handleSelectSection('shortcuts')}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="2" y="4" width="20" height="16" rx="2" ry="2" />
@@ -441,7 +484,7 @@ export default function SettingsPage() {
           <button
             type="button"
             className={`settings-nav-item ${activeSection === 'help' ? 'active' : ''}`}
-            onClick={() => handleSelectSection('/settings/help')}
+            onClick={() => handleSelectSection('help')}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10" />
@@ -474,7 +517,12 @@ export default function SettingsPage() {
           <div className="header-left">
             <button
               className="mobile-back-btn"
-              onClick={() => setMobileActiveView('sidebar')}
+              onClick={() => {
+                setMobileActiveView('sidebar');
+                if (typeof window !== 'undefined') {
+                  window.history.pushState({ section: activeSection, view: 'sidebar' }, '', `/settings/${activeSection}`);
+                }
+              }}
               title="Back to Settings Menu"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

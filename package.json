@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch server.ts",
+    "dev": "tsx watch --exclude src --exclude .next server.ts",
     "dev:nodemon": "nodemon --watch server --watch server.ts server.ts",
     "build": "next build",
     "start": "NODE_ENV=production tsx server.ts",

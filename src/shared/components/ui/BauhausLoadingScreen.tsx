@@ -20,15 +20,20 @@ export const BauhausLoadingScreen: React.FC<BauhausLoadingScreenProps> = ({
       aria-live="polite"
       style={{
         position: 'fixed',
-        inset: 0,
-        width: '100vw',
-        height: '100vh',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100%',
+        height: '100%',
+        minHeight: '100dvh',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#F4F1EA',
         fontFamily: "'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         padding: '1.5rem',
+        boxSizing: 'border-box',
         zIndex: 99999,
       }}
     >
@@ -45,6 +50,7 @@ export const BauhausLoadingScreen: React.FC<BauhausLoadingScreenProps> = ({
           textAlign: 'center',
           position: 'relative',
           overflow: 'hidden',
+          boxSizing: 'border-box',
         }}
       >
         {/* Top Decorative Geometric Tri-Color Strip */}
@@ -64,10 +70,52 @@ export const BauhausLoadingScreen: React.FC<BauhausLoadingScreenProps> = ({
         </div>
 
         {/* Animated Bouncing Bauhaus Shapes */}
-        <div className="bauhaus-loading-shapes" style={{ marginBottom: '1.75rem', marginTop: '0.5rem' }}>
-          <span className="shape-circle" />
-          <span className="shape-square" />
-          <span className="shape-triangle" />
+        <div
+          className="bauhaus-loading-shapes"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '14px',
+            marginBottom: '1.75rem',
+            marginTop: '0.5rem',
+          }}
+        >
+          <span
+            className="shape-circle"
+            style={{
+              width: '26px',
+              height: '26px',
+              borderRadius: '50%',
+              backgroundColor: '#D02020',
+              border: '3px solid #121212',
+              boxShadow: '2px 2px 0px #121212',
+              display: 'inline-block',
+            }}
+          />
+          <span
+            className="shape-square"
+            style={{
+              width: '26px',
+              height: '26px',
+              backgroundColor: '#1040C0',
+              border: '3px solid #121212',
+              boxShadow: '2px 2px 0px #121212',
+              display: 'inline-block',
+            }}
+          />
+          <span
+            className="shape-triangle"
+            style={{
+              width: 0,
+              height: 0,
+              borderLeft: '14px solid transparent',
+              borderRight: '14px solid transparent',
+              borderBottom: '26px solid #F0C020',
+              display: 'inline-block',
+              filter: 'drop-shadow(2px 2px 0px #121212)',
+            }}
+          />
         </div>
 
         {/* Bauhaus Stamp */}
@@ -137,7 +185,14 @@ export const BauhausLoadingScreen: React.FC<BauhausLoadingScreenProps> = ({
             position: 'relative',
           }}
         >
-          <div className="bauhaus-loading-progress-inner" />
+          <div
+            className="bauhaus-loading-progress-inner"
+            style={{
+              height: '100%',
+              width: '40%',
+              backgroundColor: '#D02020',
+            }}
+          />
         </div>
       </div>
     </div>
