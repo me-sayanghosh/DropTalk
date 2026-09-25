@@ -5,6 +5,8 @@
 @import "../styles.css";
 @import "../features/home/components/Aurora.css";
 @import "../features/home/components/RotatingText.css";
+@import "../features/home/components/DecryptedText.css";
+@import "../features/home/components/SlotReelText.css";
 @import "../features/home/components/ScrollFloat.css";
 @import "../shared/components/ui/AnimatedList.css";
 @import "../shared/components/ui/Stepper.css";

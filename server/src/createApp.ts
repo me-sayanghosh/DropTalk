@@ -51,6 +51,7 @@ export function createApp({ disableCSP = false } = {}) {
   app.use('/uploads', express.static(
     process.env.VERCEL ? '/tmp/uploads' : path.join(process.cwd(), 'uploads')
   ));
+  app.use(express.static(path.join(process.cwd(), 'public')));
 
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
 

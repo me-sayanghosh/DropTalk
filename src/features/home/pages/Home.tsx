@@ -16,7 +16,7 @@ import {
   ArrowRight,
   Check,
 } from 'lucide-react';
-import RotatingText from '../components/RotatingText';
+import SlotReelText from '../components/SlotReelText';
 import {
   E2EEIllustration,
   RealTimeIllustration,
@@ -240,14 +240,11 @@ export default function Home() {
             <h1 className="bauhaus-hero-title">
               FORM FOLLOWS<br />
               <span className="bauhaus-hero-highlight">
-                <RotatingText
+                <SlotReelText
                   texts={['COMMUNICATION.', 'SECURITY.', 'PRECISION.', 'STRUCTURE.']}
-                  splitBy="characters"
-                  rotationInterval={2800}
-                  transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                  initial={{ y: '100%', opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: '-120%', opacity: 0 }}
+                  rotationInterval={3000}
+                  staggerDuration={0.035}
+                  pauseOnHover={true}
                 />
               </span>
             </h1>
