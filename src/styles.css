@@ -1798,6 +1798,37 @@ button {
   border-color: var(--border-color, #FFFFFF);
 }
 
+.header-notif-btn {
+  position: relative;
+}
+
+.header-notif-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: var(--color-red, #D02020);
+  color: #FFFFFF;
+  font-size: 0.62rem;
+  font-weight: 900;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--color-black, #121212);
+  box-shadow: 1px 1px 0px #121212;
+  line-height: 1;
+  pointer-events: none;
+  border-radius: 0;
+  box-sizing: border-box;
+}
+
+[data-theme="dark"] .header-notif-badge {
+  border-color: #FFFFFF;
+  box-shadow: 1px 1px 0px #FFFFFF;
+}
+
 .category-accordion-list {
   display: flex;
   flex-direction: column;
@@ -7253,7 +7284,8 @@ kbd, .kbd-group kbd {
     height: 42px;
   }
 
-  .rail-btn.logout-btn {
+  .rail-btn.logout-btn,
+  .rail-btn.rail-btn--notif {
     display: none !important;
   }
 
