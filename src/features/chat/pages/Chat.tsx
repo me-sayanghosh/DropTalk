@@ -356,6 +356,7 @@ export default function Chat() {
             onSendRequest={(toUserId: string) => handleDMUser(toUserId)}
             userId={user?.id}
             loading={dmLoading}
+            onOpenSearch={() => setShowQuickSwitcher(true)}
           />
         ) : (
           <Channels
@@ -367,6 +368,7 @@ export default function Chat() {
             memberRooms={memberRooms}
             pendingRooms={pendingRooms}
             onOpenCreate={() => setShowCreateModal(true)}
+            onOpenSearch={() => setShowQuickSwitcher(true)}
             unreadCounts={unreadCounts}
             mentionAlerts={mentionAlerts}
             onMarkAsRead={markRoomAsRead}
