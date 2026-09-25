@@ -645,8 +645,12 @@ export default function Chat() {
                 )
               ) : roomsLoading ? (
                 <div className="empty-state">
-                  <div className="lazy-spinner" />
-                  <h3 style={{ marginTop: '1.25rem' }}>LAUNCHING CHANNELS</h3>
+                  <div className="bauhaus-loading-shapes" style={{ marginBottom: '1.25rem' }}>
+                    <span className="shape-circle" />
+                    <span className="shape-square" />
+                    <span className="shape-triangle" />
+                  </div>
+                  <h3 style={{ marginTop: '0.5rem' }}>LAUNCHING CHANNELS</h3>
                   <p>CONNECTING TO WORKSPACE // PLEASE WAIT</p>
                 </div>
               ) : (

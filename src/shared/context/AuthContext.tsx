@@ -5,6 +5,7 @@ import { connectSocket, disconnectSocket } from '../utils/socket';
 import { api, getAccessToken, setTokens, clearTokens } from '../utils/api';
 import { clearAllCryptoKeys } from '../utils/crypto';
 import { User } from '../../types';
+import BauhausLoadingScreen from '../components/ui/BauhausLoadingScreen';
 
 export interface LoginParams {
   accessToken: string;
@@ -94,10 +95,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   if (!bootstrapped) {
     return (
-      <div className="lazy-suspense-fallback">
-        <div className="lazy-spinner" />
-        <span style={{ marginTop: '16px', fontSize: '13px', fontWeight: 600 }}>Loading DropTalk...</span>
-      </div>
+      <BauhausLoadingScreen
+        title="DROPTALK WORKSPACE"
+        subtitle="ESTABLISHING ENCRYPTED SESSION // PLEASE WAIT"
+        stamp="BOOTSTRAP"
+      />
     );
   }
 

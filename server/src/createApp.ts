@@ -55,6 +55,11 @@ export function createApp({ disableCSP = false } = {}) {
 
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
+  // Silently handle Chrome DevTools auto-discovery probe so it does not spam 404s in console
+  app.get('/.well-known/appspecific/com.chrome.devtools.json', (_req, res) => {
+    res.status(204).end();
+  });
+
   const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: dev ? 1000 : 100,
