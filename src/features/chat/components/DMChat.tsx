@@ -13,12 +13,18 @@ export default function DMChat({ room, messages, userId, onAccept, onRemove, onS
   const canChat = !isPending || !room;
 
   useEffect(() => {
-    if (canChat) inputRef.current?.focus();
+    if (canChat && typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches) {
+      inputRef.current?.focus();
+    }
   }, [canChat, room?.id]);
 
   useEffect(() => {
     if (containerRef.current) {
-      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+      requestAnimationFrame(() => {
+        if (containerRef.current) {
+          containerRef.current.scrollTop = containerRef.current.scrollHeight;
+        }
+      });
     }
   }, [messages]);
 
@@ -215,10 +221,11 @@ export default function DMChat({ room, messages, userId, onAccept, onRemove, onS
                       <div className="msg-attachments">
                         {m.attachments.map((att, idx) => {
                           const fullUrl = getMediaUrl(att.url);
+                          const attKey = att.url || att._id || `att-${idx}`;
                           return att.fileType === 'image' ? (
-                            <img key={idx} src={fullUrl} alt={att.filename || 'attachment'} className="dm-att-img" />
+                            <img key={attKey} src={fullUrl} alt={att.filename || 'attachment'} className="dm-att-img" />
                           ) : (
-                            <a key={idx} href={fullUrl} download={att.filename} target="_blank" rel="noopener noreferrer" className="dm-att-doc">
+                            <a key={attKey} href={fullUrl} download={att.filename} target="_blank" rel="noopener noreferrer" className="dm-att-doc">
                               📄 {att.filename}
                             </a>
                           );

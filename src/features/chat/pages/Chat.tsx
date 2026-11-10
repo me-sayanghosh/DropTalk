@@ -113,8 +113,34 @@ export default function Chat() {
       setMobileActiveView('chat');
     } else if (p.startsWith('/dm')) {
       setNavRailTab('dm');
+      const dmMatch = p.match(/^\/dm\/([^/?#]+)/);
+      if (dmMatch && dmMatch[1]) {
+        const targetDmId = dmMatch[1];
+        const found = conversations.find(
+          (c: any) => c.id === targetDmId || c._id === targetDmId || c.partner?.id === targetDmId
+        );
+        if (found && currentDM?.id !== found.id) {
+          openDM(found);
+        }
+        setMobileActiveView('chat');
+      } else if (!currentDM) {
+        setMobileActiveView('sidebar');
+      }
     } else if (p.startsWith('/channels') || p === '/chat') {
       setNavRailTab('chat');
+      const chMatch = p.match(/^\/channels\/([^/?#]+)/);
+      if (chMatch && chMatch[1]) {
+        const targetRoomId = chMatch[1];
+        const found = rooms.find(
+          (r: Room) => r.id === targetRoomId || (r as any)._id === targetRoomId
+        );
+        if (found && currentRoom?.id !== found.id) {
+          selectRoom(found);
+        }
+        setMobileActiveView('chat');
+      } else if (!currentRoom) {
+        setMobileActiveView('sidebar');
+      }
     }
 
     const tab = searchParams.get('tab');
@@ -127,7 +153,7 @@ export default function Chat() {
     if (searchParams.get('openSearch') === 'true') {
       setShowQuickSwitcher(true);
     }
-  }, [pathname, searchParams]);
+  }, [pathname, searchParams, rooms, conversations, currentRoom?.id, currentDM?.id, selectRoom, openDM]);
 
   // Global Keyboard Shortcuts Listener
   useEffect(() => {
@@ -294,11 +320,17 @@ export default function Chat() {
   const handleSelectRoom = (room: Room) => {
     selectRoom(room);
     setMobileActiveView('chat');
+    if (pathname !== `/channels/${room.id}`) {
+      router.replace(`/channels/${room.id}`);
+    }
   };
 
   const handleOpenDM = async (convo: any) => {
     await openDM(convo);
     setMobileActiveView('chat');
+    if (pathname !== `/dm/${convo.id}`) {
+      router.replace(`/dm/${convo.id}`);
+    }
   };
 
   return (
@@ -556,7 +588,19 @@ export default function Chat() {
                   </div>
                 </>
               ) : (
-                <h2>Welcome to DropTalk</h2>
+                <div className="header-left">
+                  <button
+                    className="mobile-back-btn"
+                    onClick={() => setMobileActiveView('sidebar')}
+                    title="Back to sidebar"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="19" y1="12" x2="5" y2="12" />
+                      <polyline points="12 19 5 12 12 5" />
+                    </svg>
+                  </button>
+                  <h2>Welcome to DropTalk</h2>
+                </div>
               )}
             </header>
 
@@ -655,11 +699,16 @@ export default function Chat() {
                   </div>
                   <h3>No conversation selected</h3>
                   <p>Select a conversation from the sidebar or start a new thread to collaborate.</p>
-                  {rooms.length > 0 && (
-                    <button className="primary-action-btn" onClick={() => selectRoom(rooms[0])}>
-                      Join #{rooms[0].name}
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center', marginTop: '0.5rem' }}>
+                    {rooms.length > 0 && (
+                      <button className="primary-action-btn" onClick={() => selectRoom(rooms[0])}>
+                        Join #{rooms[0].name}
+                      </button>
+                    )}
+                    <button className="secondary-action-btn" onClick={() => setMobileActiveView('sidebar')}>
+                      Browse Channels
                     </button>
-                  )}
+                  </div>
                 </div>
               )}
             </div>

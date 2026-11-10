@@ -3,7 +3,7 @@ import { SERVER_URL, STORAGE_KEYS } from './constants';
 import { api, getRefreshToken, setTokens } from './api';
 
 let socket: Socket | null = null;
-let onReconnectCallback: (() => void) | null = null;
+const reconnectCallbacks = new Set<() => void>();
 
 interface OfflineQueueItem {
   event: string;
@@ -189,8 +189,11 @@ export function getLastSeenMessages(): Record<string, string> {
   return getLastSeenMap();
 }
 
-export function onReconnect(callback: () => void): void {
-  onReconnectCallback = callback;
+export function onReconnect(callback: () => void): () => void {
+  reconnectCallbacks.add(callback);
+  return () => {
+    reconnectCallbacks.delete(callback);
+  };
 }
 
 export function connectSocket(accessToken: string): Socket | null {
@@ -216,9 +219,13 @@ export function connectSocket(accessToken: string): Socket | null {
 
   socket.on('connect', () => {
     flushOfflineQueue();
-    if (onReconnectCallback) {
-      onReconnectCallback();
-    }
+    reconnectCallbacks.forEach((cb) => {
+      try {
+        cb();
+      } catch (err) {
+        console.error('[socket] reconnect callback error:', err);
+      }
+    });
   });
 
   socket.on('connect_error', async (err: Error) => {
@@ -261,7 +268,7 @@ export function disconnectSocket(): void {
     socket.disconnect();
     socket = null;
   }
-  onReconnectCallback = null;
+  reconnectCallbacks.clear();
 }
 
 if (typeof window !== 'undefined') {

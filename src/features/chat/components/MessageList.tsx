@@ -10,23 +10,7 @@ import {
 } from 'lucide-react';
 import { formatDateSeparator } from '../../../shared/utils/dateUtils';
 import { getMediaUrl } from '../../../shared/utils';
-
-function MessageSkeleton({ count = 5 }: { count?: number }) {
-  return (
-    <>
-      {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="msg-skeleton">
-          <div className="msg-skeleton-avatar" />
-          <div className="msg-skeleton-body">
-            <div className="msg-skeleton-name" />
-            <div className="msg-skeleton-line" />
-            <div className="msg-skeleton-line short" />
-          </div>
-        </div>
-      ))}
-    </>
-  );
-}
+import { MessageSkeleton } from '../../../shared/components/ui/SkeletonLoaders';
 
 /**
  * Parse message text and highlight @username mentions.
@@ -472,7 +456,8 @@ export default function MessageList({
                     key={r.emoji}
                     className={`reaction-badge ${r.users.includes(meId) ? 'reacted' : ''}`}
                     onClick={() => onReact?.(m.id, r.emoji)}
-                    title={r.users.length + ' reaction' + (r.users.length > 1 ? 's' : '')}
+                    title={`${r.users.length} reaction${r.users.length > 1 ? 's' : ''}`}
+                    aria-label={`React ${r.emoji}, ${r.users.length} count`}
                   >
                     {r.emoji} {r.users.length}
                   </button>

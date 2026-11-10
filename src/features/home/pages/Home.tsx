@@ -232,7 +232,7 @@ function FaqSection() {
   };
 
   return (
-    <section id="faq" className="bauhaus-section border-t-4">
+    <section id="faq" className="bauhaus-section bauhaus-border-t-4">
       <div className="bauhaus-section-header">
         <div className="bauhaus-section-tag">
           <span>06 // ARCHITECTURAL INTEL</span>
@@ -477,7 +477,7 @@ export default function Home() {
       </section>
 
       {/* ── 4. How It Works (Rotated Steps) ── */}
-      <section className="bauhaus-section bauhaus-bg-canvas border-t-4">
+      <section className="bauhaus-section bauhaus-bg-canvas bauhaus-border-t-4">
         <div className="bauhaus-section-header">
           <div className="bauhaus-section-tag">
             <span>03 // EXECUTION</span>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react';
 
 export interface ToastItem {
   id: string;
@@ -32,6 +32,10 @@ const ToastContext = createContext<ToastContextType | null>(null);
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
+  const removeToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
   const showToast = useCallback((payload: ToastPayload, type: string = 'info', duration: number = 4500) => {
     const id = Date.now() + Math.random().toString(36).substring(2, 9);
     const toastObj: ToastItem =
@@ -52,14 +56,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         removeToast(id);
       }, duration);
     }
-  }, []);
+  }, [removeToast]);
 
-  const removeToast = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  }, []);
+  const contextValue = useMemo(() => ({ showToast, removeToast, toasts }), [showToast, removeToast, toasts]);
 
   return (
-    <ToastContext.Provider value={{ showToast, removeToast, toasts }}>
+    <ToastContext.Provider value={contextValue}>
       {children}
     </ToastContext.Provider>
   );

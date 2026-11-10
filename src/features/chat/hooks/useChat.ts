@@ -119,8 +119,19 @@ export default function useChat() {
         setMemberRooms(new Set(r.data.memberships || []));
         setPendingRooms(new Set(r.data.pending || []));
         if (fetchedRooms.length > 0 && !currentRoomRef.current) {
-          const firstMemberRoom = fetchedRooms.find((room: Room) => (r.data.memberships || []).includes(room.id));
-          selectRoom(firstMemberRoom || fetchedRooms[0]);
+          let targetRoom: Room | undefined;
+          if (typeof window !== 'undefined') {
+            const match = window.location.pathname.match(/\/channels\/([^/?#]+)/);
+            if (match && match[1]) {
+              targetRoom = fetchedRooms.find((room: Room) => room.id === match[1] || (room as any)._id === match[1]);
+            }
+          }
+          if (!targetRoom) {
+            targetRoom = fetchedRooms.find((room: Room) => (r.data.memberships || []).includes(room.id)) || fetchedRooms[0];
+          }
+          if (targetRoom) {
+            selectRoom(targetRoom);
+          }
         }
       })
       .catch(() => {})
@@ -488,11 +499,14 @@ export default function useChat() {
       socket.off('room:request-denied');
       socket.off('room:auto-join');
       socket.off('message:mention');
+      socket.off('message:edited');
+      socket.off('message:pinned');
+      socket.off('message:unpinned');
     };
   }, [user, rooms]);
 
   useEffect(() => {
-    onReconnect(async () => {
+    const unsub = onReconnect(async () => {
       const lastSeen = getLastSeenMessages();
       const roomsToBackfill = Object.entries(lastSeen)
         .filter(([, msgId]) => msgId)
@@ -530,16 +544,21 @@ export default function useChat() {
     });
 
     const socket = getSocket();
-    if (!socket) return;
-    socket.emit('presence:request-map', (map: any) => {
-      if (map) {
-        const enriched: any = {};
-        for (const [userId, pres] of Object.entries<any>(map)) {
-          enriched[userId] = { ...pres, username: pres.username || userId.slice(0, 8) };
+    if (socket) {
+      socket.emit('presence:request-map', (map: any) => {
+        if (map) {
+          const enriched: any = {};
+          for (const [userId, pres] of Object.entries<any>(map)) {
+            enriched[userId] = { ...pres, username: pres.username || userId.slice(0, 8) };
+          }
+          setPresenceMap(enriched);
         }
-        setPresenceMap(enriched);
-      }
-    });
+      });
+    }
+
+    return () => {
+      unsub();
+    };
   }, []);
 
   async function selectRoom(room: Room | null) {

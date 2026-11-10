@@ -89,19 +89,4 @@ export function CallLogSkeleton({ count = 5 }: { count?: number }) {
   );
 }
 
-export function ProfileSkeleton() {
-  return (
-    <div className="skeleton-profile-card">
-      <SkeletonBox width="100%" height="120px" borderRadius="16px" />
-      <div className="skeleton-profile-avatar">
-        <SkeletonBox width="84px" height="84px" borderRadius="50%" />
-      </div>
-      <div className="skeleton-profile-fields">
-        <SkeletonBox width="40%" height="20px" borderRadius="4px" />
-        <SkeletonBox width="60%" height="14px" borderRadius="4px" />
-        <SkeletonBox width="100%" height="40px" borderRadius="10px" />
-        <SkeletonBox width="100%" height="40px" borderRadius="10px" />
-      </div>
-    </div>
-  );
-}
+
