@@ -1,12 +1,10 @@
 export { default as Channels } from './Channels';
 export { default as MemberList } from './MemberList';
 export { default as ThreadPanel } from './ThreadPanel';
-export { default as SuggestionsBar } from './SuggestionsBar';
 export { default as PendingRequests } from './PendingRequests';
 export { default as PresenceMap } from './PresenceMap';
 export { default as ScrollToBottom } from './ScrollToBottom';
 export { default as TypingIndicator } from './TypingIndicator';
-export { default as ReactionPicker } from './ReactionPicker';
 export { default as MessageList } from './MessageList';
 export { default as MessageInput } from './MessageInput';
 export { default as DMPanel } from './DMPanel';
