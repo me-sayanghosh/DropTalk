@@ -456,7 +456,8 @@ export default function MessageList({
                     key={r.emoji}
                     className={`reaction-badge ${r.users.includes(meId) ? 'reacted' : ''}`}
                     onClick={() => onReact?.(m.id, r.emoji)}
-                    title={r.users.length + ' reaction' + (r.users.length > 1 ? 's' : '')}
+                    title={`${r.users.length} reaction${r.users.length > 1 ? 's' : ''}`}
+                    aria-label={`React ${r.emoji}, ${r.users.length} count`}
                   >
                     {r.emoji} {r.users.length}
                   </button>
