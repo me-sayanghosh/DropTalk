@@ -25,6 +25,14 @@ const nextConfig = {
         tls: false,
       };
     } else {
+      config.externals = [
+        ...(Array.isArray(config.externals) ? config.externals : [config.externals].filter(Boolean)),
+        'aws4',
+        'mongodb-client-encryption',
+        'kerberos',
+        'snappy',
+        '@mongodb-js/zstd',
+      ];
       config.plugins.push({
         apply(compiler) {
           compiler.hooks.afterEmit.tap('EnsureCommonJSPackageJsonPlugin', (compilation) => {
