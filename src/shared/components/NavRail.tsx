@@ -61,7 +61,8 @@ export const NavRail: React.FC<NavRailProps> = ({
           className={`rail-btn rail-btn--notif ${activeTab === 'notifications' ? 'active' : ''}`}
           onClick={handleNotif}
           title="Notifications"
-          aria-label="Notifications"
+          aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
+          aria-current={activeTab === 'notifications' ? 'page' : undefined}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -81,6 +82,7 @@ export const NavRail: React.FC<NavRailProps> = ({
           onClick={handleCalls}
           title="Calls & Call Logs"
           aria-label="Calls & Call Logs"
+          aria-current={activeTab === 'calls' ? 'page' : undefined}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
@@ -93,6 +95,7 @@ export const NavRail: React.FC<NavRailProps> = ({
           onClick={handleChannels}
           title="Group Channels"
           aria-label="Group Channels"
+          aria-current={activeTab === 'chat' ? 'page' : undefined}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
             <rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" />
@@ -105,7 +108,8 @@ export const NavRail: React.FC<NavRailProps> = ({
           className={`rail-btn rail-btn--dm ${activeTab === 'dm' ? 'active' : ''}`}
           onClick={handleDM}
           title="Direct Messages"
-          aria-label="Direct Messages"
+          aria-label={`Direct Messages${pendingCount > 0 ? `, ${pendingCount} pending` : ''}`}
+          aria-current={activeTab === 'dm' ? 'page' : undefined}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -123,6 +127,7 @@ export const NavRail: React.FC<NavRailProps> = ({
           onClick={handleSettings}
           title="Settings"
           aria-label="Settings"
+          aria-current={activeTab === 'settings' ? 'page' : undefined}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
             <circle cx="12" cy="12" r="3" />
