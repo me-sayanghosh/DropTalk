@@ -200,12 +200,8 @@ export function registerRoomHandlers(socket, io, { joined }) {
       }));
       io.to(roomId).emit('room:online', { roomId, online, members });
 
-      const targetSockets = await io.in(roomId).fetchSockets();
-      for (const s of targetSockets) {
-        if (s.user.id === userId) {
-          s.emit('room:auto-join', { roomId });
-        }
-      }
+      // Emit directly to the granted user's private socket room
+      io.to(`user:${userId}`).emit('room:auto-join', { roomId });
 
       ack?.({ ok: true });
     } catch (err) {

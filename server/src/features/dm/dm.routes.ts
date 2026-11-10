@@ -79,8 +79,8 @@ router.post('/send', async (req, res) => {
       message: payload,
     });
 
-    // Notify the recipient of a new pending DM
-    io?.emit('dm:new-request', {
+    // Notify the recipient of a new pending DM scoped to their user room
+    io?.to(`user:${toUserId}`).emit('dm:new-request', {
       roomId: room._id.toString(),
       fromUserId,
       fromUsername: req.user.username,

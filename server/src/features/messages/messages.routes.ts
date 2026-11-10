@@ -97,7 +97,7 @@ router.get('/:roomId/messages', async (req, res) => {
 
     const clientMsgs = filtered.map((m) => ({
       ...m.toClient(),
-      replyToData: replyToMap[m._id.toString()] || null,
+      replyToData: m.replyTo ? (replyToMap[m.replyTo.toString()] || null) : null,
     }));
 
     if (!after && !before && (!limit || parseInt(limit as string, 10) === 50)) {
