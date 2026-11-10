@@ -56,16 +56,24 @@ export default function CallOverlay({
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   }
 
-  // Toggle Fullscreen
+  // Toggle Fullscreen with mobile Safari guard
   function toggleFullscreen() {
     if (!containerRef.current) return;
-    if (!document.fullscreenElement) {
-      containerRef.current.requestFullscreen().catch((err) => {
-        console.warn('Fullscreen error:', err);
-      });
-      setIsFullscreen(true);
+    const el = containerRef.current as any;
+    if (!document.fullscreenElement && !((document as any).webkitFullscreenElement)) {
+      if (el.requestFullscreen) {
+        el.requestFullscreen().catch((err: any) => console.warn('Fullscreen error:', err));
+        setIsFullscreen(true);
+      } else if (el.webkitRequestFullscreen) {
+        el.webkitRequestFullscreen();
+        setIsFullscreen(true);
+      }
     } else {
-      document.exitFullscreen().catch(() => {});
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      } else if ((document as any).webkitExitFullscreen) {
+        (document as any).webkitExitFullscreen();
+      }
       setIsFullscreen(false);
     }
   }
