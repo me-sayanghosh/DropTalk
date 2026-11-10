@@ -5,12 +5,13 @@ import express from 'express';
 
 process.env.JWT_SECRET = 'test-secret-for-jest';
 
-import { setupMongo, teardownMongo } from './setup';
+import { setupMongo, teardownMongo } from './setup.ts';
 import { User } from '../src/features/auth/user.model';
 import { Room } from '../src/features/rooms/room.model';
 import { Message } from '../src/features/messages/message.model';
 import authRoutes from '../src/features/auth/auth.routes';
 import messageRoutes, { backfillMessages } from '../src/features/messages/messages.routes';
+import { JWT_SECRET } from '../src/shared/utils/constants';
 
 let app;
 let server;
@@ -25,7 +26,7 @@ function buildApp() {
 }
 
 function makeToken(user) {
-  return jwt.sign({ sub: user._id.toString(), username: user.username }, process.env.JWT_SECRET, { expiresIn: '15m' });
+  return jwt.sign({ sub: user._id.toString(), username: user.username }, JWT_SECRET, { expiresIn: '15m' });
 }
 
 beforeAll(async () => {

@@ -1,6 +1,9 @@
 export default {
   testMatch: ['**/tests/**/*.test.[jt]s'],
-  transform: {},
+  extensionsToTreatAsEsm: ['.ts'],
+  transform: {
+    '^.+\\.tsx?$': './ts-transformer.cjs',
+  },
   testEnvironment: 'node',
   forceExit: true,
   detectOpenHandles: true,

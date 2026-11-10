@@ -6,10 +6,11 @@ import express from 'express';
 
 process.env.JWT_SECRET = 'test-secret-for-jest';
 
-import { setupMongo, teardownMongo } from './setup';
+import { setupMongo, teardownMongo } from './setup.ts';
 import { User } from '../src/features/auth/user.model';
 import { Otp } from '../src/features/auth/otp.model';
 import authRoutes from '../src/features/auth/auth.routes';
+import { JWT_SECRET } from '../src/shared/utils/constants';
 import bcrypt from 'bcryptjs';
 
 let app;
@@ -39,7 +40,7 @@ beforeEach(async () => {
 });
 
 function makeToken(user) {
-  return jwt.sign({ sub: user._id.toString(), username: user.username }, process.env.JWT_SECRET, { expiresIn: '15m' });
+  return jwt.sign({ sub: user._id.toString(), username: user.username }, JWT_SECRET, { expiresIn: '15m' });
 }
 
 describe('Refresh token reuse detection', () => {
@@ -173,21 +174,21 @@ describe('Refresh token reuse detection', () => {
 
     await User.findByIdAndUpdate(verifyRes.body.user.id, {
       $push: {
-        refreshTokens: [
-          { token: refreshA, family, createdAt: new Date(), expiresAt },
-          { token: refreshB, family, createdAt: new Date(), expiresAt },
-        ],
+        refreshTokens: {
+          $each: [
+            { token: refreshA, family, createdAt: new Date(), expiresAt },
+            { token: refreshB, family, createdAt: new Date(), expiresAt },
+          ],
+        },
       },
     });
 
     const token = makeToken(await User.findById(verifyRes.body.user.id));
     const logout = await req('/api/auth/logout', { refreshToken: refreshA }, { Authorization: `Bearer ${token}` });
-    expect(logout.status).toBe(200);
-
     const useB = await req('/api/auth/refresh', { refreshToken: refreshB });
-    expect(useB.status).toBe(200);
-
     const useA = await req('/api/auth/refresh', { refreshToken: refreshA });
+    expect(logout.status).toBe(200);
+    expect(useB.status).toBe(200);
     expect(useA.status).toBe(401);
   });
 });

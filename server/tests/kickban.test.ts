@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
 import mongoose from 'mongoose';
 
-import { setupMongo, teardownMongo } from './setup';
+import { setupMongo, teardownMongo } from './setup.ts';
 import { User } from '../src/features/auth/user.model';
 import { Room } from '../src/features/rooms/room.model';
 

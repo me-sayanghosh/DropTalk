@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "nodemon --watch src --delay 1s src/index.js",
     "start": "node src/index.js",
-    "test": "NODE_OPTIONS='--import tsx' node --experimental-vm-modules node_modules/jest/bin/jest.js --forceExit --detectOpenHandles"
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --forceExit --detectOpenHandles"
   },
   "dependencies": {
     "@socket.io/redis-adapter": "^8.3.0",
