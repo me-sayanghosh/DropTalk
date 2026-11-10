@@ -1,7 +1,3 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 @import "../styles.css";
 @import "../features/home/components/Aurora.css";
 @import "../features/home/components/RotatingText.css";
@@ -10,6 +6,10 @@
 @import "../features/home/components/ScrollFloat.css";
 @import "../shared/components/ui/AnimatedList.css";
 @import "../shared/components/ui/Stepper.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* Next.js & Utility helper overrides */
 .lazy-suspense-fallback {
