@@ -10,23 +10,7 @@ import {
 } from 'lucide-react';
 import { formatDateSeparator } from '../../../shared/utils/dateUtils';
 import { getMediaUrl } from '../../../shared/utils';
-
-function MessageSkeleton({ count = 5 }: { count?: number }) {
-  return (
-    <>
-      {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="msg-skeleton">
-          <div className="msg-skeleton-avatar" />
-          <div className="msg-skeleton-body">
-            <div className="msg-skeleton-name" />
-            <div className="msg-skeleton-line" />
-            <div className="msg-skeleton-line short" />
-          </div>
-        </div>
-      ))}
-    </>
-  );
-}
+import { MessageSkeleton } from '../../../shared/components/ui/SkeletonLoaders';
 
 /**
  * Parse message text and highlight @username mentions.
