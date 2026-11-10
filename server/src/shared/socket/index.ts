@@ -8,6 +8,7 @@ import {
   incrementPresence,
   decrementPresence,
   startHeartbeat,
+  clearUserCurrentRoom,
 } from '../../features/presence/presence.service';
 import { registerRoomHandlers } from '../../features/rooms/rooms.socket';
 import { registerMessageHandlers } from '../../features/messages/messages.socket';
@@ -86,7 +87,6 @@ export function attachSocket(httpServer) {
         if (remaining === 0) {
           io.emit('presence:update', { userId: socket.user.id, status: 'offline', currentRoom: null });
         } else {
-          const { clearUserCurrentRoom } = await import('../../features/presence/presence.service');
           clearUserCurrentRoom(socket.user.id).catch(() => {});
         }
       } catch (err: any) {
