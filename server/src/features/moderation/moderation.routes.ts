@@ -131,7 +131,7 @@ router.delete('/:roomId/messages/:messageId', requireAtLeastRole('moderator'), a
   }
 });
 
-router.post('/:roomId/messages/:messageId/report', async (req, res) => {
+router.post('/:roomId/messages/:messageId/report', requireAtLeastRole('member'), async (req, res) => {
   try {
     const { roomId, messageId } = req.params;
 
@@ -148,10 +148,9 @@ router.post('/:roomId/messages/:messageId/report', async (req, res) => {
   }
 });
 
-router.get('/:roomId/members', async (req, res) => {
+router.get('/:roomId/members', requireAtLeastRole('member'), async (req, res) => {
   try {
-    const { roomId } = req.params;
-    const room = await Room.findById(roomId);
+    const room = req.room;
     if (!room) return res.status(404).json({ error: 'room not found' });
 
     const userIds = room.members.map((m) => m.user);
