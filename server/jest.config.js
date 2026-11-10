@@ -1,5 +1,5 @@
 export default {
-  testMatch: ['**/tests/**/*.test.js'],
+  testMatch: ['**/tests/**/*.test.[jt]s'],
   transform: {},
   testEnvironment: 'node',
   forceExit: true,

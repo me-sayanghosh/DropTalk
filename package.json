@@ -9,6 +9,7 @@
     "build": "next build",
     "start": "NODE_ENV=production tsx server.ts",
     "typecheck": "tsc --noEmit",
+    "test": "npm --prefix server test",
     "lint": "next lint"
   },
   "dependencies": {
