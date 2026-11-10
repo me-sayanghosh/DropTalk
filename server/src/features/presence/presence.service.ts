@@ -7,7 +7,7 @@ const CONN_COUNT_KEY = 'presence:connCount';
 const HEARTBEAT_TTL_MS = PRESENCE.HEARTBEAT_TTL_MS;
 const HEARTBEAT_REFRESH_MS = PRESENCE.HEARTBEAT_REFRESH_MS;
 
-export async function setPresence(userId, { status = 'online', currentRoom = null }) {
+export async function setPresence(userId: string, { status = 'online', currentRoom = null }: any) {
   const data = { status, currentRoom, lastSeen: Date.now() };
   await redis.hset(PRESENCE_KEY, userId, JSON.stringify(data));
   if (status === 'online') {
@@ -17,7 +17,7 @@ export async function setPresence(userId, { status = 'online', currentRoom = nul
   }
 }
 
-export async function incrementPresence(userId, socketId) {
+export async function incrementPresence(userId: string, socketId: string) {
   const hbKey = `presence:heartbeat:${userId}:${socketId}`;
   await redis.set(hbKey, '1', 'PX', HEARTBEAT_TTL_MS);
 
@@ -30,7 +30,7 @@ export async function incrementPresence(userId, socketId) {
   return count;
 }
 
-export function startHeartbeat(userId, socketId) {
+export function startHeartbeat(userId: string, socketId: string) {
   const hbKey = `presence:heartbeat:${userId}:${socketId}`;
   const interval = setInterval(async () => {
     try {
@@ -42,7 +42,7 @@ export function startHeartbeat(userId, socketId) {
   return interval;
 }
 
-export async function decrementPresence(userId, socketId) {
+export async function decrementPresence(userId: string, socketId?: string) {
   if (socketId) {
     const hbKey = `presence:heartbeat:${userId}:${socketId}`;
     await redis.del(hbKey);
@@ -67,23 +67,11 @@ export async function decrementPresence(userId, socketId) {
 
 export async function reconcilePresence() {
   const onlineIds = await redis.smembers(ONLINE_SET);
-  if (onlineIds.length === 0) return;
+  if (!onlineIds || onlineIds.length === 0) return;
 
   for (const userId of onlineIds) {
-    const pattern = `presence:heartbeat:${userId}:*`;
-    let cursor = '0';
-    let hasLiveHeartbeat = false;
-
-    do {
-      const [nextCursor, found] = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', 50);
-      cursor = nextCursor;
-      if (found.length > 0) {
-        hasLiveHeartbeat = true;
-        break;
-      }
-    } while (cursor !== '0');
-
-    if (!hasLiveHeartbeat) {
+    const connCount = await redis.get(`${CONN_COUNT_KEY}:${userId}`);
+    if (!connCount || parseInt(connCount, 10) <= 0) {
       const data = await getPresence(userId);
       if (data && data.status === 'online') {
         data.status = 'offline';
@@ -97,32 +85,17 @@ export async function reconcilePresence() {
   }
 }
 
-export async function getPresence(userId) {
+export async function getPresence(userId: string) {
   const raw = await redis.hget(PRESENCE_KEY, userId);
   return raw ? JSON.parse(raw) : null;
 }
 
-export async function removePresence(userId) {
-  await redis.del(`${CONN_COUNT_KEY}:${userId}`);
-  const data = await getPresence(userId);
-  if (data) {
-    data.status = 'offline';
-    data.lastSeen = Date.now();
-    await redis.hset(PRESENCE_KEY, userId, JSON.stringify(data));
-  }
-  await redis.srem(ONLINE_SET, userId);
-}
-
-export async function getOnlineUserIds() {
-  return redis.smembers(ONLINE_SET);
-}
-
 export async function getPresenceMap() {
   const onlineIds = await redis.smembers(ONLINE_SET);
-  if (onlineIds.length === 0) return {};
+  if (!onlineIds || onlineIds.length === 0) return {};
 
   const raw = await redis.hmget(PRESENCE_KEY, ...onlineIds);
-  const map = {};
+  const map: Record<string, any> = {};
   for (let i = 0; i < onlineIds.length; i++) {
     if (raw[i]) {
       map[onlineIds[i]] = JSON.parse(raw[i]);
@@ -131,7 +104,7 @@ export async function getPresenceMap() {
   return map;
 }
 
-export async function setUserCurrentRoom(userId, roomId) {
+export async function setUserCurrentRoom(userId: string, roomId: string) {
   const data = await getPresence(userId);
   if (data) {
     data.currentRoom = roomId;
@@ -140,7 +113,7 @@ export async function setUserCurrentRoom(userId, roomId) {
   }
 }
 
-export async function clearUserCurrentRoom(userId) {
+export async function clearUserCurrentRoom(userId: string) {
   const data = await getPresence(userId);
   if (data) {
     data.currentRoom = null;
@@ -149,24 +122,38 @@ export async function clearUserCurrentRoom(userId) {
   }
 }
 
-export async function setTyping(roomId, userId, ttlMs = 3000) {
-  const key = `typing:${roomId}:${userId}`;
-  await redis.set(key, '1', 'PX', ttlMs);
+// O(1) Typing state management via scoped Redis hashes per room
+export async function setTyping(roomId: string, userId: string, ttlMs = 3000) {
+  const hashKey = `typing:${roomId}`;
+  const expireAt = Date.now() + ttlMs;
+  await redis.hset(hashKey, userId, String(expireAt));
+  await redis.expire(hashKey, Math.ceil(ttlMs / 1000) + 5);
 }
 
-export async function getTypingUsers(roomId) {
-  const pattern = `typing:${roomId}:*`;
-  const keys = [];
-  let cursor = '0';
-  do {
-    const [nextCursor, found] = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
-    cursor = nextCursor;
-    keys.push(...found);
-  } while (cursor !== '0');
+export async function getTypingUsers(roomId: string) {
+  const hashKey = `typing:${roomId}`;
+  const entries = await redis.hgetall(hashKey);
+  if (!entries || Object.keys(entries).length === 0) return [];
 
-  return keys.map((k) => k.split(':').pop());
+  const now = Date.now();
+  const activeUsers: string[] = [];
+  const expiredUsers: string[] = [];
+
+  for (const [userId, expireAtStr] of Object.entries(entries)) {
+    if (Number(expireAtStr) > now) {
+      activeUsers.push(userId);
+    } else {
+      expiredUsers.push(userId);
+    }
+  }
+
+  if (expiredUsers.length > 0) {
+    redis.hdel(hashKey, ...expiredUsers).catch(() => {});
+  }
+
+  return activeUsers;
 }
 
-export async function removeTyping(roomId, userId) {
-  await redis.del(`typing:${roomId}:${userId}`);
+export async function removeTyping(roomId: string, userId: string) {
+  await redis.hdel(`typing:${roomId}`, userId);
 }
