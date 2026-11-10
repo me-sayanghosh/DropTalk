@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, ReactNode } from 'react';
 import { connectSocket, disconnectSocket } from '../utils/socket';
 import { api, getAccessToken, setTokens, clearTokens } from '../utils/api';
 import { clearAllCryptoKeys } from '../utils/crypto';
@@ -75,20 +75,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  function login({ accessToken: at, refreshToken: rt, user: u }: LoginParams) {
+  const login = useCallback(({ accessToken: at, refreshToken: rt, user: u }: LoginParams) => {
     setTokens(at, rt);
     setAccessToken(at);
     setUser(u);
     connectSocket(at);
-  }
+  }, []);
 
-  function logout() {
+  const logout = useCallback(() => {
     clearTokens();
     clearAllCryptoKeys();
     setAccessToken(null);
     setUser(null);
     disconnectSocket();
-  }
+  }, []);
+
+  const contextValue = useMemo(
+    () => ({ user, token: accessToken, login, logout, setUser }),
+    [user, accessToken, login, logout]
+  );
 
   if (!bootstrapped) {
     return (
@@ -101,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthCtx.Provider value={{ user, token: accessToken, login, logout, setUser }}>
+    <AuthCtx.Provider value={contextValue}>
       {children}
     </AuthCtx.Provider>
   );

@@ -488,11 +488,14 @@ export default function useChat() {
       socket.off('room:request-denied');
       socket.off('room:auto-join');
       socket.off('message:mention');
+      socket.off('message:edited');
+      socket.off('message:pinned');
+      socket.off('message:unpinned');
     };
   }, [user, rooms]);
 
   useEffect(() => {
-    onReconnect(async () => {
+    const unsub = onReconnect(async () => {
       const lastSeen = getLastSeenMessages();
       const roomsToBackfill = Object.entries(lastSeen)
         .filter(([, msgId]) => msgId)
@@ -530,16 +533,21 @@ export default function useChat() {
     });
 
     const socket = getSocket();
-    if (!socket) return;
-    socket.emit('presence:request-map', (map: any) => {
-      if (map) {
-        const enriched: any = {};
-        for (const [userId, pres] of Object.entries<any>(map)) {
-          enriched[userId] = { ...pres, username: pres.username || userId.slice(0, 8) };
+    if (socket) {
+      socket.emit('presence:request-map', (map: any) => {
+        if (map) {
+          const enriched: any = {};
+          for (const [userId, pres] of Object.entries<any>(map)) {
+            enriched[userId] = { ...pres, username: pres.username || userId.slice(0, 8) };
+          }
+          setPresenceMap(enriched);
         }
-        setPresenceMap(enriched);
-      }
-    });
+      });
+    }
+
+    return () => {
+      unsub();
+    };
   }, []);
 
   async function selectRoom(room: Room | null) {
