@@ -1,7 +1,5 @@
 @import "../styles.css";
 @import "../features/home/components/SlotReelText.css";
-@import "../shared/components/ui/AnimatedList.css";
-@import "../shared/components/ui/Stepper.css";
 
 @tailwind base;
 @tailwind components;

@@ -113,10 +113,34 @@ export default function Chat() {
       setMobileActiveView('chat');
     } else if (p.startsWith('/dm')) {
       setNavRailTab('dm');
-      if (!currentDM) setMobileActiveView('sidebar');
+      const dmMatch = p.match(/^\/dm\/([^/?#]+)/);
+      if (dmMatch && dmMatch[1]) {
+        const targetDmId = dmMatch[1];
+        const found = conversations.find(
+          (c: any) => c.id === targetDmId || c._id === targetDmId || c.partner?.id === targetDmId
+        );
+        if (found && currentDM?.id !== found.id) {
+          openDM(found);
+        }
+        setMobileActiveView('chat');
+      } else if (!currentDM) {
+        setMobileActiveView('sidebar');
+      }
     } else if (p.startsWith('/channels') || p === '/chat') {
       setNavRailTab('chat');
-      if (!currentRoom) setMobileActiveView('sidebar');
+      const chMatch = p.match(/^\/channels\/([^/?#]+)/);
+      if (chMatch && chMatch[1]) {
+        const targetRoomId = chMatch[1];
+        const found = rooms.find(
+          (r: Room) => r.id === targetRoomId || (r as any)._id === targetRoomId
+        );
+        if (found && currentRoom?.id !== found.id) {
+          selectRoom(found);
+        }
+        setMobileActiveView('chat');
+      } else if (!currentRoom) {
+        setMobileActiveView('sidebar');
+      }
     }
 
     const tab = searchParams.get('tab');
@@ -129,7 +153,7 @@ export default function Chat() {
     if (searchParams.get('openSearch') === 'true') {
       setShowQuickSwitcher(true);
     }
-  }, [pathname, searchParams]);
+  }, [pathname, searchParams, rooms, conversations, currentRoom?.id, currentDM?.id, selectRoom, openDM]);
 
   // Global Keyboard Shortcuts Listener
   useEffect(() => {
@@ -296,11 +320,17 @@ export default function Chat() {
   const handleSelectRoom = (room: Room) => {
     selectRoom(room);
     setMobileActiveView('chat');
+    if (pathname !== `/channels/${room.id}`) {
+      router.replace(`/channels/${room.id}`);
+    }
   };
 
   const handleOpenDM = async (convo: any) => {
     await openDM(convo);
     setMobileActiveView('chat');
+    if (pathname !== `/dm/${convo.id}`) {
+      router.replace(`/dm/${convo.id}`);
+    }
   };
 
   return (

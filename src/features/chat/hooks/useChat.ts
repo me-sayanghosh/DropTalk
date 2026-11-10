@@ -119,8 +119,19 @@ export default function useChat() {
         setMemberRooms(new Set(r.data.memberships || []));
         setPendingRooms(new Set(r.data.pending || []));
         if (fetchedRooms.length > 0 && !currentRoomRef.current) {
-          const firstMemberRoom = fetchedRooms.find((room: Room) => (r.data.memberships || []).includes(room.id));
-          selectRoom(firstMemberRoom || fetchedRooms[0]);
+          let targetRoom: Room | undefined;
+          if (typeof window !== 'undefined') {
+            const match = window.location.pathname.match(/\/channels\/([^/?#]+)/);
+            if (match && match[1]) {
+              targetRoom = fetchedRooms.find((room: Room) => room.id === match[1] || (room as any)._id === match[1]);
+            }
+          }
+          if (!targetRoom) {
+            targetRoom = fetchedRooms.find((room: Room) => (r.data.memberships || []).includes(room.id)) || fetchedRooms[0];
+          }
+          if (targetRoom) {
+            selectRoom(targetRoom);
+          }
         }
       })
       .catch(() => {})

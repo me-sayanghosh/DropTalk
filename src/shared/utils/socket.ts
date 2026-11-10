@@ -268,7 +268,7 @@ export function disconnectSocket(): void {
     socket.disconnect();
     socket = null;
   }
-  onReconnectCallback = null;
+  reconnectCallbacks.clear();
 }
 
 if (typeof window !== 'undefined') {
