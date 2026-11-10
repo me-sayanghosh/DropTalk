@@ -133,8 +133,9 @@ export default function JoinNow() {
     setErr('');
     setInfo('');
 
-    if (!email || !email.includes('@')) {
-      setErr('Please enter a valid email address.');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegex.test(email.trim())) {
+      setErr('Please enter a valid email address (e.g. name@domain.com).');
       return;
     }
 
@@ -308,7 +309,7 @@ export default function JoinNow() {
                   setErr('Google sign-in initialized. If popup is blocked, please check browser settings or use Email OTP.');
                 }
               } else {
-                setErr('Google Client ID not detected in environment. Using Email OTP authentication below.');
+                setInfo('Google Sign-In is unconfigured in this environment. Please enter your email below to receive a direct 6-digit access code.');
               }
             }}
             className="bauhaus-btn bauhaus-btn-outline w-full justify-center"
@@ -423,8 +424,10 @@ export default function JoinNow() {
                     ref={inputRefs[idx]}
                     type="text"
                     inputMode="numeric"
+                    autoComplete={idx === 0 ? 'one-time-code' : 'off'}
                     maxLength={6}
                     value={digit}
+                    aria-label={`Verification code digit ${idx + 1}`}
                     onChange={(e) => handleDigitChange(idx, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(idx, e)}
                     className={`bauhaus-otp-cell ${digit ? 'filled' : ''}`}
