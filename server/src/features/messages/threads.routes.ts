@@ -23,12 +23,17 @@ router.get('/:roomId/messages/:messageId/replies', async (req, res) => {
     if (!parent) return res.status(404).json({ error: 'message not found' });
 
     const replies = await Message.find({ parentMessage: messageId })
+      .populate('sender', 'username profileImage')
       .sort({ createdAt: 1 })
       .limit(100);
 
-    res.json({ replies: replies.map((m) => m.toClient()) });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    const filtered = replies.filter(
+      (m) => !(m.deletedFor || []).some((id) => id.toString() === req.user.id)
+    );
+
+    res.json({ replies: filtered.map((m) => m.toClient()) });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Internal server error' });
   }
 });
 
@@ -45,12 +50,15 @@ router.get('/:roomId/threads', async (req, res) => {
     }
 
     const threads = await Message.aggregate([
-      { $match: { room: room._id, parentMessage: null } },
+      { $match: { room: room._id, parentMessage: null, deleted: { $ne: true } } },
       {
         $lookup: {
           from: 'messages',
-          localField: '_id',
-          foreignField: 'parentMessage',
+          let: { parentId: '$_id' },
+          pipeline: [
+            { $match: { $expr: { $eq: ['$parentMessage', '$$parentId'] }, deleted: { $ne: true } } },
+            { $sort: { createdAt: 1 } },
+          ],
           as: 'replies',
         },
       },
@@ -61,14 +69,50 @@ router.get('/:roomId/threads', async (req, res) => {
           lastReply: { $last: '$replies' },
         },
       },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'sender',
+          foreignField: '_id',
+          as: 'senderUser',
+        },
+      },
+      { $unwind: { path: '$senderUser', preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'lastReply.sender',
+          foreignField: '_id',
+          as: 'lastReplySender',
+        },
+      },
+      { $unwind: { path: '$lastReplySender', preserveNullAndEmptyArrays: true } },
       { $sort: { 'lastReply.createdAt': -1 } },
       { $limit: 50 },
-      { $project: { _id: 1, text: 1, sender: 1, createdAt: 1, replyCount: 1, lastReply: 1 } },
+      {
+        $project: {
+          _id: 1,
+          id: '$_id',
+          text: 1,
+          sender: {
+            id: '$sender',
+            username: { $ifNull: ['$senderUser.username', 'User'] },
+          },
+          createdAt: 1,
+          replyCount: 1,
+          lastReply: {
+            id: '$lastReply._id',
+            text: '$lastReply.text',
+            createdAt: '$lastReply.createdAt',
+            senderUsername: { $ifNull: ['$lastReplySender.username', 'User'] },
+          },
+        },
+      },
     ]);
 
     res.json({ threads });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Internal server error' });
   }
 });
 
