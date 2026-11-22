@@ -2,6 +2,7 @@ import { Router } from 'express';
 import mongoose from 'mongoose';
 import { CallLog } from './callLog.model';
 import { requireAuth } from '../../shared/middleware/auth';
+import { createNotification } from '../notifications/notifications.service';
 
 const router = Router();
 router.use(requireAuth);
@@ -85,6 +86,22 @@ router.post('/log', async (req, res) => {
       .populate('receiver', 'username name profileImage')
       .populate('room', 'name');
 
+    if (validReceiver && (log.status === 'missed' || log.status === 'rejected')) {
+      const callTypeLabel = log.type === 'video' ? 'video call' : 'voice call';
+      const callerName = req.user.username || 'Someone';
+      const title = log.status === 'missed' ? `Missed ${callTypeLabel}` : `${callTypeLabel} declined`;
+      const message = `${callerName} called you (${callTypeLabel}).`;
+
+      createNotification({
+        userId: validReceiver,
+        actorId: callerId,
+        type: 'system',
+        title,
+        message,
+        link: '/calls',
+      }).catch((e) => console.error('[calls] notification error:', e.message));
+    }
+
     res.status(201).json({ log: populated.toClient(callerId) });
   } catch (err) {
     console.error('[calls] log error:', err.message);
@@ -133,6 +150,24 @@ router.put('/log/:logId', async (req, res) => {
       .populate('caller', 'username name profileImage')
       .populate('receiver', 'username name profileImage')
       .populate('room', 'name');
+
+    if (log.receiver && (log.status === 'missed' || log.status === 'rejected')) {
+      const callTypeLabel = log.type === 'video' ? 'video call' : 'voice call';
+      const callerName = req.user.username || 'Someone';
+      const title = log.status === 'missed' ? `Missed ${callTypeLabel}` : `${callTypeLabel} declined`;
+      const message = `${callerName} called you (${callTypeLabel}).`;
+      const receiverId = (log.receiver as any)?._id || log.receiver;
+      const callerId = (log.caller as any)?._id || log.caller;
+
+      createNotification({
+        userId: receiverId,
+        actorId: callerId,
+        type: 'system',
+        title,
+        message,
+        link: '/calls',
+      }).catch((e) => console.error('[calls] notification update error:', e.message));
+    }
 
     res.json({ log: populated.toClient(userId) });
   } catch (err) {
