@@ -21,3 +21,4 @@ export { default as KeyboardShortcutsModal } from './KeyboardShortcutsModal';
 export { default as CallLogsPanel } from '../../calls/components/CallLogsPanel';
 export { default as CallLogsMainView } from '../../calls/components/CallLogsMainView';
 export { default as ChannelMembersPage } from './ChannelMembersPage';
+export { default as AIPanel } from './AIPanel';
