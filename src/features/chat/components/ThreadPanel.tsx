@@ -67,8 +67,6 @@ export default function ThreadPanel({ parentMessage, roomId, meId, isPrivate, on
     e.preventDefault();
     const t = text.trim();
     if (!t || !parentMessage) return;
-    const socket = getSocket();
-    if (!socket) return;
 
     let textToSend = t;
     if (isPrivate && getRoomKey(roomId)) {
@@ -80,12 +78,32 @@ export default function ThreadPanel({ parentMessage, roomId, meId, isPrivate, on
       }
     }
 
-    socket.emit('message:thread-reply', {
-      roomId,
-      parentMessageId: parentMessage.id,
-      text: textToSend,
-      clientMsgId: crypto.randomUUID(),
-    });
+    const clientMsgId = crypto.randomUUID();
+    const socket = getSocket();
+
+    if (socket && socket.connected) {
+      socket.emit('message:thread-reply', {
+        roomId,
+        parentMessageId: parentMessage.id,
+        text: textToSend,
+        clientMsgId,
+      });
+    } else {
+      try {
+        const res = await api.post(`/rooms/${roomId}/messages`, {
+          text: textToSend,
+          parentMessageId: parentMessage.id,
+          clientMsgId,
+        });
+        if (res.data?.message) {
+          setReplies((prev) => [...prev, res.data.message]);
+          maybeDecryptReply(res.data.message);
+        }
+      } catch (err) {
+        console.error('Thread HTTP send failed:', err);
+      }
+    }
+
     setText('');
   }
 
