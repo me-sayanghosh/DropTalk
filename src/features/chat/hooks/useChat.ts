@@ -642,10 +642,13 @@ export default function useChat() {
     }
   }
 
-  function leaveRoom(room: Room) {
+  function leaveRoom(roomOrId: Room | string) {
+    const roomId = typeof roomOrId === 'string' ? roomOrId : roomOrId?.id;
+    if (!roomId) return;
     const socket = socketRef.current;
-    if (socket) socket.emit('room:leave', { roomId: room.id });
-    if (currentRoom?.id === room.id) {
+    if (socket) socket.emit('room:leave', { roomId });
+    api.post(`/rooms/${roomId}/leave`).catch(() => {});
+    if (currentRoom?.id === roomId) {
       setCurrentRoom(null);
       setMessages([]);
       setOnline([]);
