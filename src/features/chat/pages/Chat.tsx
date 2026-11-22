@@ -10,6 +10,7 @@ import {
   DMPanel, DMChat, CreateChannelModal, UserProfileCard, ForwardModal, MessageSearchModal,
   PinnedMessagesModal, ChannelSettingsModal, CallOverlay, QuickSwitcherModal, KeyboardShortcutsModal,
   CallLogsPanel, CallLogsMainView, ChannelMembersPage,
+  AIPanel, SuggestionsBar,
 } from '../components';
 import NotificationDrawer from '../../notifications/NotificationDrawer';
 import { useNotifications } from '../../notifications/useNotifications';
@@ -74,6 +75,7 @@ export default function Chat() {
   const [selectedProfileUser, setSelectedProfileUser] = useState<User | null>(null);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [showPinnedModal, setShowPinnedModal] = useState(false);
+  const [showAIPanel, setShowAIPanel] = useState(false);
   const [showChannelSettingsModal, setShowChannelSettingsModal] = useState(false);
   const [showQuickSwitcher, setShowQuickSwitcher] = useState(false);
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
@@ -588,6 +590,13 @@ export default function Chat() {
                         <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
                       </svg>
                     </button>
+                    <button
+                      className="header-icon-btn ai-copilot-btn"
+                      onClick={() => setShowAIPanel(true)}
+                      title="AI Conversation Summary (Gemini)"
+                    >
+                      <span style={{ fontSize: '1.1rem' }}>✨</span>
+                    </button>
                   </div>
                 </>
               ) : (
@@ -662,6 +671,14 @@ export default function Chat() {
 
                       </div>
                       <TypingIndicator typingUsers={typingUsers} />
+                      <SuggestionsBar
+                        roomId={currentRoom.id}
+                        currentInput={currentInput}
+                        onSelectSuggestion={(s) => {
+                          setCurrentInput(s);
+                          send(s);
+                        }}
+                      />
                       <MessageInput
                         onSend={send}
                         onTyping={handleTyping}
@@ -786,6 +803,15 @@ export default function Chat() {
             const el = document.getElementById(`msg-${msgId}`);
             if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }}
+        />
+      )}
+
+      {/* AI Copilot Panel */}
+      {showAIPanel && currentRoom && (
+        <AIPanel
+          roomId={currentRoom.id}
+          roomName={currentRoom.name}
+          onClose={() => setShowAIPanel(false)}
         />
       )}
 
