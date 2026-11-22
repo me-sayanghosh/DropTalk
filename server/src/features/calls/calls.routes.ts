@@ -93,4 +93,36 @@ router.delete('/history', async (req, res) => {
   }
 });
 
+/**
+ * DELETE /api/calls/history/:logId
+ * Soft-delete a single call log entry for the current user.
+ */
+router.delete('/history/:logId', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { logId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(logId)) {
+      return res.status(400).json({ error: 'Invalid log ID' });
+    }
+
+    const log = await CallLog.findOne({
+      _id: logId,
+      $or: [{ caller: userId }, { receiver: userId }],
+    });
+
+    if (!log) {
+      return res.status(404).json({ error: 'Call log not found' });
+    }
+
+    await CallLog.findByIdAndUpdate(logId, {
+      $addToSet: { deletedFor: userId },
+    });
+
+    res.json({ ok: true, logId });
+  } catch (err) {
+    console.error('[calls] single delete error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router;
