@@ -35,7 +35,7 @@ router.post('/:roomId/members/:userId/kick', requireAtLeastRole('moderator'), as
 
     room.members = room.members.filter((m) => m.user.toString() !== userId);
     if (room.encryptedKeys && room.encryptedKeys.length > 0) {
-      room.encryptedKeys = room.encryptedKeys.filter((k: any) => k.userId !== userId) as any;
+      room.encryptedKeys = room.encryptedKeys.filter((k: any) => (k.user ? k.user.toString() : k.userId) !== userId) as any;
     }
     await room.save();
 
