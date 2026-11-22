@@ -444,6 +444,46 @@ router.post('/:roomId/messages/:messageId/react', async (req, res) => {
   }
 });
 
+// GET /api/rooms/:roomId/pinned - Get all pinned messages in a room
+router.get('/:roomId/pinned', async (req, res) => {
+  try {
+    const { roomId } = req.params;
+
+    const room = await Room.findById(roomId);
+    if (!room) return res.status(404).json({ error: 'room not found' });
+
+    if (room.type === 'private') {
+      const isMember = room.members.some((m) => m.user.toString() === req.user.id);
+      if (!isMember) return res.status(403).json({ error: 'not a member of this private room' });
+    }
+
+    const pinnedIds = (room.pinnedMessages || []).filter(Boolean);
+    if (pinnedIds.length === 0) {
+      return res.json({ ok: true, pinnedMessages: [] });
+    }
+
+    const messages = await Message.find({
+      _id: { $in: pinnedIds },
+      room: roomId,
+      deleted: false,
+    })
+      .populate('sender', 'username profileImage')
+      .sort({ createdAt: -1 });
+
+    const filtered = messages.filter(
+      (m) => !(m.deletedFor || []).some((id) => id.toString() === req.user.id)
+    );
+
+    res.json({
+      ok: true,
+      pinnedMessages: filtered.map((m) => m.toClient()),
+    });
+  } catch (err: any) {
+    console.error('[messages] pinned fetch error:', err.message);
+    res.status(500).json({ error: err.message || 'Internal server error' });
+  }
+});
+
 // GET /api/rooms/:roomId/messages/search?q=query - Search messages within a room
 router.get('/:roomId/messages/search', async (req, res) => {
   try {
