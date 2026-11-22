@@ -64,7 +64,7 @@ export default function MessageSearchModal({ roomId, isOpen, onClose, onJumpToMe
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-card search-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-card search-modal" role="dialog" aria-modal="true" aria-label="Search Messages" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3>Search Messages</h3>
           <button className="modal-close" onClick={onClose}>&times;</button>

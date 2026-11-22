@@ -41,7 +41,7 @@ export default function ChannelSettingsModal({ room, onClose, onUpdated }) {
 
   return (
     <div className="cc-modal-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="cc-modal">
+      <div className="cc-modal" role="dialog" aria-modal="true" aria-label="Channel Settings">
         {/* Header */}
         <div className="cc-modal-header">
           <div className="cc-modal-title-area">

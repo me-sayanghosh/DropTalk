@@ -25,7 +25,7 @@ export default function ForwardModal({ message, rooms = [], conversations = [], 
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-card forward-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-card forward-modal" role="dialog" aria-modal="true" aria-label="Forward Message" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3>Forward Message</h3>
           <button className="modal-close" onClick={onClose}>&times;</button>

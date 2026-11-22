@@ -17,7 +17,7 @@ export default function UserProfileCard({ user, isOnline, onClose, onStartDM, on
 
   return (
     <div className="user-card-backdrop" onClick={onClose}>
-      <div className="user-card-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="user-card-modal" role="dialog" aria-modal="true" aria-label="User Profile" onClick={(e) => e.stopPropagation()}>
         {/* Banner header */}
         <div className="user-card-banner">
           <button className="user-card-close-btn" onClick={onClose} title="Close">&times;</button>
