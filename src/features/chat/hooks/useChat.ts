@@ -944,6 +944,7 @@ export default function useChat() {
         text: message.text
           ? `[Forwarded from @${forwardedFrom.senderUsername}]: ${message.text}`
           : `[Forwarded attachment from @${forwardedFrom.senderUsername}]`,
+        attachments: message.attachments || [],
       });
     }
   }
