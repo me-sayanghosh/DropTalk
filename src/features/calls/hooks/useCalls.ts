@@ -115,6 +115,15 @@ export function useCalls(user?: User | null) {
     []
   );
 
+  const deleteCallLog = useCallback(async (logId: string) => {
+    try {
+      await api.delete(`/calls/history/${logId}`);
+      setCallLogs((prev) => prev.filter((l) => l.id !== logId));
+    } catch (err) {
+      console.error('Failed to delete call log:', err);
+    }
+  }, []);
+
   const clearCallHistory = useCallback(async () => {
     try {
       await api.delete('/calls/history');
@@ -130,6 +139,7 @@ export function useCalls(user?: User | null) {
     loading,
     fetchCallLogs,
     addCallLog,
+    deleteCallLog,
     clearCallHistory,
   };
 }

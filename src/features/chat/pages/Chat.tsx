@@ -55,7 +55,7 @@ export default function Chat() {
     deleteNotification,
     clearAllNotifications,
   } = useNotifications(user);
-  const { callLogs, loading: callLogsLoading, addCallLog, clearCallHistory } = useCalls(user);
+  const { callLogs, loading: callLogsLoading, addCallLog, deleteCallLog, clearCallHistory } = useCalls(user);
   const {
     callState, callerInfo, callDuration, localStream, remoteStream, isMuted, isVideoOff, isScreenSharing,
     startCall, acceptCall, rejectCall, endCall, toggleMute, toggleVideo, toggleScreenShare,
@@ -373,6 +373,7 @@ export default function Chat() {
             loading={callLogsLoading}
             onSelectLog={(log: any) => { setSelectedCallLog(log); setMobileActiveView('chat'); }}
             onStartCall={handleStartCall}
+            onDeleteLog={deleteCallLog}
             onClearHistory={clearCallHistory}
           />
         ) : navRailTab === 'dm' ? (
@@ -437,6 +438,7 @@ export default function Chat() {
             logs={callLogs}
             selectedLog={selectedCallLog}
             onStartCall={handleStartCall}
+            onDeleteLog={deleteCallLog}
             onClearHistory={clearCallHistory}
             onBack={() => { router.push('/channels'); setNavRailTab('chat'); setMobileActiveView('sidebar'); }}
           />
