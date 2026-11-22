@@ -14,9 +14,10 @@ router.use(requireAuth);
 router.get('/history', async (req, res) => {
   try {
     const userId = req.user.id;
+    const userObjId = mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : userId;
     const logs = await CallLog.find({
       $or: [{ caller: userId }, { receiver: userId }],
-      deletedFor: { $ne: userId },
+      deletedFor: { $nin: [userObjId, userId] },
     })
       .sort({ createdAt: -1 })
       .populate('caller', 'username name profileImage')
