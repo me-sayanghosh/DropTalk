@@ -351,12 +351,18 @@ export default function useChat() {
       setRooms((prev) =>
         prev.map((r) => (r.id === roomId ? { ...r, pinnedMessages } : r))
       );
+      if (roomId === currentRoomRef.current) {
+        setCurrentRoom((prev) => (prev && prev.id === roomId ? { ...prev, pinnedMessages } : prev));
+      }
     });
 
     socket.on('message:unpinned', ({ roomId, pinnedMessages }: any) => {
       setRooms((prev) =>
         prev.map((r) => (r.id === roomId ? { ...r, pinnedMessages } : r))
       );
+      if (roomId === currentRoomRef.current) {
+        setCurrentRoom((prev) => (prev && prev.id === roomId ? { ...prev, pinnedMessages } : prev));
+      }
     });
 
     socket.on('message:deleted', ({ roomId, messageId }: any) => {
