@@ -18,11 +18,12 @@ router.use(requireAuth);
  */
 router.post('/send', async (req, res) => {
   try {
-    const { toUserId, text } = req.body;
+    const { toUserId, text, attachments = [] } = req.body || {};
     const fromUserId = req.user.id;
+    const trimmedText = typeof text === 'string' ? text.trim() : '';
 
-    if (!toUserId || !text?.trim()) {
-      return res.status(400).json({ error: 'toUserId and text required' });
+    if (!toUserId || (!trimmedText && (!attachments || attachments.length === 0))) {
+      return res.status(400).json({ error: 'toUserId and message text or attachment required' });
     }
     if (toUserId === fromUserId) {
       return res.status(400).json({ error: 'Cannot DM yourself' });
@@ -65,7 +66,8 @@ router.post('/send', async (req, res) => {
     const msg = await Message.create({
       room: room._id,
       sender: fromUserId,
-      text: text.trim(),
+      text: trimmedText,
+      attachments: Array.isArray(attachments) ? attachments : [],
     });
 
     const io = getIO();
