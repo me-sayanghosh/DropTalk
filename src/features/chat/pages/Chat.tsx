@@ -55,12 +55,12 @@ export default function Chat() {
     deleteNotification,
     clearAllNotifications,
   } = useNotifications(user);
-  const {
-    callState, callerInfo, localStream, remoteStream, isMuted, isVideoOff, isScreenSharing,
-    startCall, acceptCall, rejectCall, endCall, toggleMute, toggleVideo, toggleScreenShare,
-  } = useWebRTC(user, membersMap);
-
   const { callLogs, loading: callLogsLoading, addCallLog, clearCallHistory } = useCalls(user);
+  const {
+    callState, callerInfo, callDuration, localStream, remoteStream, isMuted, isVideoOff, isScreenSharing,
+    startCall, acceptCall, rejectCall, endCall, toggleMute, toggleVideo, toggleScreenShare,
+  } = useWebRTC(user, membersMap, addCallLog);
+
   const [selectedCallLog, setSelectedCallLog] = useState<CallLog | null>(null);
 
   const { theme, toggleTheme } = useTheme();
