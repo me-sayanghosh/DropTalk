@@ -96,7 +96,7 @@ router.post('/send', async (req, res) => {
       actorId: fromUserId,
       type: 'dm',
       title: `New DM from @${req.user.username}`,
-      message: text.trim().substring(0, 100),
+      message: trimmedText ? trimmedText.substring(0, 100) : 'Sent an attachment',
       link: '/chat',
       roomId: room._id,
       messageId: msg._id,

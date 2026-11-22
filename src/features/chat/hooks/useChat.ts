@@ -351,12 +351,18 @@ export default function useChat() {
       setRooms((prev) =>
         prev.map((r) => (r.id === roomId ? { ...r, pinnedMessages } : r))
       );
+      if (roomId === currentRoomRef.current) {
+        setCurrentRoom((prev) => (prev && prev.id === roomId ? { ...prev, pinnedMessages } : prev));
+      }
     });
 
     socket.on('message:unpinned', ({ roomId, pinnedMessages }: any) => {
       setRooms((prev) =>
         prev.map((r) => (r.id === roomId ? { ...r, pinnedMessages } : r))
       );
+      if (roomId === currentRoomRef.current) {
+        setCurrentRoom((prev) => (prev && prev.id === roomId ? { ...prev, pinnedMessages } : prev));
+      }
     });
 
     socket.on('message:deleted', ({ roomId, messageId }: any) => {
@@ -433,10 +439,16 @@ export default function useChat() {
       }
     });
 
-    socket.on('presence:update', ({ userId, status, currentRoom: room }: any) => {
+    socket.on('presence:update', ({ userId, status, currentRoom: room, customStatus }: any) => {
       setPresenceMap((prev) => ({
         ...prev,
-        [userId]: { status, currentRoom: room, username: prev[userId]?.username || userId.slice(0, 8) },
+        [userId]: {
+          ...prev[userId],
+          status,
+          currentRoom: room,
+          username: prev[userId]?.username || userId.slice(0, 8),
+          customStatus: customStatus !== undefined ? customStatus : prev[userId]?.customStatus,
+        },
       }));
     });
 
@@ -876,15 +888,31 @@ export default function useChat() {
   function deleteMessage(messageId: string) {
     if (!currentRoom) return;
     const socket = socketRef.current;
-    if (!socket) return;
-    socket.emit('message:delete', { roomId: currentRoom.id, messageId });
+    if (socket && socket.connected) {
+      socket.emit('message:delete', { roomId: currentRoom.id, messageId });
+    } else {
+      api.delete(`/rooms/${currentRoom.id}/messages/${messageId}`)
+        .then(() => {
+          setMessages((prev) =>
+            prev.map((m) => (m.id === messageId ? { ...m, deleted: true, text: '' } : m))
+          );
+        })
+        .catch((err) => console.error('REST deleteMessage error:', err));
+    }
   }
 
   function deleteForMe(messageId: string) {
     if (!currentRoom) return;
     const socket = socketRef.current;
-    if (!socket) return;
-    socket.emit('message:delete-for-me', { roomId: currentRoom.id, messageId });
+    if (socket && socket.connected) {
+      socket.emit('message:delete-for-me', { roomId: currentRoom.id, messageId });
+    } else {
+      api.delete(`/rooms/${currentRoom.id}/messages/${messageId}/me`)
+        .then(() => {
+          setMessages((prev) => prev.filter((m) => m.id !== messageId));
+        })
+        .catch((err) => console.error('REST deleteForMe error:', err));
+    }
   }
 
   function handleReadReceipt(messageId: string) {
@@ -897,15 +925,37 @@ export default function useChat() {
   function handleReact(messageId: string, emoji: string) {
     if (!currentRoom) return;
     const socket = socketRef.current;
-    if (!socket) return;
-    socket.emit('message:react', { roomId: currentRoom.id, messageId, emoji });
+    if (socket && socket.connected) {
+      socket.emit('message:react', { roomId: currentRoom.id, messageId, emoji });
+    } else {
+      api.post(`/rooms/${currentRoom.id}/messages/${messageId}/react`, { emoji })
+        .then((res) => {
+          if (res.data?.reactions) {
+            setMessages((prev) =>
+              prev.map((m) => (m.id === messageId ? { ...m, reactions: res.data.reactions } : m))
+            );
+          }
+        })
+        .catch((err) => console.error('REST react error:', err));
+    }
   }
 
   function editMessage(messageId: string, newText: string) {
     if (!currentRoom || !messageId || !newText?.trim()) return;
     const socket = getSocket();
-    if (socket) {
+    if (socket && socket.connected) {
       socket.emit('message:edit', { roomId: currentRoom.id, messageId, text: newText.trim() });
+    } else {
+      api.patch(`/rooms/${currentRoom.id}/messages/${messageId}`, { text: newText.trim() })
+        .then((res) => {
+          if (res.data?.message) {
+            const { text, edited, editedAt } = res.data.message;
+            setMessages((prev) =>
+              prev.map((m) => (m.id === messageId ? { ...m, text, edited, editedAt } : m))
+            );
+          }
+        })
+        .catch((err) => console.error('REST editMessage error:', err));
     }
   }
 
@@ -927,16 +977,38 @@ export default function useChat() {
   function pinMessage(messageId: string) {
     if (!currentRoom || !messageId) return;
     const socket = getSocket();
-    if (socket) {
+    if (socket && socket.connected) {
       socket.emit('message:pin', { roomId: currentRoom.id, messageId });
+    } else {
+      api.post(`/rooms/${currentRoom.id}/messages/${messageId}/pin`)
+        .then((res) => {
+          if (res.data?.pinnedMessages) {
+            setRooms((prev) =>
+              prev.map((r) => (r.id === currentRoom.id ? { ...r, pinnedMessages: res.data.pinnedMessages } : r))
+            );
+            setCurrentRoom((prev) => (prev ? { ...prev, pinnedMessages: res.data.pinnedMessages } : prev));
+          }
+        })
+        .catch((err) => console.error('REST pinMessage error:', err));
     }
   }
 
   function unpinMessage(messageId: string) {
     if (!currentRoom || !messageId) return;
     const socket = getSocket();
-    if (socket) {
+    if (socket && socket.connected) {
       socket.emit('message:unpin', { roomId: currentRoom.id, messageId });
+    } else {
+      api.delete(`/rooms/${currentRoom.id}/messages/${messageId}/pin`)
+        .then((res) => {
+          if (res.data?.pinnedMessages) {
+            setRooms((prev) =>
+              prev.map((r) => (r.id === currentRoom.id ? { ...r, pinnedMessages: res.data.pinnedMessages } : r))
+            );
+            setCurrentRoom((prev) => (prev ? { ...prev, pinnedMessages: res.data.pinnedMessages } : prev));
+          }
+        })
+        .catch((err) => console.error('REST unpinMessage error:', err));
     }
   }
 

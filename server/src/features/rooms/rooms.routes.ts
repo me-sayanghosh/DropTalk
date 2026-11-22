@@ -4,6 +4,7 @@ import { requireAuth } from '../../shared/middleware/auth';
 import { DEFAULT_ROOMS, ROOM_TYPES } from '../../shared/utils/constants';
 import { Message } from '../messages/message.model';
 import { getIO } from '../../shared/socket/index';
+import { cacheService } from '../../shared/cache/cache.service';
 
 const router = Router();
 
@@ -283,6 +284,7 @@ router.post('/:roomId/leave', async (req, res) => {
     if (memberIdx === -1) return res.status(400).json({ error: 'not a member of this room' });
 
     room.members.splice(memberIdx, 1);
+    room.encryptedKeys = (room.encryptedKeys || []).filter((ek) => ek.user.toString() !== req.user.id) as any;
     await room.save();
 
     const io = getIO();
@@ -313,6 +315,7 @@ router.delete('/:roomId', async (req, res) => {
 
     await Message.deleteMany({ room: room._id });
     await Room.findByIdAndDelete(room._id);
+    cacheService.delete(`msgs:${room._id}:*`);
 
     const io = getIO();
     if (io) {

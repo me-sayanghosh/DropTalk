@@ -96,7 +96,13 @@ export function registerKeyHandlers(socket, io, { joined }) {
       if (!room) throw new Error('room not found');
 
       const keyId = generateKeyId();
-      room.encryptedKeys.push({ user: socket.user.id, key: encryptedKey, keyId });
+      const existingIdx = (room.encryptedKeys || []).findIndex((ek) => ek.user.toString() === socket.user.id);
+      if (existingIdx >= 0) {
+        room.encryptedKeys[existingIdx].key = encryptedKey;
+        room.encryptedKeys[existingIdx].keyId = keyId;
+      } else {
+        room.encryptedKeys.push({ user: socket.user.id, key: encryptedKey, keyId });
+      }
       await room.save();
 
       ack?.({ ok: true });

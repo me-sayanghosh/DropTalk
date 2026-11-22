@@ -84,7 +84,7 @@ export default function UserProfileCard({
                 <button
                   className="user-card-btn secondary call-voice-btn"
                   onClick={() => {
-                    onStartCall(String(user.id || user._id), false);
+                    onStartCall(String(user.id || user._id), false, user);
                     onClose();
                   }}
                   title="Start Voice Call"
@@ -97,7 +97,7 @@ export default function UserProfileCard({
                 <button
                   className="user-card-btn secondary call-video-btn"
                   onClick={() => {
-                    onStartCall(String(user.id || user._id), true);
+                    onStartCall(String(user.id || user._id), true, user);
                     onClose();
                   }}
                   title="Start Video Call"

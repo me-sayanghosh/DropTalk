@@ -82,6 +82,27 @@ class InMemoryRedis {
     const m = this._hash.get(key);
     return fields.map(f => m?.get(f) ?? null);
   }
+  async hdel(key, ...fields) {
+    const m = this._hash.get(key);
+    if (!m) return 0;
+    let count = 0;
+    for (const f of fields) {
+      if (m.delete(f)) count++;
+    }
+    return count;
+  }
+  async hgetall(key) {
+    const m = this._hash.get(key);
+    if (!m) return {};
+    const res: Record<string, string> = {};
+    for (const [k, v] of m) {
+      res[k] = String(v);
+    }
+    return res;
+  }
+  async hexists(key, field) {
+    return this._hash.get(key)?.has(field) ? 1 : 0;
+  }
 
   /* ── set commands ── */
   async sadd(key, ...members) {
@@ -117,6 +138,7 @@ class InMemoryRedis {
     return removed;
   }
   async pexpire(key, ms) { this._expire(key, ms); return 1; }
+  async expire(key, seconds) { this._expire(key, Number(seconds) * 1000); return 1; }
 
   /* ── scan (simplified) ── */
   async scan(cursor, _match, pattern, _count, _countVal) {

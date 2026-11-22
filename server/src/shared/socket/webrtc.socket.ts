@@ -168,9 +168,12 @@ export function registerWebRTCHandlers(socket, io) {
   });
 
   // End Call
-  socket.on('webrtc:call-end', (data: any) => {
+  socket.on('webrtc:call-end', (data: any, ack?: any) => {
     try {
-      if (!data) return;
+      if (!data) {
+        ack?.({ ok: false, error: 'No data provided' });
+        return;
+      }
       const { toUserId, roomId } = data;
       const payload = {
         endedBy: socket.user.id,
@@ -181,8 +184,10 @@ export function registerWebRTCHandlers(socket, io) {
       } else if (roomId) {
         socket.to(roomId).emit('webrtc:call-ended', payload);
       }
+      ack?.({ ok: true });
     } catch (err: any) {
       console.warn('[webrtc:call-end] signal error:', err?.message || err);
+      ack?.({ ok: false, error: err?.message || 'Call end relay failed' });
     }
   });
 }

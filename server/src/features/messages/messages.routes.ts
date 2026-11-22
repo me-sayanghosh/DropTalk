@@ -119,6 +119,7 @@ router.post('/:roomId/messages', async (req, res) => {
   try {
     const { roomId } = req.params;
     const { text = '', attachments = [], clientMsgId, replyTo, parentMessage, forwardedFrom } = req.body || {};
+    const effectiveParent = parentMessage || req.body?.parentMessageId || null;
     const trimmedText = typeof text === 'string' ? text.trim() : '';
 
     if (!roomId || (!trimmedText && (!attachments || attachments.length === 0))) {
@@ -198,7 +199,7 @@ router.post('/:roomId/messages', async (req, res) => {
       attachments: Array.isArray(attachments) ? attachments : [],
       clientMsgId: clientMsgId || null,
       replyTo: replyTo || null,
-      parentMessage: parentMessage || null,
+      parentMessage: effectiveParent,
       forwardedFrom: forwardedFrom || null,
       mentions: mentionIds,
     });
@@ -217,10 +218,10 @@ router.post('/:roomId/messages', async (req, res) => {
     const io = getIO();
     if (io) {
       io.to(roomId).emit('message:new', { roomId, message: payload });
-      if (parentMessage) {
+      if (effectiveParent) {
         io.to(roomId).emit('message:thread-reply', {
           roomId,
-          parentMessageId: parentMessage,
+          parentMessageId: effectiveParent.toString(),
           reply: payload,
         });
       }
@@ -292,8 +293,8 @@ router.post('/:roomId/messages', async (req, res) => {
   }
 });
 
-// PUT /api/rooms/:roomId/messages/:messageId - Edit a message via REST API
-router.put('/:roomId/messages/:messageId', async (req, res) => {
+// PUT & PATCH /api/rooms/:roomId/messages/:messageId - Edit a message via REST API
+const handleMessageEdit = async (req: any, res: any) => {
   try {
     const { roomId, messageId } = req.params;
     const { text } = req.body || {};
@@ -339,7 +340,10 @@ router.put('/:roomId/messages/:messageId', async (req, res) => {
     console.error('[messages] edit error:', err.message);
     res.status(500).json({ error: err.message || 'Internal server error' });
   }
-});
+};
+
+router.put('/:roomId/messages/:messageId', handleMessageEdit);
+router.patch('/:roomId/messages/:messageId', handleMessageEdit);
 
 // DELETE /api/rooms/:roomId/messages/:messageId/me - Delete message for current user only
 router.delete('/:roomId/messages/:messageId/me', async (req, res) => {
@@ -419,30 +423,50 @@ router.post('/:roomId/messages/:messageId/react', async (req, res) => {
     const isMember = room.members.some((m) => m.user.toString() === req.user.id);
     if (!isMember) return res.status(403).json({ error: 'not a member of this room' });
 
-    const message = await Message.findOne({ _id: messageId, room: roomId });
+    let message = await Message.findOne({ _id: messageId, room: roomId });
     if (!message) return res.status(404).json({ error: 'message not found' });
 
     const cleanEmoji = emoji.trim();
     let isAdded = false;
-    const reaction = message.reactions.find((r) => r.emoji === cleanEmoji);
+    let saved = false;
+    let attempts = 0;
 
-    if (reaction) {
-      const userIdx = reaction.users.findIndex((u) => u.toString() === req.user.id);
-      if (userIdx >= 0) {
-        reaction.users.splice(userIdx, 1);
-        if (reaction.users.length === 0) {
-          message.reactions = message.reactions.filter((r) => r.emoji !== cleanEmoji) as any;
+    while (!saved && attempts < 3) {
+      attempts++;
+      try {
+        isAdded = false;
+        const reaction = message.reactions.find((r) => r.emoji === cleanEmoji);
+
+        if (reaction) {
+          const userIdx = reaction.users.findIndex((u) => u.toString() === req.user.id);
+          if (userIdx >= 0) {
+            reaction.users.splice(userIdx, 1);
+            if (reaction.users.length === 0) {
+              message.reactions = message.reactions.filter((r) => r.emoji !== cleanEmoji) as any;
+            }
+          } else {
+            reaction.users.push(req.user.id);
+            isAdded = true;
+          }
+        } else {
+          message.reactions.push({ emoji: cleanEmoji, users: [req.user.id] });
+          isAdded = true;
         }
-      } else {
-        reaction.users.push(req.user.id);
-        isAdded = true;
+
+        await message.save();
+        saved = true;
+      } catch (saveErr: any) {
+        if (saveErr.name === 'VersionError' && attempts < 3) {
+          const refreshed = await Message.findOne({ _id: messageId, room: roomId });
+          if (refreshed) {
+            message = refreshed;
+            continue;
+          }
+        }
+        throw saveErr;
       }
-    } else {
-      message.reactions.push({ emoji: cleanEmoji, users: [req.user.id] });
-      isAdded = true;
     }
 
-    await message.save();
     cacheService.delete(`msgs:${roomId}:*`);
 
     const formattedReactions = message.reactions.map((r) => ({

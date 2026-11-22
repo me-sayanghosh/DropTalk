@@ -76,6 +76,7 @@ export function createApp({ disableCSP = false } = {}) {
   app.use('/api/rooms', threadRoutes);
   app.use('/api/rooms', keyRoutes);
   app.use('/api/rooms', aiRoutes);
+  app.use('/api/ai', aiRoutes);
   app.use('/api/dm', dmRoutes);
   app.use('/api/notifications', notificationRoutes);
   app.use('/api/upload', uploadRoutes);

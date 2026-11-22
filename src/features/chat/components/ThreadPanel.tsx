@@ -37,6 +37,14 @@ export default function ThreadPanel({ parentMessage, roomId, meId, isPrivate, on
   }, [replies]);
 
   useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose?.();
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  useEffect(() => {
     const socket = getSocket();
     if (!socket) return;
 
@@ -54,12 +62,31 @@ export default function ThreadPanel({ parentMessage, roomId, meId, isPrivate, on
         m.id === messageId ? { ...m, deleted: true, text: '' } : m
       ));
     }
+    function onMessageEdited({ messageId, text, edited, editedAt }: any) {
+      setReplies((prev) => prev.map((m) =>
+        m.id === messageId ? { ...m, text, edited, editedAt } : m
+      ));
+    }
+    function onMessageDeletedForMe({ messageId }: any) {
+      setReplies((prev) => prev.filter((m) => m.id !== messageId));
+    }
+    function onMessageReaction({ messageId, reactions }: any) {
+      setReplies((prev) => prev.map((m) =>
+        m.id === messageId ? { ...m, reactions } : m
+      ));
+    }
 
     socket.on('message:thread-reply', onThreadReply);
     socket.on('message:deleted', onMessageDeleted);
+    socket.on('message:edited', onMessageEdited);
+    socket.on('message:deleted-for-me', onMessageDeletedForMe);
+    socket.on('message:reaction', onMessageReaction);
     return () => {
       socket.off('message:thread-reply', onThreadReply);
       socket.off('message:deleted', onMessageDeleted);
+      socket.off('message:edited', onMessageEdited);
+      socket.off('message:deleted-for-me', onMessageDeletedForMe);
+      socket.off('message:reaction', onMessageReaction);
     };
   }, [parentMessage]);
 
@@ -92,6 +119,7 @@ export default function ThreadPanel({ parentMessage, roomId, meId, isPrivate, on
       try {
         const res = await api.post(`/rooms/${roomId}/messages`, {
           text: textToSend,
+          parentMessage: parentMessage.id,
           parentMessageId: parentMessage.id,
           clientMsgId,
         });

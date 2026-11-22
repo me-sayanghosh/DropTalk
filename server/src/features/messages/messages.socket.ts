@@ -327,28 +327,47 @@ export function registerMessageHandlers(socket, io, { joined }) {
       if (!roomId || !messageId || !emoji) throw new Error('roomId, messageId, and emoji required');
       if (!joined.has(roomId)) throw new Error('join the room first');
 
-      const msg = await Message.findOne({ _id: messageId, room: roomId });
+      let msg = await Message.findOne({ _id: messageId, room: roomId });
       if (!msg) throw new Error('message not found');
 
       let isAdded = false;
-      const reaction = msg.reactions.find((r) => r.emoji === emoji);
-      if (reaction) {
-        const userIdx = reaction.users.findIndex((u) => u.toString() === socket.user.id);
-        if (userIdx >= 0) {
-          reaction.users.splice(userIdx, 1);
-          if (reaction.users.length === 0) {
-            msg.reactions = msg.reactions.filter((r) => r.emoji !== emoji) as any;
-          }
-        } else {
-          reaction.users.push(socket.user.id);
-          isAdded = true;
-        }
-      } else {
-        msg.reactions.push({ emoji, users: [socket.user.id] });
-        isAdded = true;
-      }
+      let saved = false;
+      let attempts = 0;
 
-      await msg.save();
+      while (!saved && attempts < 3) {
+        attempts++;
+        try {
+          isAdded = false;
+          const reaction = msg.reactions.find((r) => r.emoji === emoji);
+          if (reaction) {
+            const userIdx = reaction.users.findIndex((u) => u.toString() === socket.user.id);
+            if (userIdx >= 0) {
+              reaction.users.splice(userIdx, 1);
+              if (reaction.users.length === 0) {
+                msg.reactions = msg.reactions.filter((r) => r.emoji !== emoji) as any;
+              }
+            } else {
+              reaction.users.push(socket.user.id);
+              isAdded = true;
+            }
+          } else {
+            msg.reactions.push({ emoji, users: [socket.user.id] });
+            isAdded = true;
+          }
+
+          await msg.save();
+          saved = true;
+        } catch (saveErr: any) {
+          if (saveErr.name === 'VersionError' && attempts < 3) {
+            const refreshed = await Message.findOne({ _id: messageId, room: roomId });
+            if (refreshed) {
+              msg = refreshed;
+              continue;
+            }
+          }
+          throw saveErr;
+        }
+      }
 
       cacheService.delete(`msgs:${roomId}:*`);
 

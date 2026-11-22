@@ -1,5 +1,6 @@
 import redis from '../../shared/config/redis';
 import { PRESENCE } from '../../shared/utils/constants';
+import { getIO } from '../../shared/socket/index';
 
 const PRESENCE_KEY = 'presence';
 const ONLINE_SET = 'presence:online';
@@ -80,6 +81,16 @@ export async function reconcilePresence() {
         await redis.hset(PRESENCE_KEY, userId, JSON.stringify(data));
         await redis.srem(ONLINE_SET, userId);
         await redis.del(`${CONN_COUNT_KEY}:${userId}`);
+
+        const io = getIO();
+        if (io) {
+          io.emit('presence:update', {
+            userId,
+            status: 'offline',
+            currentRoom: null,
+            customStatus: data.customStatus || null,
+          });
+        }
       }
     }
   }

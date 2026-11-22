@@ -14,9 +14,10 @@ router.use(requireAuth);
 router.get('/history', async (req, res) => {
   try {
     const userId = req.user.id;
+    const userObjId = mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : userId;
     const logs = await CallLog.find({
       $or: [{ caller: userId }, { receiver: userId }],
-      deletedFor: { $ne: userId },
+      deletedFor: { $nin: [userObjId, userId] },
     })
       .sort({ createdAt: -1 })
       .populate('caller', 'username name profileImage')
@@ -183,9 +184,10 @@ router.put('/log/:logId', async (req, res) => {
 router.delete('/history', async (req, res) => {
   try {
     const userId = req.user.id;
+    const userObjId = mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : userId;
     await CallLog.updateMany(
       { $or: [{ caller: userId }, { receiver: userId }] },
-      { $addToSet: { deletedFor: userId } }
+      { $addToSet: { deletedFor: userObjId } }
     );
     res.json({ ok: true });
   } catch (err) {
@@ -215,8 +217,9 @@ router.delete('/history/:logId', async (req, res) => {
       return res.status(404).json({ error: 'Call log not found' });
     }
 
+    const userObjId = mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : userId;
     await CallLog.findByIdAndUpdate(logId, {
-      $addToSet: { deletedFor: userId },
+      $addToSet: { deletedFor: userObjId },
     });
 
     res.json({ ok: true, logId });
