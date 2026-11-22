@@ -69,12 +69,23 @@ export function registerWebRTCHandlers(socket, io) {
   });
 
   // Relay WebRTC Offer (SDP)
-  socket.on('webrtc:offer', (data: any) => {
+  socket.on('webrtc:offer', (data: any, ack?: any) => {
     try {
-      if (!data) return;
+      if (!data || typeof data !== 'object') {
+        ack?.({ ok: false, error: 'Invalid payload' });
+        return;
+      }
       const { toUserId, roomId, offer } = data;
+      if (!offer || typeof offer !== 'object') {
+        ack?.({ ok: false, error: 'Valid SDP offer object is required' });
+        return;
+      }
+      if (!toUserId && !roomId) {
+        ack?.({ ok: false, error: 'toUserId or roomId is required' });
+        return;
+      }
       const payload = {
-        fromUserId: socket.user.id,
+        fromUserId: socket.user?.id,
         offer,
         roomId: roomId || null,
       };
@@ -83,18 +94,31 @@ export function registerWebRTCHandlers(socket, io) {
       } else if (roomId) {
         socket.to(roomId).emit('webrtc:offer', payload);
       }
+      ack?.({ ok: true });
     } catch (err: any) {
       console.warn('[webrtc:offer] signal error:', err?.message || err);
+      ack?.({ ok: false, error: err?.message || 'Offer relay failed' });
     }
   });
 
   // Relay WebRTC Answer (SDP)
-  socket.on('webrtc:answer', (data: any) => {
+  socket.on('webrtc:answer', (data: any, ack?: any) => {
     try {
-      if (!data) return;
+      if (!data || typeof data !== 'object') {
+        ack?.({ ok: false, error: 'Invalid payload' });
+        return;
+      }
       const { toUserId, roomId, answer } = data;
+      if (!answer || typeof answer !== 'object') {
+        ack?.({ ok: false, error: 'Valid SDP answer object is required' });
+        return;
+      }
+      if (!toUserId && !roomId) {
+        ack?.({ ok: false, error: 'toUserId or roomId is required' });
+        return;
+      }
       const payload = {
-        fromUserId: socket.user.id,
+        fromUserId: socket.user?.id,
         answer,
         roomId: roomId || null,
       };
@@ -103,18 +127,31 @@ export function registerWebRTCHandlers(socket, io) {
       } else if (roomId) {
         socket.to(roomId).emit('webrtc:answer', payload);
       }
+      ack?.({ ok: true });
     } catch (err: any) {
       console.warn('[webrtc:answer] signal error:', err?.message || err);
+      ack?.({ ok: false, error: err?.message || 'Answer relay failed' });
     }
   });
 
   // Relay ICE Candidate
-  socket.on('webrtc:ice-candidate', (data: any) => {
+  socket.on('webrtc:ice-candidate', (data: any, ack?: any) => {
     try {
-      if (!data) return;
+      if (!data || typeof data !== 'object') {
+        ack?.({ ok: false, error: 'Invalid payload' });
+        return;
+      }
       const { toUserId, roomId, candidate } = data;
+      if (!candidate || typeof candidate !== 'object') {
+        ack?.({ ok: false, error: 'Valid candidate object is required' });
+        return;
+      }
+      if (!toUserId && !roomId) {
+        ack?.({ ok: false, error: 'toUserId or roomId is required' });
+        return;
+      }
       const payload = {
-        fromUserId: socket.user.id,
+        fromUserId: socket.user?.id,
         candidate,
         roomId: roomId || null,
       };
@@ -123,8 +160,10 @@ export function registerWebRTCHandlers(socket, io) {
       } else if (roomId) {
         socket.to(roomId).emit('webrtc:ice-candidate', payload);
       }
+      ack?.({ ok: true });
     } catch (err: any) {
       console.warn('[webrtc:ice-candidate] signal error:', err?.message || err);
+      ack?.({ ok: false, error: err?.message || 'ICE candidate relay failed' });
     }
   });
 
