@@ -256,4 +256,37 @@ router.get('/:roomId/banned', requireAtLeastRole('moderator'), async (req, res) 
   }
 });
 
+router.get('/:roomId/members/search', requireAtLeastRole('member'), async (req: any, res) => {
+  try {
+    const q = String(req.query.q || '').trim();
+    const room = req.room;
+    const memberUserIds = (room.members || []).map((m: any) => m.user);
+
+    const query: any = { _id: { $in: memberUserIds } };
+    if (q) {
+      const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      query.$or = [
+        { username: { $regex: escaped, $options: 'i' } },
+        { name: { $regex: escaped, $options: 'i' } },
+      ];
+    }
+
+    const users = await User.find(query).select('username name profileImage').limit(50).lean();
+    const memberRoleMap = new Map((room.members || []).map((m: any) => [m.user.toString(), m.role]));
+
+    const results = users.map((u: any) => ({
+      id: u._id.toString(),
+      username: u.username,
+      name: u.name || '',
+      profileImage: u.profileImage || '',
+      role: memberRoleMap.get(u._id.toString()) || 'member',
+    }));
+
+    res.json({ members: results });
+  } catch (err: any) {
+    console.error('[moderation] members search error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router;
