@@ -292,6 +292,55 @@ router.post('/:roomId/messages', async (req, res) => {
   }
 });
 
+// PUT /api/rooms/:roomId/messages/:messageId - Edit a message via REST API
+router.put('/:roomId/messages/:messageId', async (req, res) => {
+  try {
+    const { roomId, messageId } = req.params;
+    const { text } = req.body || {};
+    const trimmed = typeof text === 'string' ? text.trim() : '';
+
+    if (!trimmed) {
+      return res.status(400).json({ error: 'Message text required' });
+    }
+
+    const message = await Message.findOne({ _id: messageId, room: roomId });
+    if (!message) return res.status(404).json({ error: 'Message not found' });
+
+    if (message.sender.toString() !== req.user.id) {
+      return res.status(403).json({ error: 'Only the author can edit this message' });
+    }
+
+    if (message.deleted) {
+      return res.status(400).json({ error: 'Cannot edit deleted message' });
+    }
+
+    message.text = trimmed;
+    message.edited = true;
+    message.editedAt = new Date();
+    await message.save();
+
+    cacheService.delete(`msgs:${roomId}:*`);
+
+    const payload = {
+      messageId: message._id.toString(),
+      roomId,
+      text: message.text,
+      edited: true,
+      editedAt: message.editedAt,
+    };
+
+    const io = getIO();
+    if (io) {
+      io.to(roomId).emit('message:edited', payload);
+    }
+
+    res.json({ ok: true, message: payload });
+  } catch (err: any) {
+    console.error('[messages] edit error:', err.message);
+    res.status(500).json({ error: err.message || 'Internal server error' });
+  }
+});
+
 // GET /api/rooms/:roomId/messages/search?q=query - Search messages within a room
 router.get('/:roomId/messages/search', async (req, res) => {
   try {
