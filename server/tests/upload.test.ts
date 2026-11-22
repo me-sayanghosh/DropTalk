@@ -16,6 +16,7 @@ let app: express.Express;
 let server: http.Server;
 let port: number;
 let alice: any;
+const uploadedFilenames: string[] = [];
 
 function makeToken(user: any) {
   return jwt.sign({ sub: user._id.toString(), username: user.username }, JWT_SECRET, { expiresIn: '15m' });
@@ -100,6 +101,19 @@ beforeAll(async () => {
 afterAll(async () => {
   if (server) await new Promise<void>((r) => server.close(() => r()));
   await teardownMongo();
+
+  // Clean test uploads
+  try {
+    const uploadPath = path.join(process.cwd(), 'uploads');
+    for (const f of uploadedFilenames) {
+      const fullPath = path.join(uploadPath, f);
+      if (fs.existsSync(fullPath)) {
+        fs.unlinkSync(fullPath);
+      }
+    }
+  } catch (err) {
+    // Ignore cleanup errors
+  }
 });
 
 describe('Upload API (/api/upload)', () => {
@@ -122,6 +136,9 @@ describe('Upload API (/api/upload)', () => {
     expect(res.body.attachment.fileType).toBe('image');
     expect(res.body.attachment.mimeType).toBe('image/png');
     expect(res.body.attachment.url).toMatch(/^\/uploads\//);
+    if (res.body.attachment.url) {
+      uploadedFilenames.push(path.basename(res.body.attachment.url));
+    }
   });
 
   test('POST /api/upload rejects disallowed mime type', async () => {
@@ -178,5 +195,10 @@ describe('Upload API (/api/upload)', () => {
     expect(res.body.attachments.length).toBe(2);
     expect(res.body.attachments[0].fileType).toBe('document');
     expect(res.body.attachments[1].fileType).toBe('document');
+    for (const a of res.body.attachments) {
+      if (a.url) {
+        uploadedFilenames.push(path.basename(a.url));
+      }
+    }
   });
 });
