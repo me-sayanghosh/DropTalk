@@ -330,6 +330,7 @@ export function registerMessageHandlers(socket, io, { joined }) {
       const msg = await Message.findOne({ _id: messageId, room: roomId });
       if (!msg) throw new Error('message not found');
 
+      let isAdded = false;
       const reaction = msg.reactions.find((r) => r.emoji === emoji);
       if (reaction) {
         const userIdx = reaction.users.findIndex((u) => u.toString() === socket.user.id);
@@ -340,9 +341,11 @@ export function registerMessageHandlers(socket, io, { joined }) {
           }
         } else {
           reaction.users.push(socket.user.id);
+          isAdded = true;
         }
       } else {
         msg.reactions.push({ emoji, users: [socket.user.id] });
+        isAdded = true;
       }
 
       await msg.save();
@@ -355,6 +358,20 @@ export function registerMessageHandlers(socket, io, { joined }) {
       }));
 
       io.to(roomId).emit('message:reaction', { roomId, messageId, reactions });
+
+      if (isAdded && msg.sender.toString() !== socket.user.id) {
+        createNotification({
+          userId: msg.sender.toString(),
+          actorId: socket.user.id,
+          type: 'reaction',
+          title: `@${socket.user.username} reacted with ${emoji}`,
+          message: msg.text ? msg.text.substring(0, 100) : 'Reacted to your message',
+          link: '/chat',
+          roomId,
+          messageId: msg._id.toString(),
+        }).catch((e) => console.error('[reaction notification] error:', e.message));
+      }
+
       ack?.({ ok: true, reactions });
     } catch (err) {
       ack?.({ ok: false, error: err.message });
