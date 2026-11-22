@@ -40,6 +40,19 @@ router.post('/log', async (req, res) => {
     const { receiverId, roomId, type = 'voice', status = 'completed', durationSeconds = 0 } = req.body;
     const callerId = req.user.id;
 
+    if (type && !['voice', 'video'].includes(type)) {
+      return res.status(400).json({ error: "Invalid call type. Must be 'voice' or 'video'" });
+    }
+
+    if (status && !['completed', 'missed', 'rejected', 'cancelled'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid call status' });
+    }
+
+    const parsedDuration = parseInt(durationSeconds, 10);
+    if (isNaN(parsedDuration) || parsedDuration < 0) {
+      return res.status(400).json({ error: 'durationSeconds must be a non-negative number' });
+    }
+
     let validReceiver = null;
     if (receiverId && receiverId !== 'null' && receiverId !== 'undefined') {
       if (mongoose.Types.ObjectId.isValid(receiverId)) {
@@ -54,13 +67,17 @@ router.post('/log', async (req, res) => {
       }
     }
 
+    if (!validReceiver && !validRoom) {
+      return res.status(400).json({ error: 'Valid receiverId or roomId is required' });
+    }
+
     const log = await CallLog.create({
       caller: callerId,
       receiver: validReceiver,
       room: validRoom,
       type: type === 'video' ? 'video' : 'voice',
       status: status || 'completed',
-      durationSeconds: parseInt(durationSeconds, 10) || 0,
+      durationSeconds: parsedDuration,
     });
 
     const populated = await CallLog.findById(log._id)
