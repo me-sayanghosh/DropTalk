@@ -115,8 +115,8 @@ export default function useDM() {
 
   // Send a message in an accepted DM via dual transport (Socket.IO + HTTP fallback) with optimistic UI
   const sendDMMessage = useCallback(
-    async (text: string) => {
-      if (!currentDM || !text.trim()) return;
+    async (text: string, attachments: any[] = []) => {
+      if (!currentDM || (!text.trim() && (!attachments || attachments.length === 0))) return;
       const roomIdStr = (currentDM.id || (currentDM as any)._id)?.toString();
       const clientMsgId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`;
       const tempId = `temp-${clientMsgId}`;
@@ -134,7 +134,7 @@ export default function useDM() {
         } as any,
         senderId: user?.id,
         senderUsername: user?.username || 'You',
-        attachments: [],
+        attachments: attachments || [],
         clientMsgId,
         status: 'sending',
         createdAt: new Date().toISOString(),
@@ -146,7 +146,7 @@ export default function useDM() {
       setConversations((prev) =>
         prev.map((c) =>
           c.id?.toString() === roomIdStr || c._id?.toString() === roomIdStr
-            ? { ...c, lastMessage: { text: text.trim(), createdAt: optimisticMsg.createdAt } }
+            ? { ...c, lastMessage: { text: text.trim() || (attachments.length ? 'Sent an attachment' : ''), createdAt: optimisticMsg.createdAt } }
             : c
         )
       );
@@ -155,6 +155,7 @@ export default function useDM() {
       try {
         const confirmedMsg = await sendDMMessageHttp(roomIdStr, {
           text: text.trim(),
+          attachments: attachments || [],
           clientMsgId,
         });
 
