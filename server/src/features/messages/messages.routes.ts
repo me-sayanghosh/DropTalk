@@ -423,30 +423,50 @@ router.post('/:roomId/messages/:messageId/react', async (req, res) => {
     const isMember = room.members.some((m) => m.user.toString() === req.user.id);
     if (!isMember) return res.status(403).json({ error: 'not a member of this room' });
 
-    const message = await Message.findOne({ _id: messageId, room: roomId });
+    let message = await Message.findOne({ _id: messageId, room: roomId });
     if (!message) return res.status(404).json({ error: 'message not found' });
 
     const cleanEmoji = emoji.trim();
     let isAdded = false;
-    const reaction = message.reactions.find((r) => r.emoji === cleanEmoji);
+    let saved = false;
+    let attempts = 0;
 
-    if (reaction) {
-      const userIdx = reaction.users.findIndex((u) => u.toString() === req.user.id);
-      if (userIdx >= 0) {
-        reaction.users.splice(userIdx, 1);
-        if (reaction.users.length === 0) {
-          message.reactions = message.reactions.filter((r) => r.emoji !== cleanEmoji) as any;
+    while (!saved && attempts < 3) {
+      attempts++;
+      try {
+        isAdded = false;
+        const reaction = message.reactions.find((r) => r.emoji === cleanEmoji);
+
+        if (reaction) {
+          const userIdx = reaction.users.findIndex((u) => u.toString() === req.user.id);
+          if (userIdx >= 0) {
+            reaction.users.splice(userIdx, 1);
+            if (reaction.users.length === 0) {
+              message.reactions = message.reactions.filter((r) => r.emoji !== cleanEmoji) as any;
+            }
+          } else {
+            reaction.users.push(req.user.id);
+            isAdded = true;
+          }
+        } else {
+          message.reactions.push({ emoji: cleanEmoji, users: [req.user.id] });
+          isAdded = true;
         }
-      } else {
-        reaction.users.push(req.user.id);
-        isAdded = true;
+
+        await message.save();
+        saved = true;
+      } catch (saveErr: any) {
+        if (saveErr.name === 'VersionError' && attempts < 3) {
+          const refreshed = await Message.findOne({ _id: messageId, room: roomId });
+          if (refreshed) {
+            message = refreshed;
+            continue;
+          }
+        }
+        throw saveErr;
       }
-    } else {
-      message.reactions.push({ emoji: cleanEmoji, users: [req.user.id] });
-      isAdded = true;
     }
 
-    await message.save();
     cacheService.delete(`msgs:${roomId}:*`);
 
     const formattedReactions = message.reactions.map((r) => ({

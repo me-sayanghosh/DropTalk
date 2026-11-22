@@ -141,4 +141,24 @@ describe('Pinned Messages and Reactions API', () => {
     expect(r3.status).toBe(200);
     expect(r3.body.reactions.find((r: any) => r.emoji === '👍')?.users.length).toBe(1);
   });
+
+  test('Concurrent reactions on the same message by multiple users in parallel', async () => {
+    const token1 = makeToken(user1);
+    const token2 = makeToken(user2);
+    const msg = await Message.create({ room: room._id, sender: user1._id, text: 'Concurrent reactions test' });
+
+    // Both users react in parallel at the exact same time
+    const [res1, res2] = await Promise.all([
+      request('POST', `/api/rooms/${room._id}/messages/${msg._id}/react`, token1, { emoji: '🔥' }),
+      request('POST', `/api/rooms/${room._id}/messages/${msg._id}/react`, token2, { emoji: '🔥' }),
+    ]);
+
+    expect(res1.status).toBe(200);
+    expect(res2.status).toBe(200);
+
+    const updated = await Message.findById(msg._id);
+    const fireReaction = updated?.reactions.find((r) => r.emoji === '🔥');
+    expect(fireReaction).toBeDefined();
+    expect(fireReaction?.users.length).toBe(2);
+  });
 });
