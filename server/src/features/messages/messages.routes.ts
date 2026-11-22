@@ -549,7 +549,12 @@ export async function backfillMessages(userId, rooms) {
           .sort({ _id: 1 })
           .limit(100)
           .lean();
-        results[r.roomId.toString()] = messages.map((m) => ({
+
+        const filtered = messages.filter(
+          (m) => !(m.deletedFor || []).some((id) => id.toString() === userId.toString())
+        );
+
+        results[r.roomId.toString()] = filtered.map((m) => ({
           id: m._id.toString(),
           roomId: m.room.toString(),
           senderId: m.sender.toString(),
