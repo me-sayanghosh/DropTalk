@@ -372,6 +372,78 @@ router.delete('/:roomId/messages/:messageId/me', async (req, res) => {
   }
 });
 
+// POST /api/rooms/:roomId/messages/:messageId/react - Toggle emoji reaction via REST API
+router.post('/:roomId/messages/:messageId/react', async (req, res) => {
+  try {
+    const { roomId, messageId } = req.params;
+    const { emoji } = req.body || {};
+
+    if (!emoji || typeof emoji !== 'string' || !emoji.trim()) {
+      return res.status(400).json({ error: 'Emoji required' });
+    }
+
+    const room = await Room.findById(roomId);
+    if (!room) return res.status(404).json({ error: 'room not found' });
+
+    const isMember = room.members.some((m) => m.user.toString() === req.user.id);
+    if (!isMember) return res.status(403).json({ error: 'not a member of this room' });
+
+    const message = await Message.findOne({ _id: messageId, room: roomId });
+    if (!message) return res.status(404).json({ error: 'message not found' });
+
+    const cleanEmoji = emoji.trim();
+    let isAdded = false;
+    const reaction = message.reactions.find((r) => r.emoji === cleanEmoji);
+
+    if (reaction) {
+      const userIdx = reaction.users.findIndex((u) => u.toString() === req.user.id);
+      if (userIdx >= 0) {
+        reaction.users.splice(userIdx, 1);
+        if (reaction.users.length === 0) {
+          message.reactions = message.reactions.filter((r) => r.emoji !== cleanEmoji) as any;
+        }
+      } else {
+        reaction.users.push(req.user.id);
+        isAdded = true;
+      }
+    } else {
+      message.reactions.push({ emoji: cleanEmoji, users: [req.user.id] });
+      isAdded = true;
+    }
+
+    await message.save();
+    cacheService.delete(`msgs:${roomId}:*`);
+
+    const formattedReactions = message.reactions.map((r) => ({
+      emoji: r.emoji,
+      users: r.users.map((u) => u.toString()),
+    }));
+
+    const io = getIO();
+    if (io) {
+      io.to(roomId).emit('message:reaction', { roomId, messageId, reactions: formattedReactions });
+    }
+
+    if (isAdded && message.sender.toString() !== req.user.id) {
+      createNotification({
+        userId: message.sender.toString(),
+        actorId: req.user.id,
+        type: 'reaction',
+        title: `@${req.user.username} reacted with ${cleanEmoji}`,
+        message: message.text ? message.text.substring(0, 100) : 'Reacted to your message',
+        link: '/chat',
+        roomId,
+        messageId: message._id.toString(),
+      }).catch((e) => console.error('[reaction notification] error:', e.message));
+    }
+
+    res.json({ ok: true, reactions: formattedReactions });
+  } catch (err: any) {
+    console.error('[messages] react error:', err.message);
+    res.status(500).json({ error: err.message || 'Internal server error' });
+  }
+});
+
 // GET /api/rooms/:roomId/messages/search?q=query - Search messages within a room
 router.get('/:roomId/messages/search', async (req, res) => {
   try {
