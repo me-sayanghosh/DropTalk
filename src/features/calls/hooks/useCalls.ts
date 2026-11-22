@@ -107,9 +107,25 @@ export function useCalls(user?: User | null) {
             if (prev.some((l) => l.id === res.data.log.id)) return prev;
             return deduplicateLogs([res.data.log, ...prev]);
           });
+          return res.data.log;
         }
       } catch (err) {
         console.error('Failed to log call:', err);
+      }
+    },
+    []
+  );
+
+  const updateCallLog = useCallback(
+    async (logId: string, { durationSeconds, status }: { durationSeconds?: number; status?: CallStatus }) => {
+      try {
+        const res = await api.put(`/calls/log/${logId}`, { durationSeconds, status });
+        if (res.data?.log) {
+          setCallLogs((prev) => prev.map((l) => (l.id === logId ? res.data.log : l)));
+          return res.data.log;
+        }
+      } catch (err) {
+        console.error('Failed to update call log:', err);
       }
     },
     []
@@ -139,6 +155,7 @@ export function useCalls(user?: User | null) {
     loading,
     fetchCallLogs,
     addCallLog,
+    updateCallLog,
     deleteCallLog,
     clearCallHistory,
   };

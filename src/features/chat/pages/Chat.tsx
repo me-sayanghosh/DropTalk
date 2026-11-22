@@ -314,9 +314,6 @@ export default function Chat() {
       }
     }
 
-    if (toUserId) {
-      addCallLog({ receiverId: toUserId, roomId, type: isVideo ? 'video' : 'voice', status: 'completed' });
-    }
     startCall(toUserId, roomId, isVideo, targetName, targetProfileImage);
   };
 
