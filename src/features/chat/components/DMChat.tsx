@@ -1,16 +1,19 @@
 import { useState, useRef, useEffect } from 'react';
 import { formatDateSeparator } from '../../../shared/utils/dateUtils';
-import { getMediaUrl } from '../../../shared/utils';
+import { getMediaUrl, getSocket } from '../../../shared/utils';
 import { api } from '../../../shared/utils/api';
 
 export default function DMChat({ room, messages, userId, onAccept, onRemove, onSend, loading, onStartCall, onBack }) {
   const [text, setText] = useState('');
   const [attachments, setAttachments] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [partnerTyping, setPartnerTyping] = useState(false);
   const inputRef = useRef(null);
   const containerRef = useRef(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const isTypingRef = useRef(false);
+  const typingTimerRef = useRef<any>(null);
 
   const isPending = room?.dmStatus === 'pending';
   const isInitiator = room?.dmInitiator === userId;
@@ -22,6 +25,47 @@ export default function DMChat({ room, messages, userId, onAccept, onRemove, onS
       inputRef.current?.focus();
     }
   }, [canChat, room?.id]);
+
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket || !room?.id) return;
+
+    function onTyping(data: any) {
+      if (data.roomId === room.id && (data.user?.id !== userId && data.userId !== userId)) {
+        setPartnerTyping(true);
+      }
+    }
+    function onStoppedTyping(data: any) {
+      if (data.roomId === room.id && (data.userId !== userId && data.user?.id !== userId)) {
+        setPartnerTyping(false);
+      }
+    }
+
+    socket.on('user:typing', onTyping);
+    socket.on('user:stopped-typing', onStoppedTyping);
+
+    return () => {
+      socket.off('user:typing', onTyping);
+      socket.off('user:stopped-typing', onStoppedTyping);
+    };
+  }, [room?.id, userId]);
+
+  function handleTyping() {
+    if (!room?.id) return;
+    const socket = getSocket();
+    if (!socket) return;
+
+    if (!isTypingRef.current) {
+      isTypingRef.current = true;
+      socket.emit('user:typing', { roomId: room.id });
+    }
+
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    typingTimerRef.current = setTimeout(() => {
+      isTypingRef.current = false;
+      socket.emit('user:stopped-typing', { roomId: room.id });
+    }, 2500);
+  }
 
   useEffect(() => {
     if (containerRef.current) {
@@ -69,6 +113,16 @@ export default function DMChat({ room, messages, userId, onAccept, onRemove, onS
     e.preventDefault();
     const t = text.trim();
     if ((!t && attachments.length === 0) || !canChat || uploading) return;
+
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    if (isTypingRef.current) {
+      isTypingRef.current = false;
+      const socket = getSocket();
+      if (socket && room?.id) {
+        socket.emit('user:stopped-typing', { roomId: room.id });
+      }
+    }
+
     onSend(t, attachments);
     setText('');
     setAttachments([]);
@@ -287,6 +341,11 @@ export default function DMChat({ room, messages, userId, onAccept, onRemove, onS
       </div>
 
       {/* Composer — only if accepted */}
+      {partnerTyping && (
+        <div className="dm-typing-status">
+          <span>{partnerName} is typing...</span>
+        </div>
+      )}
       {canChat ? (
         <div className="dm-composer-container">
           <input
@@ -332,7 +391,10 @@ export default function DMChat({ room, messages, userId, onAccept, onRemove, onS
               ref={inputRef}
               placeholder={uploading ? 'Uploading attachment...' : `Message ${partnerName}...`}
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => {
+                setText(e.target.value);
+                handleTyping();
+              }}
               onKeyDown={handleKeyDown}
               disabled={uploading}
             />
