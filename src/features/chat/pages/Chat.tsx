@@ -772,6 +772,7 @@ export default function Chat() {
       {showPinnedModal && currentRoom && (
         <PinnedMessagesModal
           isOpen={showPinnedModal}
+          roomId={currentRoom.id}
           onClose={() => setShowPinnedModal(false)}
           pinnedMessages={currentRoom.pinnedMessages || []}
           allMessages={displayMessages}
