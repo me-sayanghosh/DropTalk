@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
@@ -454,6 +455,36 @@ router.put('/custom-status', requireAuth, async (req, res) => {
   } catch (err: any) {
     console.error('[auth] custom-status error:', err?.message || err);
     res.status(500).json({ error: err?.message || 'Failed to update custom status' });
+  }
+});
+
+// PUT /api/auth/privacy-settings - Update privacy & visibility settings
+router.put('/privacy-settings', requireAuth, async (req, res) => {
+  try {
+    const { showOnlineStatus, showProfilePicture, blockedUsers } = req.body || {};
+    const update: any = {};
+
+    if (showOnlineStatus !== undefined) {
+      update['privacySettings.showOnlineStatus'] = Boolean(showOnlineStatus);
+    }
+    if (showProfilePicture !== undefined) {
+      update['privacySettings.showProfilePicture'] = Boolean(showProfilePicture);
+    }
+    if (Array.isArray(blockedUsers)) {
+      update['privacySettings.blockedUsers'] = blockedUsers.filter((id: any) =>
+        mongoose.Types.ObjectId.isValid(id)
+      );
+    }
+
+    const user = await User.findByIdAndUpdate(req.user.id, { $set: update }, { new: true });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    return res.json({ ok: true, user: user.toClient() });
+  } catch (err: any) {
+    console.error('[auth] privacy-settings error:', err?.message || err);
+    res.status(500).json({ error: err?.message || 'Failed to update privacy settings' });
   }
 });
 
