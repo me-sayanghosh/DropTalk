@@ -129,4 +129,24 @@ describe('Threads API', () => {
     expect(thread1).toBeDefined();
     expect(thread1.replyCount).toBe(2);
   });
+
+  test('POST /api/rooms/:roomId/messages/:messageId/reply posts a reply to a thread', async () => {
+    const token = makeToken(replier);
+    const parentMsg = await Message.create({ room: room._id, sender: author._id, text: 'Discuss RFC' });
+
+    const replyRes = await request('POST', `/api/rooms/${room._id}/messages/${parentMsg._id}/reply`, token, {
+      text: 'Looks great to me',
+    });
+
+    expect(replyRes.status).toBe(201);
+    expect(replyRes.body.ok).toBe(true);
+    expect(replyRes.body.message.text).toBe('Looks great to me');
+    expect(replyRes.body.message.parentMessage).toBe(parentMsg._id.toString());
+
+    // Verify it appears in replies endpoint
+    const listRes = await request('GET', `/api/rooms/${room._id}/messages/${parentMsg._id}/replies`, token);
+    expect(listRes.status).toBe(200);
+    expect(listRes.body.replies.length).toBe(1);
+    expect(listRes.body.replies[0].text).toBe('Looks great to me');
+  });
 });

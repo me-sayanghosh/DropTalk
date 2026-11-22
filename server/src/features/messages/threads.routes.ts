@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { Message } from './message.model';
 import { Room } from '../rooms/room.model';
 import { requireAuth } from '../../shared/middleware/auth';
+import { getIO } from '../../shared/socket/index';
+import { cacheService } from '../../shared/cache/cache.service';
 
 const router = Router();
 
@@ -36,6 +38,71 @@ router.get('/:roomId/messages/:messageId/replies', async (req, res) => {
     res.status(500).json({ error: err.message || 'Internal server error' });
   }
 });
+
+const handlePostThreadReply = async (req: any, res: any) => {
+  try {
+    const { roomId, messageId } = req.params;
+    const { text = '', attachments = [], clientMsgId } = req.body || {};
+    const trimmed = typeof text === 'string' ? text.trim() : '';
+
+    if (!trimmed && (!attachments || attachments.length === 0)) {
+      return res.status(400).json({ error: 'message text or attachment required' });
+    }
+
+    const room = await Room.findById(roomId);
+    if (!room) return res.status(404).json({ error: 'room not found' });
+
+    if (room.type === 'private') {
+      const isMember = room.members.some((m) => m.user.toString() === req.user.id);
+      if (!isMember) return res.status(403).json({ error: 'not a member of this private room' });
+    }
+
+    const parent = await Message.findOne({ _id: messageId, room: roomId });
+    if (!parent) return res.status(404).json({ error: 'parent message not found' });
+
+    if (clientMsgId) {
+      const existing = await Message.findOne({ clientMsgId }).populate('sender', 'username profileImage').lean();
+      if (existing) {
+        return res.json({ ok: true, message: (existing as any) });
+      }
+    }
+
+    const reply = await Message.create({
+      room: roomId,
+      sender: req.user.id,
+      text: trimmed,
+      attachments: Array.isArray(attachments) ? attachments : [],
+      parentMessage: parent._id,
+      clientMsgId: clientMsgId || null,
+    });
+
+    const populated = await Message.findById(reply._id).populate('sender', 'username profileImage');
+    const payload = {
+      ...populated.toClient(),
+      sender: { id: req.user.id, username: req.user.username },
+      senderUsername: req.user.username,
+    };
+
+    cacheService.delete(`msgs:${roomId}:*`);
+
+    const io = getIO();
+    if (io) {
+      io.to(roomId).emit('message:new', { roomId, message: payload });
+      io.to(roomId).emit('message:thread-reply', {
+        roomId,
+        parentMessageId: parent._id.toString(),
+        reply: payload,
+      });
+    }
+
+    res.status(201).json({ ok: true, message: payload });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Internal server error' });
+  }
+};
+
+router.post('/:roomId/messages/:messageId/reply', handlePostThreadReply);
+router.post('/:roomId/messages/:messageId/replies', handlePostThreadReply);
 
 router.get('/:roomId/threads', async (req, res) => {
   try {

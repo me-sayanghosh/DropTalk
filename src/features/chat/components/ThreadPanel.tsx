@@ -92,6 +92,7 @@ export default function ThreadPanel({ parentMessage, roomId, meId, isPrivate, on
       try {
         const res = await api.post(`/rooms/${roomId}/messages`, {
           text: textToSend,
+          parentMessage: parentMessage.id,
           parentMessageId: parentMessage.id,
           clientMsgId,
         });

@@ -119,6 +119,7 @@ router.post('/:roomId/messages', async (req, res) => {
   try {
     const { roomId } = req.params;
     const { text = '', attachments = [], clientMsgId, replyTo, parentMessage, forwardedFrom } = req.body || {};
+    const effectiveParent = parentMessage || req.body?.parentMessageId || null;
     const trimmedText = typeof text === 'string' ? text.trim() : '';
 
     if (!roomId || (!trimmedText && (!attachments || attachments.length === 0))) {
@@ -198,7 +199,7 @@ router.post('/:roomId/messages', async (req, res) => {
       attachments: Array.isArray(attachments) ? attachments : [],
       clientMsgId: clientMsgId || null,
       replyTo: replyTo || null,
-      parentMessage: parentMessage || null,
+      parentMessage: effectiveParent,
       forwardedFrom: forwardedFrom || null,
       mentions: mentionIds,
     });
@@ -217,10 +218,10 @@ router.post('/:roomId/messages', async (req, res) => {
     const io = getIO();
     if (io) {
       io.to(roomId).emit('message:new', { roomId, message: payload });
-      if (parentMessage) {
+      if (effectiveParent) {
         io.to(roomId).emit('message:thread-reply', {
           roomId,
-          parentMessageId: parentMessage,
+          parentMessageId: effectiveParent.toString(),
           reply: payload,
         });
       }
