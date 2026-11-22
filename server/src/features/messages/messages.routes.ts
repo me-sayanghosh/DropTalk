@@ -341,6 +341,37 @@ router.put('/:roomId/messages/:messageId', async (req, res) => {
   }
 });
 
+// DELETE /api/rooms/:roomId/messages/:messageId/me - Delete message for current user only
+router.delete('/:roomId/messages/:messageId/me', async (req, res) => {
+  try {
+    const { roomId, messageId } = req.params;
+
+    const room = await Room.findById(roomId);
+    if (!room) return res.status(404).json({ error: 'room not found' });
+
+    const isMember = room.members.some((m) => m.user.toString() === req.user.id);
+    if (!isMember) return res.status(403).json({ error: 'not a member of this room' });
+
+    const message = await Message.findOne({ _id: messageId, room: roomId });
+    if (!message) return res.status(404).json({ error: 'message not found' });
+
+    if (!message.deletedFor.some((id) => id.toString() === req.user.id)) {
+      message.deletedFor.push(req.user.id);
+      await message.save();
+    }
+
+    const io = getIO();
+    if (io) {
+      io.to(`user:${req.user.id}`).emit('message:deleted-for-me', { roomId, messageId });
+    }
+
+    res.json({ ok: true, messageId });
+  } catch (err: any) {
+    console.error('[messages] delete-for-me error:', err.message);
+    res.status(500).json({ error: err.message || 'Internal server error' });
+  }
+});
+
 // GET /api/rooms/:roomId/messages/search?q=query - Search messages within a room
 router.get('/:roomId/messages/search', async (req, res) => {
   try {
