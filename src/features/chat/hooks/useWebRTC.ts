@@ -64,9 +64,11 @@ export function useWebRTC(
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const peerTargetRef = useRef<{ targetUserId?: string; roomId?: string } | null>(null);
+  const iceCandidatesQueueRef = useRef<any[]>([]);
 
   // Cleanup helper
   const endCall = useCallback((emitEnd = true, customStatus?: 'completed' | 'missed' | 'rejected' | 'cancelled') => {
+    iceCandidatesQueueRef.current = [];
     const finalDuration = connectedAtRef.current ? Math.floor((Date.now() - connectedAtRef.current) / 1000) : 0;
     const finalStatus: 'completed' | 'missed' | 'rejected' | 'cancelled' =
       customStatus || (connectedAtRef.current ? 'completed' : callState === 'calling' ? 'cancelled' : callState === 'incoming' ? 'missed' : 'completed');
@@ -329,6 +331,17 @@ export function useWebRTC(
       endCall(false);
     });
 
+    const drainIceQueue = async (pc: RTCPeerConnection) => {
+      while (iceCandidatesQueueRef.current.length > 0) {
+        const c = iceCandidatesQueueRef.current.shift();
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(c));
+        } catch (e) {
+          console.warn('[useWebRTC] Queued ICE candidate failed:', e);
+        }
+      }
+    };
+
     // Offer received
     socket.on('webrtc:offer', async ({ fromUserId, roomId, offer }: any) => {
       let pc = pcRef.current;
@@ -337,6 +350,7 @@ export function useWebRTC(
       }
       if (pc) {
         await pc.setRemoteDescription(new RTCSessionDescription(offer));
+        await drainIceQueue(pc);
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
 
@@ -348,17 +362,22 @@ export function useWebRTC(
     socket.on('webrtc:answer', async ({ answer }: any) => {
       if (pcRef.current) {
         await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
+        await drainIceQueue(pcRef.current);
       }
     });
 
     // ICE Candidate received
     socket.on('webrtc:ice-candidate', async ({ candidate }: any) => {
-      if (pcRef.current && candidate) {
-        try {
-          await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
-        } catch (err) {
-          console.error('ICE candidate error:', err);
-        }
+      if (!candidate) return;
+      const pc = pcRef.current;
+      if (!pc || !pc.remoteDescription) {
+        iceCandidatesQueueRef.current.push(candidate);
+        return;
+      }
+      try {
+        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      } catch (err) {
+        console.warn('[useWebRTC] ICE candidate error:', err);
       }
     });
 
