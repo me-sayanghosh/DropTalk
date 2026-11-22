@@ -249,7 +249,7 @@ router.get('/:roomId/messages', async (req, res) => {
   try {
     const { roomId } = req.params;
     const userId = req.user.id;
-    const { after, limit } = req.query;
+    const { after, before, limit } = req.query;
 
     const room = await Room.findOne({
       _id: roomId,
@@ -261,6 +261,8 @@ router.get('/:roomId/messages', async (req, res) => {
     const query: any = { room: roomId, parentMessage: null };
     if (after && mongoose.Types.ObjectId.isValid(after as string)) {
       query._id = { $gt: new mongoose.Types.ObjectId(after as string) };
+    } else if (before && mongoose.Types.ObjectId.isValid(before as string)) {
+      query._id = { $lt: new mongoose.Types.ObjectId(before as string) };
     }
 
     const cap = Math.min(parseInt(limit as string, 10) || 50, 500);
