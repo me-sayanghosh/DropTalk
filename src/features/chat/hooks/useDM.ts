@@ -296,13 +296,57 @@ export default function useDM() {
       }
     }
 
+    function onMessageEdited({ roomId, messageId, text, edited, editedAt }: any) {
+      const activeDmId = (currentDM?.id || (currentDM as any)?._id)?.toString();
+      if (activeDmId && roomId?.toString() === activeDmId) {
+        setDmMessages((prev) =>
+          prev.map((m) => (m.id === messageId || (m as any)._id === messageId ? { ...m, text, edited, editedAt } : m))
+        );
+      }
+    }
+
+    function onMessageDeleted({ roomId, messageId }: any) {
+      const activeDmId = (currentDM?.id || (currentDM as any)?._id)?.toString();
+      if (activeDmId && roomId?.toString() === activeDmId) {
+        setDmMessages((prev) =>
+          prev.map((m) => (m.id === messageId || (m as any)._id === messageId ? { ...m, deleted: true, text: '' } : m))
+        );
+      }
+    }
+
+    function onMessageDeletedForMe({ roomId, messageId }: any) {
+      const activeDmId = (currentDM?.id || (currentDM as any)?._id)?.toString();
+      if (activeDmId && roomId?.toString() === activeDmId) {
+        setDmMessages((prev) =>
+          prev.filter((m) => m.id !== messageId && (m as any)._id !== messageId)
+        );
+      }
+    }
+
+    function onMessageReaction({ roomId, messageId, reactions }: any) {
+      const activeDmId = (currentDM?.id || (currentDM as any)?._id)?.toString();
+      if (activeDmId && roomId?.toString() === activeDmId) {
+        setDmMessages((prev) =>
+          prev.map((m) => (m.id === messageId || (m as any)._id === messageId ? { ...m, reactions } : m))
+        );
+      }
+    }
+
     socket.on('message:new', onMessageNew);
+    socket.on('message:edited', onMessageEdited);
+    socket.on('message:deleted', onMessageDeleted);
+    socket.on('message:deleted-for-me', onMessageDeletedForMe);
+    socket.on('message:reaction', onMessageReaction);
     socket.on('dm:new-request', onDMNewRequest);
     socket.on('dm:accepted', onDMAccepted);
     socket.on('dm:removed', onDMRemoved);
 
     return () => {
       socket.off('message:new', onMessageNew);
+      socket.off('message:edited', onMessageEdited);
+      socket.off('message:deleted', onMessageDeleted);
+      socket.off('message:deleted-for-me', onMessageDeletedForMe);
+      socket.off('message:reaction', onMessageReaction);
       socket.off('dm:new-request', onDMNewRequest);
       socket.off('dm:accepted', onDMAccepted);
       socket.off('dm:removed', onDMRemoved);
