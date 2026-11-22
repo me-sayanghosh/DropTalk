@@ -36,7 +36,8 @@ export default function Chat() {
     messagesContainerRef, isPrivate, hasKey, unreadCounts, mentionAlerts,
     selectRoom, leaveRoom, handleRequestJoin, createRoom,
     send, handleTyping, deleteMessage, deleteForMe, handleReadReceipt, handleReact, refreshMembers,
-    editMessage, pinMessage, unpinMessage, forwardMessage, loadOlderMessages,
+    editMessage, editingMessage, setEditingMessage, editLastSentMessage,
+    pinMessage, unpinMessage, forwardMessage, loadOlderMessages,
     markRoomAsRead, clearRoomMessages,
   } = useChat();
 
@@ -667,6 +668,10 @@ export default function Chat() {
                         onClearReply={() => setReplyTo(null)}
                         membersMap={membersMap}
                         slowMode={currentRoom.slowMode || 0}
+                        editingMessage={editingMessage}
+                        onSaveEdit={editMessage}
+                        onCancelEdit={() => setEditingMessage(null)}
+                        onEditLastMessage={editLastSentMessage}
                       />
                     </div>
                     {threadMessage && (

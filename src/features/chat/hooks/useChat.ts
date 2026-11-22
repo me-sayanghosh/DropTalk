@@ -52,6 +52,7 @@ export default function useChat() {
   const [threadCounts, setThreadCounts] = useState<Record<string, number>>({});
   const [decryptedMessages, setDecryptedMessages] = useState<Record<string, string>>({});
   const [keyStatus, setKeyStatus] = useState<string | null>(null);
+  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [currentInput, setCurrentInput] = useState('');
   const [memberRooms, setMemberRooms] = useState<Set<string>>(new Set());
   const [pendingRooms, setPendingRooms] = useState<Set<string>>(new Set());
@@ -908,6 +909,21 @@ export default function useChat() {
     }
   }
 
+  function editLastSentMessage() {
+    const myId = userRef.current?.id;
+    if (!myId) return null;
+    const myMsgs = messagesRef.current.filter((m) => {
+      const senderId = (m.sender as any)?.id || (m.sender as any)?._id || (m as any).senderId || (typeof m.sender === 'string' ? m.sender : null);
+      return senderId === myId && !m.deleted;
+    });
+    const last = myMsgs[myMsgs.length - 1];
+    if (last) {
+      setEditingMessage(last);
+      return last;
+    }
+    return null;
+  }
+
   function pinMessage(messageId: string) {
     if (!currentRoom || !messageId) return;
     const socket = getSocket();
@@ -1040,6 +1056,9 @@ export default function useChat() {
     handleReact,
     refreshMembers,
     editMessage,
+    editingMessage,
+    setEditingMessage,
+    editLastSentMessage,
     pinMessage,
     unpinMessage,
     forwardMessage,

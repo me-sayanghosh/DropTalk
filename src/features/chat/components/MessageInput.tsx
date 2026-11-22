@@ -1,7 +1,19 @@
 import { useState, useRef, useEffect } from 'react';
 import { api, getMediaUrl } from '../../../shared/utils';
 
-export default function MessageInput({ onSend, onTyping, onTextChange, replyTo, onClearReply, membersMap, slowMode = 0 }) {
+export default function MessageInput({
+  onSend,
+  onTyping,
+  onTextChange,
+  replyTo,
+  onClearReply,
+  membersMap,
+  slowMode = 0,
+  editingMessage = null,
+  onSaveEdit,
+  onCancelEdit,
+  onEditLastMessage,
+}) {
   const [text, setText] = useState('');
   const [mentionQuery, setMentionQuery] = useState(null); // string after @ or null
   const [mentionIndex, setMentionIndex] = useState(0);
@@ -31,6 +43,13 @@ export default function MessageInput({ onSend, onTyping, onTextChange, replyTo, 
   useEffect(() => {
     if (replyTo) inputRef.current?.focus();
   }, [replyTo]);
+
+  useEffect(() => {
+    if (editingMessage) {
+      setText(editingMessage.text || '');
+      inputRef.current?.focus();
+    }
+  }, [editingMessage]);
 
   function detectMention(value) {
     const cursor = inputRef.current?.selectionStart ?? value.length;
@@ -131,6 +150,13 @@ export default function MessageInput({ onSend, onTyping, onTextChange, replyTo, 
     if (!t && attachments.length === 0) return;
     if (uploading) return;
 
+    if (editingMessage) {
+      onSaveEdit?.(editingMessage.id, t);
+      setText('');
+      onCancelEdit?.();
+      return;
+    }
+
     onSend(t, attachments);
     setText('');
     setAttachments([]);
@@ -167,6 +193,18 @@ export default function MessageInput({ onSend, onTyping, onTextChange, replyTo, 
         setMentionQuery(null);
         return;
       }
+    }
+
+    if (e.key === 'ArrowUp' && text === '' && attachments.length === 0) {
+      e.preventDefault();
+      onEditLastMessage?.();
+      return;
+    }
+
+    if (e.key === 'Escape' && editingMessage) {
+      e.preventDefault();
+      onCancelEdit?.();
+      return;
     }
 
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -227,6 +265,22 @@ export default function MessageInput({ onSend, onTyping, onTextChange, replyTo, 
       {coolDown > 0 && (
         <div className="slowmode-active-bar">
           ⏳ Slow mode active: please wait <strong>{coolDown}s</strong> before sending another message.
+        </div>
+      )}
+
+      {/* Editing Mode Bar */}
+      {editingMessage && (
+        <div className="composer-reply-quote" style={{ borderLeftColor: 'var(--color-accent, #6366f1)' }}>
+          <div className="composer-reply-info">
+            <span className="composer-reply-label">Editing message</span>
+            <span className="composer-reply-name">(Press Escape to cancel, Enter to save)</span>
+          </div>
+          <span className="composer-reply-text">{editingMessage.text?.substring(0, 80) || '...'}</span>
+          <button type="button" className="composer-reply-close" onClick={onCancelEdit} title="Cancel editing">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
         </div>
       )}
 
