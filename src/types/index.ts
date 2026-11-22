@@ -182,6 +182,7 @@ export interface PresenceEntry {
   status: 'online' | 'idle' | 'dnd' | 'offline';
   currentRoom?: string;
   lastSeen?: string | number;
+  customStatus?: { emoji?: string; text?: string };
 }
 
 export interface TypingUser {

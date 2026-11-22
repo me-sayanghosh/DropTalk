@@ -433,10 +433,16 @@ export default function useChat() {
       }
     });
 
-    socket.on('presence:update', ({ userId, status, currentRoom: room }: any) => {
+    socket.on('presence:update', ({ userId, status, currentRoom: room, customStatus }: any) => {
       setPresenceMap((prev) => ({
         ...prev,
-        [userId]: { status, currentRoom: room, username: prev[userId]?.username || userId.slice(0, 8) },
+        [userId]: {
+          ...prev[userId],
+          status,
+          currentRoom: room,
+          username: prev[userId]?.username || userId.slice(0, 8),
+          customStatus: customStatus !== undefined ? customStatus : prev[userId]?.customStatus,
+        },
       }));
     });
 
