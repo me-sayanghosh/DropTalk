@@ -105,6 +105,19 @@ describe('Direct Messages API', () => {
     expect(convRes.body.conversations[0].partner.username).toBe('dm_alice');
   });
 
+  test('POST /api/dm/send succeeds with attachment only (no text provided)', async () => {
+    const aliceToken = makeToken(alice);
+    const res = await request('POST', '/api/dm/send', aliceToken, {
+      toUserId: bob._id.toString(),
+      attachments: [{ url: '/uploads/sample.pdf', filename: 'sample.pdf', fileType: 'document' }],
+    });
+
+    expect(res.status).toBe(201);
+    expect(res.body.room.isDM).toBe(true);
+    expect(res.body.message.attachments.length).toBe(1);
+    expect(res.body.message.attachments[0].filename).toBe('sample.pdf');
+  });
+
   test('POST /api/dm/:roomId/accept updates dmStatus to accepted', async () => {
     const aliceToken = makeToken(alice);
     const bobToken = makeToken(bob);
