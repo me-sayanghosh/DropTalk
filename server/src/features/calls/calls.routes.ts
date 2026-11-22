@@ -15,6 +15,7 @@ router.get('/history', async (req, res) => {
     const userId = req.user.id;
     const logs = await CallLog.find({
       $or: [{ caller: userId }, { receiver: userId }],
+      deletedFor: { $ne: userId },
     })
       .sort({ createdAt: -1 })
       .populate('caller', 'username name profileImage')
@@ -81,9 +82,10 @@ router.post('/log', async (req, res) => {
 router.delete('/history', async (req, res) => {
   try {
     const userId = req.user.id;
-    await CallLog.deleteMany({
-      $or: [{ caller: userId }, { receiver: userId }],
-    });
+    await CallLog.updateMany(
+      { $or: [{ caller: userId }, { receiver: userId }] },
+      { $addToSet: { deletedFor: userId } }
+    );
     res.json({ ok: true });
   } catch (err) {
     console.error('[calls] clear error:', err.message);
