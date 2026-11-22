@@ -283,6 +283,7 @@ router.post('/:roomId/leave', async (req, res) => {
     if (memberIdx === -1) return res.status(400).json({ error: 'not a member of this room' });
 
     room.members.splice(memberIdx, 1);
+    room.encryptedKeys = (room.encryptedKeys || []).filter((ek) => ek.user.toString() !== req.user.id) as any;
     await room.save();
 
     const io = getIO();

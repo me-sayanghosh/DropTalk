@@ -144,6 +144,9 @@ describe('Rooms API', () => {
         { user: ownerUser._id, role: 'owner', joinedAt: new Date(), muted: false },
         { user: memberUser._id, role: 'member', joinedAt: new Date(), muted: false },
       ],
+      encryptedKeys: [
+        { user: memberUser._id, key: 'secret_key_member' },
+      ],
     });
 
     const res = await request('POST', `/api/rooms/${room._id}/leave`, memberToken);
@@ -151,6 +154,7 @@ describe('Rooms API', () => {
 
     const updated = await Room.findById(room._id);
     expect(updated?.members.some((m) => m.user.toString() === memberUser._id.toString())).toBe(false);
+    expect(updated?.encryptedKeys.some((ek) => ek.user.toString() === memberUser._id.toString())).toBe(false);
   });
 
   test('DELETE /api/rooms/:roomId allows only owner to delete channel', async () => {
