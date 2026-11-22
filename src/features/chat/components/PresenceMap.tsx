@@ -1,6 +1,8 @@
 interface PresenceEntry {
+  status?: string;
   currentRoom?: string;
   username?: string;
+  customStatus?: { emoji?: string; text?: string };
   [key: string]: unknown;
 }
 
@@ -14,7 +16,9 @@ export default function PresenceMap({ presenceMap, currentUserId, rooms = [] }: 
   currentUserId: string;
   rooms?: Room[];
 }) {
-  const entries = Object.entries(presenceMap).filter(([userId]) => userId !== currentUserId);
+  const entries = Object.entries(presenceMap).filter(
+    ([userId, pres]) => userId !== currentUserId && pres && pres.status !== 'offline'
+  );
 
   const roomNameMap: Record<string, string> = {};
   for (const r of rooms) {
@@ -46,12 +50,20 @@ export default function PresenceMap({ presenceMap, currentUserId, rooms = [] }: 
             {roomName === 'lobby' ? 'In lobby' : `In #${roomNameMap[roomName] || roomName}`}
           </div>
           <ul>
-            {users.map((u) => (
-              <li key={u.userId} className="presence-user">
-                <span className="presence-dot online"></span>
-                <span className="presence-username">{u.username || u.userId.slice(0, 8)}</span>
-              </li>
-            ))}
+            {users.map((u) => {
+              const statusClass = u.status === 'away' ? 'away' : u.status === 'dnd' ? 'dnd' : 'online';
+              return (
+                <li key={u.userId} className="presence-user">
+                  <span className={`presence-dot ${statusClass}`}></span>
+                  <span className="presence-username">{u.username || u.userId.slice(0, 8)}</span>
+                  {u.customStatus?.emoji && (
+                    <span className="presence-custom-status" title={u.customStatus?.text || ''}>
+                      {u.customStatus.emoji}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </div>
       ))}
