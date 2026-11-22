@@ -484,6 +484,68 @@ router.get('/:roomId/pinned', async (req, res) => {
   }
 });
 
+// POST /api/rooms/:roomId/messages/:messageId/pin - Pin a message via REST API
+router.post('/:roomId/messages/:messageId/pin', async (req, res) => {
+  try {
+    const { roomId, messageId } = req.params;
+
+    const room = await Room.findById(roomId);
+    if (!room) return res.status(404).json({ error: 'room not found' });
+
+    const isMember = room.members.some((m) => m.user.toString() === req.user.id);
+    if (!isMember) return res.status(403).json({ error: 'not a member of this room' });
+
+    const message = await Message.findOne({ _id: messageId, room: roomId });
+    if (!message) return res.status(404).json({ error: 'message not found' });
+
+    if (!room.pinnedMessages) room.pinnedMessages = [];
+    if (!room.pinnedMessages.some((p) => p.toString() === messageId)) {
+      room.pinnedMessages.push(message._id);
+      await room.save();
+    }
+
+    const pinnedIds = room.pinnedMessages.map((p) => p.toString());
+    const io = getIO();
+    if (io) {
+      io.to(roomId).emit('message:pinned', { roomId, messageId, pinnedMessages: pinnedIds });
+    }
+
+    res.json({ ok: true, pinnedMessages: pinnedIds });
+  } catch (err: any) {
+    console.error('[messages] pin error:', err.message);
+    res.status(500).json({ error: err.message || 'Internal server error' });
+  }
+});
+
+// DELETE /api/rooms/:roomId/messages/:messageId/pin - Unpin a message via REST API
+router.delete('/:roomId/messages/:messageId/pin', async (req, res) => {
+  try {
+    const { roomId, messageId } = req.params;
+
+    const room = await Room.findById(roomId);
+    if (!room) return res.status(404).json({ error: 'room not found' });
+
+    const isMember = room.members.some((m) => m.user.toString() === req.user.id);
+    if (!isMember) return res.status(403).json({ error: 'not a member of this room' });
+
+    if (room.pinnedMessages) {
+      room.pinnedMessages = room.pinnedMessages.filter((p) => p.toString() !== messageId);
+      await room.save();
+    }
+
+    const pinnedIds = (room.pinnedMessages || []).map((p) => p.toString());
+    const io = getIO();
+    if (io) {
+      io.to(roomId).emit('message:unpinned', { roomId, messageId, pinnedMessages: pinnedIds });
+    }
+
+    res.json({ ok: true, pinnedMessages: pinnedIds });
+  } catch (err: any) {
+    console.error('[messages] unpin error:', err.message);
+    res.status(500).json({ error: err.message || 'Internal server error' });
+  }
+});
+
 // GET /api/rooms/:roomId/messages/search?q=query - Search messages within a room
 router.get('/:roomId/messages/search', async (req, res) => {
   try {
