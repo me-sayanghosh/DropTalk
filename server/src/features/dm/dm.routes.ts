@@ -188,11 +188,13 @@ router.post('/:roomId/accept', async (req, res) => {
     await room.save();
 
     const io = getIO();
-    // Notify both parties
-    io?.emit('dm:accepted', {
-      roomId: room._id.toString(),
-      acceptedBy: userId,
-    });
+    if (io) {
+      const roomIdStr = room._id.toString();
+      io.to(roomIdStr).emit('dm:accepted', { roomId: roomIdStr, acceptedBy: userId });
+      for (const m of room.members) {
+        io.to(`user:${m.user.toString()}`).emit('dm:accepted', { roomId: roomIdStr, acceptedBy: userId });
+      }
+    }
 
     res.json({ room: room.toClient() });
   } catch (err) {
@@ -217,12 +219,20 @@ router.delete('/:roomId', async (req, res) => {
     });
     if (!room) return res.status(404).json({ error: 'DM not found' });
 
+    const memberIds = room.members.map((m) => m.user.toString());
+    const roomIdStr = room._id.toString();
+
     // Delete all messages and the room
     await Message.deleteMany({ room: room._id });
     await room.deleteOne();
 
     const io = getIO();
-    io?.emit('dm:removed', { roomId: room._id.toString(), removedBy: userId });
+    if (io) {
+      io.to(roomIdStr).emit('dm:removed', { roomId: roomIdStr, removedBy: userId });
+      for (const mId of memberIds) {
+        io.to(`user:${mId}`).emit('dm:removed', { roomId: roomIdStr, removedBy: userId });
+      }
+    }
 
     res.json({ ok: true });
   } catch (err) {
