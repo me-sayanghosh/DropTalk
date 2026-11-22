@@ -1,4 +1,14 @@
+import { useEffect } from 'react';
+
 export default function UserProfileCard({ user, isOnline, onClose, onStartDM, onMention, currentUserId }) {
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   if (!user) return null;
 
   const initial = (user.username || 'U')[0].toUpperCase();

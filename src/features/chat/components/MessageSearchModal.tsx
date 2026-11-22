@@ -34,6 +34,15 @@ export default function MessageSearchModal({ roomId, isOpen, onClose, onJumpToMe
     };
   }, [query, roomId, isOpen]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   function highlightQuery(text, q) {
