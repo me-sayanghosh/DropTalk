@@ -148,6 +148,18 @@ describe('Messages API', () => {
     expect(res.body.message.edited).toBe(true);
   });
 
+  test('PATCH /api/rooms/:roomId/messages/:messageId edits message', async () => {
+    const token = makeToken(senderUser);
+    const msg = await Message.create({ room: room._id, sender: senderUser._id, text: 'Before patch' });
+
+    const res = await request('PATCH', `/api/rooms/${room._id}/messages/${msg._id}`, token, {
+      text: 'After patch',
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.message.text).toBe('After patch');
+    expect(res.body.message.edited).toBe(true);
+  });
+
   test('POST /api/rooms/:roomId/messages/:messageId/delete-for-me hides message for user', async () => {
     const token = makeToken(senderUser);
     const msg = await Message.create({ room: room._id, sender: senderUser._id, text: 'Secret to hide' });

@@ -292,8 +292,8 @@ router.post('/:roomId/messages', async (req, res) => {
   }
 });
 
-// PUT /api/rooms/:roomId/messages/:messageId - Edit a message via REST API
-router.put('/:roomId/messages/:messageId', async (req, res) => {
+// PUT & PATCH /api/rooms/:roomId/messages/:messageId - Edit a message via REST API
+const handleMessageEdit = async (req: any, res: any) => {
   try {
     const { roomId, messageId } = req.params;
     const { text } = req.body || {};
@@ -339,7 +339,10 @@ router.put('/:roomId/messages/:messageId', async (req, res) => {
     console.error('[messages] edit error:', err.message);
     res.status(500).json({ error: err.message || 'Internal server error' });
   }
-});
+};
+
+router.put('/:roomId/messages/:messageId', handleMessageEdit);
+router.patch('/:roomId/messages/:messageId', handleMessageEdit);
 
 // DELETE /api/rooms/:roomId/messages/:messageId/me - Delete message for current user only
 router.delete('/:roomId/messages/:messageId/me', async (req, res) => {
