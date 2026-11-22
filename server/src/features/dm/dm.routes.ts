@@ -5,6 +5,7 @@ import { Message } from '../messages/message.model';
 import { User } from '../auth/user.model';
 import { requireAuth } from '../../shared/middleware/auth';
 import { getIO } from '../../shared/socket/index';
+import { cacheService } from '../../shared/cache/cache.service';
 import { createNotification } from '../notifications/notifications.service';
 
 const router = Router();
@@ -354,14 +355,24 @@ router.post('/:roomId/messages', async (req, res) => {
       replyTo: replyTo || null,
     });
 
+    // Touch room updatedAt to bump conversation in list
+    room.updatedAt = new Date();
+    await room.save();
+
+    const roomIdStr = room._id.toString();
+    cacheService.delete(`msgs:${roomIdStr}:*`);
+
     const payload = {
       ...msg.toClient(),
-      sender: { id: userId, username: req.user.username },
+      sender: {
+        id: userId,
+        username: req.user.username,
+        profileImage: (req.user as any).profileImage || '',
+      },
       senderUsername: req.user.username,
     };
 
     const io = getIO();
-    const roomIdStr = room._id.toString();
     io?.to(roomIdStr).emit('message:new', {
       roomId: roomIdStr,
       message: payload,
