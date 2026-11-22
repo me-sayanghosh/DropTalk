@@ -9,6 +9,9 @@ import { requireAuth } from '../../shared/middleware/auth';
 import { sendOtpEmail } from '../../shared/utils/mailer';
 import { TOKEN_EXPIRY, USERNAME_REGEX, USERNAME_MIN_LENGTH, USERNAME_MAX_LENGTH, JWT_SECRET } from '../../shared/utils/constants';
 import { parseExpiry, escapeRegex, generateAutoUsername } from '../../shared/utils/helpers';
+import redis from '../../shared/config/redis';
+import { getPresence } from '../presence/presence.service';
+import { getIO } from '../../shared/socket/index';
 
 const router = Router();
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || '');
@@ -426,6 +429,26 @@ router.put('/custom-status', requireAuth, async (req, res) => {
       },
       { new: true }
     );
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const currentPresence = await getPresence(req.user.id).catch(() => null);
+    if (currentPresence) {
+      currentPresence.customStatus = user.customStatus;
+      await redis.hset('presence', req.user.id, JSON.stringify(currentPresence)).catch(() => {});
+    }
+
+    const io = getIO();
+    if (io) {
+      io.emit('presence:update', {
+        userId: req.user.id,
+        status: currentPresence?.status || 'online',
+        currentRoom: currentPresence?.currentRoom || null,
+        customStatus: user.customStatus,
+      });
+    }
 
     return res.json({ ok: true, user: user.toClient() });
   } catch (err: any) {
