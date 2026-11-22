@@ -749,6 +749,9 @@ export default function Chat() {
           currentUserId={user?.id || (user as any)?._id}
           onClose={() => setSelectedProfileUser(null)}
           onStartDM={(toUserId: string) => handleDMUser(toUserId, selectedProfileUser.username)}
+          onStartCall={(targetUserId: string, isVideo: boolean) =>
+            startCall(targetUserId, undefined, isVideo, selectedProfileUser?.name || selectedProfileUser?.username, selectedProfileUser?.profileImage)
+          }
           onMention={(username: string) => {
             setCurrentInput((prev) => (prev ? `${prev} @${username} ` : `@${username} `));
           }}
