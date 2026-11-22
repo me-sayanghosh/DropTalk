@@ -54,15 +54,29 @@ export function registerKeyHandlers(socket, io, { joined }) {
       const room = await Room.findById(roomId);
       if (!room) throw new Error('room not found');
 
+      const keyId = generateKeyId();
+      const existingIdx = room.encryptedKeys.findIndex((ek) => ek.user.toString() === targetUserId);
+      if (existingIdx >= 0) {
+        room.encryptedKeys[existingIdx].key = encryptedKey;
+        room.encryptedKeys[existingIdx].keyId = keyId;
+      } else {
+        room.encryptedKeys.push({ user: targetUserId, key: encryptedKey, keyId });
+      }
+      await room.save();
+
+      const payload = {
+        roomId,
+        encryptedKey,
+        fromUserId: socket.user.id,
+        fromUsername: socket.user.username,
+      };
+
+      io.to(`user:${targetUserId}`).emit('room:key-receive', payload);
+
       const targetSockets = await io.in(roomId).fetchSockets();
       for (const s of targetSockets) {
         if (s.user.id === targetUserId) {
-          s.emit('room:key-receive', {
-            roomId,
-            encryptedKey,
-            fromUserId: socket.user.id,
-            fromUsername: socket.user.username,
-          });
+          s.emit('room:key-receive', payload);
         }
       }
 
