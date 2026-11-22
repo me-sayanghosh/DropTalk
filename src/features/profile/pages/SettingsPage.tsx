@@ -9,6 +9,7 @@ import useDM from '../../chat/hooks/useDM';
 import { formatBadgeCount } from '../../../shared/utils/dateUtils';
 import { useToast } from '../../../shared/context/ToastContext';
 import { API_BASE } from '../../../shared/utils/constants';
+import { api } from '../../../shared/utils/api';
 import NavRail from '../../../shared/components/NavRail';
 
 const API = API_BASE;
@@ -237,19 +238,42 @@ export default function SettingsPage() {
     await saveProfileData({ username: trimmed }, 'Username handle updated!', () => setIsEditingUsername(false));
   }
 
+  useEffect(() => {
+    if (user?.privacySettings) {
+      if (user.privacySettings.showOnlineStatus !== undefined) {
+        setShowOnlineStatus(user.privacySettings.showOnlineStatus);
+      }
+      if (user.privacySettings.showProfilePicture !== undefined) {
+        setShowProfilePicture(user.privacySettings.showProfilePicture);
+      }
+    }
+  }, [user]);
+
   // Handlers for Privacy
-  function handleToggleOnlineStatus() {
+  async function handleToggleOnlineStatus() {
     const next = !showOnlineStatus;
     setShowOnlineStatus(next);
     if (typeof window !== 'undefined') localStorage.setItem('settings_showOnline', String(next));
+    try {
+      const res = await api.put('/auth/privacy-settings', { showOnlineStatus: next });
+      if (res.data?.user) setUser(res.data.user);
+    } catch (err) {
+      console.warn('Failed to sync privacy settings with server:', err);
+    }
     setPrivacySuccess('Privacy settings saved');
     setTimeout(() => setPrivacySuccess(''), 3000);
   }
 
-  function handleToggleDP() {
+  async function handleToggleDP() {
     const next = !showProfilePicture;
     setShowProfilePicture(next);
     if (typeof window !== 'undefined') localStorage.setItem('settings_showDP', String(next));
+    try {
+      const res = await api.put('/auth/privacy-settings', { showProfilePicture: next });
+      if (res.data?.user) setUser(res.data.user);
+    } catch (err) {
+      console.warn('Failed to sync DP privacy settings with server:', err);
+    }
     setPrivacySuccess('Privacy settings saved');
     setTimeout(() => setPrivacySuccess(''), 3000);
   }

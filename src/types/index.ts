@@ -18,6 +18,12 @@ export interface NotificationSettings {
   backgroundSync?: boolean;
 }
 
+export interface PrivacySettings {
+  showOnlineStatus?: boolean;
+  showProfilePicture?: boolean;
+  blockedUsers?: string[];
+}
+
 export interface User {
   id: string;
   _id?: string;
@@ -29,6 +35,7 @@ export interface User {
   googleId?: string;
   customStatus?: CustomStatus;
   notificationSettings?: NotificationSettings;
+  privacySettings?: PrivacySettings;
   createdAt?: string;
   updatedAt?: string;
 }
