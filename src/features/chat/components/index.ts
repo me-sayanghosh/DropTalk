@@ -22,3 +22,4 @@ export { default as CallLogsPanel } from '../../calls/components/CallLogsPanel';
 export { default as CallLogsMainView } from '../../calls/components/CallLogsMainView';
 export { default as ChannelMembersPage } from './ChannelMembersPage';
 export { default as AIPanel } from './AIPanel';
+export { default as SuggestionsBar } from './SuggestionsBar';
