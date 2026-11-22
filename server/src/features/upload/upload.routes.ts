@@ -112,10 +112,27 @@ router.post('/multiple', upload.array('files', 5), (req, res) => {
     }));
 
     res.json({ ok: true, attachments });
-  } catch (err) {
+  } catch (err: any) {
     console.error('[upload] multiple error:', err.message);
     res.status(500).json({ error: 'Internal server error' });
   }
+});
+
+// Multer & Upload error handling middleware
+router.use((err: any, _req: any, res: any, next: any) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ error: 'File size limit exceeded (max 50MB)' });
+    }
+    if (err.code === 'LIMIT_FILE_COUNT' || err.code === 'LIMIT_UNEXPECTED_FILE') {
+      return res.status(400).json({ error: 'Too many files uploaded (max 5)' });
+    }
+    return res.status(400).json({ error: err.message });
+  }
+  if (err) {
+    return res.status(400).json({ error: err.message || 'File upload error' });
+  }
+  next();
 });
 
 export default router;
