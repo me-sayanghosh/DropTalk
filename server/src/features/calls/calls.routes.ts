@@ -76,6 +76,55 @@ router.post('/log', async (req, res) => {
 });
 
 /**
+ * PUT /api/calls/log/:logId
+ * Update call duration and status on call end.
+ */
+router.put('/log/:logId', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { logId } = req.params;
+    const { durationSeconds, status } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(logId)) {
+      return res.status(400).json({ error: 'Invalid log ID' });
+    }
+
+    const log = await CallLog.findOne({
+      _id: logId,
+      $or: [{ caller: userId }, { receiver: userId }],
+    });
+
+    if (!log) {
+      return res.status(404).json({ error: 'Call log not found' });
+    }
+
+    if (durationSeconds !== undefined) {
+      const parsed = parseInt(durationSeconds, 10);
+      if (!isNaN(parsed) && parsed >= 0) {
+        log.durationSeconds = parsed;
+      }
+    }
+
+    if (status && ['completed', 'missed', 'rejected', 'cancelled'].includes(status)) {
+      log.status = status;
+    }
+
+    log.endedAt = new Date();
+    await log.save();
+
+    const populated = await CallLog.findById(log._id)
+      .populate('caller', 'username name profileImage')
+      .populate('receiver', 'username name profileImage')
+      .populate('room', 'name');
+
+    res.json({ log: populated.toClient(userId) });
+  } catch (err) {
+    console.error('[calls] update error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
  * DELETE /api/calls/history
  * Clear call history for current user.
  */
