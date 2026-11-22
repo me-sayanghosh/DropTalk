@@ -1,14 +1,55 @@
-export default function PinnedMessagesModal({ isOpen, onClose, pinnedMessages = [], allMessages = [], onUnpin, onJumpToMessage }) {
+import { useState, useEffect } from 'react';
+import { api } from '../../../shared/utils/api';
+
+export default function PinnedMessagesModal({
+  isOpen,
+  roomId,
+  onClose,
+  pinnedMessages = [],
+  allMessages = [],
+  onUnpin,
+  onJumpToMessage,
+}) {
+  const [fetchedPinned, setFetchedPinned] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (!isOpen || !roomId) {
+      setFetchedPinned([]);
+      return;
+    }
+    setLoading(true);
+    api.get(`/rooms/${roomId}/pinned`)
+      .then((res) => {
+        if (res.data?.messages) {
+          setFetchedPinned(res.data.messages);
+        }
+      })
+      .catch((err) => console.warn('Failed to load pinned messages:', err))
+      .finally(() => setLoading(false));
+  }, [isOpen, roomId]);
+
   if (!isOpen) return null;
 
   // Resolve pinned message objects
-  const pinnedDocs = pinnedMessages
+  const localDocs = pinnedMessages
     .map((id) => allMessages.find((m) => m.id === id || m._id === id))
     .filter(Boolean);
 
+  const pinnedDocs = fetchedPinned.length > 0 ? fetchedPinned : localDocs;
+
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-card pinned-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-card pinned-modal" role="dialog" aria-modal="true" aria-label="Pinned Messages" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
@@ -36,7 +77,11 @@ export default function PinnedMessagesModal({ isOpen, onClose, pinnedMessages = 
                 </div>
                 <button
                   className="pinned-unpin-btn"
-                  onClick={() => onUnpin(msg.id)}
+                  onClick={() => {
+                    const targetId = msg.id || msg._id;
+                    onUnpin(targetId);
+                    setFetchedPinned((prev) => prev.filter((m) => (m.id || m._id) !== targetId));
+                  }}
                   title="Unpin message"
                 >
                   Unpin

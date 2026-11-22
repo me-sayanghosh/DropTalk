@@ -9,7 +9,7 @@ router.use(requireAuth);
 router.post('/:roomId/keys', async (req, res) => {
   try {
     const { roomId } = req.params;
-    const { encryptedKey } = req.body || {};
+    const { encryptedKey, targetUserId } = req.body || {};
 
     if (!encryptedKey) return res.status(400).json({ error: 'encryptedKey required' });
 
@@ -19,8 +19,22 @@ router.post('/:roomId/keys', async (req, res) => {
     const isMember = room.members.some((m) => m.user.toString() === req.user.id);
     if (!isMember) return res.status(403).json({ error: 'not a member' });
 
+    const effectiveUserId = targetUserId || req.user.id;
+    if (targetUserId && targetUserId !== req.user.id) {
+      const selfMember = room.members.find((m) => m.user.toString() === req.user.id);
+      if (!selfMember || (selfMember.role !== 'owner' && selfMember.role !== 'moderator')) {
+        return res.status(403).json({ error: 'only owner or moderator can store keys for other members' });
+      }
+    }
+
     const keyId = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-    room.encryptedKeys.push({ user: req.user.id, key: encryptedKey, keyId });
+    const existingIdx = room.encryptedKeys.findIndex((ek) => ek.user.toString() === effectiveUserId);
+    if (existingIdx >= 0) {
+      room.encryptedKeys[existingIdx].key = encryptedKey;
+      room.encryptedKeys[existingIdx].keyId = keyId;
+    } else {
+      room.encryptedKeys.push({ user: effectiveUserId, key: encryptedKey, keyId });
+    }
 
     await room.save();
     res.json({ ok: true });

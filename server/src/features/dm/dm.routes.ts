@@ -5,6 +5,7 @@ import { Message } from '../messages/message.model';
 import { User } from '../auth/user.model';
 import { requireAuth } from '../../shared/middleware/auth';
 import { getIO } from '../../shared/socket/index';
+import { cacheService } from '../../shared/cache/cache.service';
 import { createNotification } from '../notifications/notifications.service';
 
 const router = Router();
@@ -17,11 +18,12 @@ router.use(requireAuth);
  */
 router.post('/send', async (req, res) => {
   try {
-    const { toUserId, text } = req.body;
+    const { toUserId, text, attachments = [] } = req.body || {};
     const fromUserId = req.user.id;
+    const trimmedText = typeof text === 'string' ? text.trim() : '';
 
-    if (!toUserId || !text?.trim()) {
-      return res.status(400).json({ error: 'toUserId and text required' });
+    if (!toUserId || (!trimmedText && (!attachments || attachments.length === 0))) {
+      return res.status(400).json({ error: 'toUserId and message text or attachment required' });
     }
     if (toUserId === fromUserId) {
       return res.status(400).json({ error: 'Cannot DM yourself' });
@@ -64,7 +66,8 @@ router.post('/send', async (req, res) => {
     const msg = await Message.create({
       room: room._id,
       sender: fromUserId,
-      text: text.trim(),
+      text: trimmedText,
+      attachments: Array.isArray(attachments) ? attachments : [],
     });
 
     const io = getIO();
@@ -185,11 +188,13 @@ router.post('/:roomId/accept', async (req, res) => {
     await room.save();
 
     const io = getIO();
-    // Notify both parties
-    io?.emit('dm:accepted', {
-      roomId: room._id.toString(),
-      acceptedBy: userId,
-    });
+    if (io) {
+      const roomIdStr = room._id.toString();
+      io.to(roomIdStr).emit('dm:accepted', { roomId: roomIdStr, acceptedBy: userId });
+      for (const m of room.members) {
+        io.to(`user:${m.user.toString()}`).emit('dm:accepted', { roomId: roomIdStr, acceptedBy: userId });
+      }
+    }
 
     res.json({ room: room.toClient() });
   } catch (err) {
@@ -214,12 +219,20 @@ router.delete('/:roomId', async (req, res) => {
     });
     if (!room) return res.status(404).json({ error: 'DM not found' });
 
+    const memberIds = room.members.map((m) => m.user.toString());
+    const roomIdStr = room._id.toString();
+
     // Delete all messages and the room
     await Message.deleteMany({ room: room._id });
     await room.deleteOne();
 
     const io = getIO();
-    io?.emit('dm:removed', { roomId: room._id.toString(), removedBy: userId });
+    if (io) {
+      io.to(roomIdStr).emit('dm:removed', { roomId: roomIdStr, removedBy: userId });
+      for (const mId of memberIds) {
+        io.to(`user:${mId}`).emit('dm:removed', { roomId: roomIdStr, removedBy: userId });
+      }
+    }
 
     res.json({ ok: true });
   } catch (err) {
@@ -236,7 +249,7 @@ router.get('/:roomId/messages', async (req, res) => {
   try {
     const { roomId } = req.params;
     const userId = req.user.id;
-    const { after, limit } = req.query;
+    const { after, before, limit } = req.query;
 
     const room = await Room.findOne({
       _id: roomId,
@@ -248,6 +261,8 @@ router.get('/:roomId/messages', async (req, res) => {
     const query: any = { room: roomId, parentMessage: null };
     if (after && mongoose.Types.ObjectId.isValid(after as string)) {
       query._id = { $gt: new mongoose.Types.ObjectId(after as string) };
+    } else if (before && mongoose.Types.ObjectId.isValid(before as string)) {
+      query._id = { $lt: new mongoose.Types.ObjectId(before as string) };
     }
 
     const cap = Math.min(parseInt(limit as string, 10) || 50, 500);
@@ -354,14 +369,24 @@ router.post('/:roomId/messages', async (req, res) => {
       replyTo: replyTo || null,
     });
 
+    // Touch room updatedAt to bump conversation in list
+    room.updatedAt = new Date();
+    await room.save();
+
+    const roomIdStr = room._id.toString();
+    cacheService.delete(`msgs:${roomIdStr}:*`);
+
     const payload = {
       ...msg.toClient(),
-      sender: { id: userId, username: req.user.username },
+      sender: {
+        id: userId,
+        username: req.user.username,
+        profileImage: (req.user as any).profileImage || '',
+      },
       senderUsername: req.user.username,
     };
 
     const io = getIO();
-    const roomIdStr = room._id.toString();
     io?.to(roomIdStr).emit('message:new', {
       roomId: roomIdStr,
       message: payload,

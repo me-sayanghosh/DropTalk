@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
@@ -9,6 +10,9 @@ import { requireAuth } from '../../shared/middleware/auth';
 import { sendOtpEmail } from '../../shared/utils/mailer';
 import { TOKEN_EXPIRY, USERNAME_REGEX, USERNAME_MIN_LENGTH, USERNAME_MAX_LENGTH, JWT_SECRET } from '../../shared/utils/constants';
 import { parseExpiry, escapeRegex, generateAutoUsername } from '../../shared/utils/helpers';
+import redis from '../../shared/config/redis';
+import { getPresence } from '../presence/presence.service';
+import { getIO } from '../../shared/socket/index';
 
 const router = Router();
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || '');
@@ -427,10 +431,60 @@ router.put('/custom-status', requireAuth, async (req, res) => {
       { new: true }
     );
 
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const currentPresence = await getPresence(req.user.id).catch(() => null);
+    if (currentPresence) {
+      currentPresence.customStatus = user.customStatus;
+      await redis.hset('presence', req.user.id, JSON.stringify(currentPresence)).catch(() => {});
+    }
+
+    const io = getIO();
+    if (io) {
+      io.emit('presence:update', {
+        userId: req.user.id,
+        status: currentPresence?.status || 'online',
+        currentRoom: currentPresence?.currentRoom || null,
+        customStatus: user.customStatus,
+      });
+    }
+
     return res.json({ ok: true, user: user.toClient() });
   } catch (err: any) {
     console.error('[auth] custom-status error:', err?.message || err);
     res.status(500).json({ error: err?.message || 'Failed to update custom status' });
+  }
+});
+
+// PUT /api/auth/privacy-settings - Update privacy & visibility settings
+router.put('/privacy-settings', requireAuth, async (req, res) => {
+  try {
+    const { showOnlineStatus, showProfilePicture, blockedUsers } = req.body || {};
+    const update: any = {};
+
+    if (showOnlineStatus !== undefined) {
+      update['privacySettings.showOnlineStatus'] = Boolean(showOnlineStatus);
+    }
+    if (showProfilePicture !== undefined) {
+      update['privacySettings.showProfilePicture'] = Boolean(showProfilePicture);
+    }
+    if (Array.isArray(blockedUsers)) {
+      update['privacySettings.blockedUsers'] = blockedUsers.filter((id: any) =>
+        mongoose.Types.ObjectId.isValid(id)
+      );
+    }
+
+    const user = await User.findByIdAndUpdate(req.user.id, { $set: update }, { new: true });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    return res.json({ ok: true, user: user.toClient() });
+  } catch (err: any) {
+    console.error('[auth] privacy-settings error:', err?.message || err);
+    res.status(500).json({ error: err?.message || 'Failed to update privacy settings' });
   }
 });
 

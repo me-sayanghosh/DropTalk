@@ -2,6 +2,7 @@ import { Router } from 'express';
 import mongoose from 'mongoose';
 import { CallLog } from './callLog.model';
 import { requireAuth } from '../../shared/middleware/auth';
+import { createNotification } from '../notifications/notifications.service';
 
 const router = Router();
 router.use(requireAuth);
@@ -15,6 +16,7 @@ router.get('/history', async (req, res) => {
     const userId = req.user.id;
     const logs = await CallLog.find({
       $or: [{ caller: userId }, { receiver: userId }],
+      deletedFor: { $ne: userId },
     })
       .sort({ createdAt: -1 })
       .populate('caller', 'username name profileImage')
@@ -39,6 +41,19 @@ router.post('/log', async (req, res) => {
     const { receiverId, roomId, type = 'voice', status = 'completed', durationSeconds = 0 } = req.body;
     const callerId = req.user.id;
 
+    if (type && !['voice', 'video'].includes(type)) {
+      return res.status(400).json({ error: "Invalid call type. Must be 'voice' or 'video'" });
+    }
+
+    if (status && !['completed', 'missed', 'rejected', 'cancelled'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid call status' });
+    }
+
+    const parsedDuration = parseInt(durationSeconds, 10);
+    if (isNaN(parsedDuration) || parsedDuration < 0) {
+      return res.status(400).json({ error: 'durationSeconds must be a non-negative number' });
+    }
+
     let validReceiver = null;
     if (receiverId && receiverId !== 'null' && receiverId !== 'undefined') {
       if (mongoose.Types.ObjectId.isValid(receiverId)) {
@@ -53,13 +68,17 @@ router.post('/log', async (req, res) => {
       }
     }
 
+    if (!validReceiver && !validRoom) {
+      return res.status(400).json({ error: 'Valid receiverId or roomId is required' });
+    }
+
     const log = await CallLog.create({
       caller: callerId,
       receiver: validReceiver,
       room: validRoom,
       type: type === 'video' ? 'video' : 'voice',
       status: status || 'completed',
-      durationSeconds: parseInt(durationSeconds, 10) || 0,
+      durationSeconds: parsedDuration,
     });
 
     const populated = await CallLog.findById(log._id)
@@ -67,9 +86,92 @@ router.post('/log', async (req, res) => {
       .populate('receiver', 'username name profileImage')
       .populate('room', 'name');
 
+    if (validReceiver && (log.status === 'missed' || log.status === 'rejected')) {
+      const callTypeLabel = log.type === 'video' ? 'video call' : 'voice call';
+      const callerName = req.user.username || 'Someone';
+      const title = log.status === 'missed' ? `Missed ${callTypeLabel}` : `${callTypeLabel} declined`;
+      const message = `${callerName} called you (${callTypeLabel}).`;
+
+      createNotification({
+        userId: validReceiver,
+        actorId: callerId,
+        type: 'system',
+        title,
+        message,
+        link: '/calls',
+      }).catch((e) => console.error('[calls] notification error:', e.message));
+    }
+
     res.status(201).json({ log: populated.toClient(callerId) });
   } catch (err) {
     console.error('[calls] log error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * PUT /api/calls/log/:logId
+ * Update call duration and status on call end.
+ */
+router.put('/log/:logId', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { logId } = req.params;
+    const { durationSeconds, status } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(logId)) {
+      return res.status(400).json({ error: 'Invalid log ID' });
+    }
+
+    const log = await CallLog.findOne({
+      _id: logId,
+      $or: [{ caller: userId }, { receiver: userId }],
+    });
+
+    if (!log) {
+      return res.status(404).json({ error: 'Call log not found' });
+    }
+
+    if (durationSeconds !== undefined) {
+      const parsed = parseInt(durationSeconds, 10);
+      if (!isNaN(parsed) && parsed >= 0) {
+        log.durationSeconds = parsed;
+      }
+    }
+
+    if (status && ['completed', 'missed', 'rejected', 'cancelled'].includes(status)) {
+      log.status = status;
+    }
+
+    log.endedAt = new Date();
+    await log.save();
+
+    const populated = await CallLog.findById(log._id)
+      .populate('caller', 'username name profileImage')
+      .populate('receiver', 'username name profileImage')
+      .populate('room', 'name');
+
+    if (log.receiver && (log.status === 'missed' || log.status === 'rejected')) {
+      const callTypeLabel = log.type === 'video' ? 'video call' : 'voice call';
+      const callerName = req.user.username || 'Someone';
+      const title = log.status === 'missed' ? `Missed ${callTypeLabel}` : `${callTypeLabel} declined`;
+      const message = `${callerName} called you (${callTypeLabel}).`;
+      const receiverId = (log.receiver as any)?._id || log.receiver;
+      const callerId = (log.caller as any)?._id || log.caller;
+
+      createNotification({
+        userId: receiverId,
+        actorId: callerId,
+        type: 'system',
+        title,
+        message,
+        link: '/calls',
+      }).catch((e) => console.error('[calls] notification update error:', e.message));
+    }
+
+    res.json({ log: populated.toClient(userId) });
+  } catch (err) {
+    console.error('[calls] update error:', err.message);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -81,12 +183,45 @@ router.post('/log', async (req, res) => {
 router.delete('/history', async (req, res) => {
   try {
     const userId = req.user.id;
-    await CallLog.deleteMany({
-      $or: [{ caller: userId }, { receiver: userId }],
-    });
+    await CallLog.updateMany(
+      { $or: [{ caller: userId }, { receiver: userId }] },
+      { $addToSet: { deletedFor: userId } }
+    );
     res.json({ ok: true });
   } catch (err) {
     console.error('[calls] clear error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * DELETE /api/calls/history/:logId
+ * Soft-delete a single call log entry for the current user.
+ */
+router.delete('/history/:logId', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { logId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(logId)) {
+      return res.status(400).json({ error: 'Invalid log ID' });
+    }
+
+    const log = await CallLog.findOne({
+      _id: logId,
+      $or: [{ caller: userId }, { receiver: userId }],
+    });
+
+    if (!log) {
+      return res.status(404).json({ error: 'Call log not found' });
+    }
+
+    await CallLog.findByIdAndUpdate(logId, {
+      $addToSet: { deletedFor: userId },
+    });
+
+    res.json({ ok: true, logId });
+  } catch (err) {
+    console.error('[calls] single delete error:', err.message);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

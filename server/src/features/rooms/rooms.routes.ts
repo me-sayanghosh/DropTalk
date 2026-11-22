@@ -2,8 +2,8 @@ import { Router } from 'express';
 import { Room } from './room.model';
 import { requireAuth } from '../../shared/middleware/auth';
 import { DEFAULT_ROOMS, ROOM_TYPES } from '../../shared/utils/constants';
-
 import { Message } from '../messages/message.model';
+import { getIO } from '../../shared/socket/index';
 
 const router = Router();
 
@@ -269,6 +269,58 @@ router.put('/:roomId/settings', async (req, res) => {
     await room.save();
     res.json({ room: room.toClient() });
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/rooms/:roomId/leave - Leave a channel
+router.post('/:roomId/leave', async (req, res) => {
+  try {
+    const room = await Room.findById(req.params.roomId);
+    if (!room) return res.status(404).json({ error: 'room not found' });
+
+    const memberIdx = room.members.findIndex((m) => m.user.toString() === req.user.id);
+    if (memberIdx === -1) return res.status(400).json({ error: 'not a member of this room' });
+
+    room.members.splice(memberIdx, 1);
+    await room.save();
+
+    const io = getIO();
+    if (io) {
+      io.to(req.params.roomId).emit('room:user-left', {
+        roomId: req.params.roomId,
+        userId: req.user.id,
+      });
+    }
+
+    res.json({ ok: true, roomId: req.params.roomId });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/rooms/:roomId - Delete a channel (owner only)
+router.delete('/:roomId', async (req, res) => {
+  try {
+    const room = await Room.findById(req.params.roomId);
+    if (!room) return res.status(404).json({ error: 'room not found' });
+
+    const member = room.members.find((m) => m.user.toString() === req.user.id);
+    const isOwner = (member && member.role === 'owner') || room.createdBy?.toString() === req.user.id;
+    if (!isOwner) {
+      return res.status(403).json({ error: 'only the room owner can delete this channel' });
+    }
+
+    await Message.deleteMany({ room: room._id });
+    await Room.findByIdAndDelete(room._id);
+
+    const io = getIO();
+    if (io) {
+      io.to(req.params.roomId).emit('room:deleted', { roomId: req.params.roomId });
+    }
+
+    res.json({ ok: true, roomId: req.params.roomId });
+  } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });

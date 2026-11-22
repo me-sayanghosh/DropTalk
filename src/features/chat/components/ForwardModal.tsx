@@ -25,7 +25,7 @@ export default function ForwardModal({ message, rooms = [], conversations = [], 
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-card forward-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-card forward-modal" role="dialog" aria-modal="true" aria-label="Forward Message" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3>Forward Message</h3>
           <button className="modal-close" onClick={onClose}>&times;</button>
@@ -71,18 +71,22 @@ export default function ForwardModal({ message, rooms = [], conversations = [], 
           {filteredDMs.length > 0 && (
             <div className="forward-section">
               <span className="forward-section-label">Direct Messages</span>
-              {filteredDMs.map((convo) => (
-                <button
-                  key={convo.id}
-                  type="button"
-                  className={`forward-target-item ${selectedTarget?.id === convo.id ? 'selected' : ''}`}
-                  onClick={() => setSelectedTarget({ id: convo.id, type: 'dm', name: `@${convo.partner?.username}` })}
-                >
-                  <span className="target-avatar">{convo.partner?.username?.[0]?.toUpperCase()}</span>
-                  <span className="target-name">@{convo.partner?.username}</span>
-                  {selectedTarget?.id === convo.id && <span className="target-check">✓</span>}
-                </button>
-              ))}
+              {filteredDMs.map((convo) => {
+                const partnerId = convo.partner?.id || convo.partner?._id || convo.id;
+                const isSelected = selectedTarget?.id === partnerId;
+                return (
+                  <button
+                    key={convo.id}
+                    type="button"
+                    className={`forward-target-item ${isSelected ? 'selected' : ''}`}
+                    onClick={() => setSelectedTarget({ id: partnerId, type: 'dm', name: `@${convo.partner?.username}` })}
+                  >
+                    <span className="target-avatar">{convo.partner?.username?.[0]?.toUpperCase()}</span>
+                    <span className="target-name">@{convo.partner?.username}</span>
+                    {isSelected && <span className="target-check">✓</span>}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>

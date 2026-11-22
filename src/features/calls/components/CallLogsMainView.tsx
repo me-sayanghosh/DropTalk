@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { formatCardTime } from '../../../shared/utils/dateUtils';
 import StartCallModal from './StartCallModal';
 
-export default function CallLogsMainView({ logs = [], selectedLog, onStartCall, onClearHistory, onBack }: any) {
+export default function CallLogsMainView({ logs = [], selectedLog, onStartCall, onClearHistory, onBack, onDeleteLog }: any) {
   const [showModal, setShowModal] = useState(false);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all'); // 'all' | 'missed' | 'voice' | 'video'
@@ -250,6 +250,23 @@ export default function CallLogsMainView({ logs = [], selectedLog, onStartCall, 
                               >
                                 📹 Video
                               </button>
+                              {onDeleteLog && (
+                                <button
+                                  className="call-btn-delete"
+                                  onClick={() => onDeleteLog(log.id)}
+                                  title="Delete call entry"
+                                  style={{
+                                    background: 'transparent',
+                                    border: '1px solid var(--color-border, #e2e8f0)',
+                                    borderRadius: '6px',
+                                    padding: '4px 8px',
+                                    cursor: 'pointer',
+                                    marginLeft: '6px',
+                                  }}
+                                >
+                                  🗑️
+                                </button>
+                              )}
                             </div>
                           )}
                         </td>
@@ -329,6 +346,21 @@ export default function CallLogsMainView({ logs = [], selectedLog, onStartCall, 
                                   <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
                                 </svg>
                               </button>
+                              {onDeleteLog && (
+                                <button
+                                  className="call-action-btn delete-btn"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDeleteLog(log.id);
+                                  }}
+                                  title="Delete call log"
+                                >
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <polyline points="3 6 5 6 21 6" />
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                  </svg>
+                                </button>
+                              )}
                             </div>
                           )}
                         </div>

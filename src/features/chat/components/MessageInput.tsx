@@ -1,7 +1,19 @@
 import { useState, useRef, useEffect } from 'react';
 import { api, getMediaUrl } from '../../../shared/utils';
 
-export default function MessageInput({ onSend, onTyping, onTextChange, replyTo, onClearReply, membersMap, slowMode = 0 }) {
+export default function MessageInput({
+  onSend,
+  onTyping,
+  onTextChange,
+  replyTo,
+  onClearReply,
+  membersMap,
+  slowMode = 0,
+  editingMessage = null,
+  onSaveEdit,
+  onCancelEdit,
+  onEditLastMessage,
+}) {
   const [text, setText] = useState('');
   const [mentionQuery, setMentionQuery] = useState(null); // string after @ or null
   const [mentionIndex, setMentionIndex] = useState(0);
@@ -31,6 +43,27 @@ export default function MessageInput({ onSend, onTyping, onTextChange, replyTo, 
   useEffect(() => {
     if (replyTo) inputRef.current?.focus();
   }, [replyTo]);
+
+  useEffect(() => {
+    if (editingMessage) {
+      setText(editingMessage.text || '');
+      inputRef.current?.focus();
+    }
+  }, [editingMessage]);
+
+  useEffect(() => {
+    if (coolDown <= 0) return;
+    const interval = setInterval(() => {
+      setCoolDown((c) => {
+        if (c <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return c - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [coolDown]);
 
   function detectMention(value) {
     const cursor = inputRef.current?.selectionStart ?? value.length;
@@ -130,8 +163,19 @@ export default function MessageInput({ onSend, onTyping, onTextChange, replyTo, 
     const t = text.trim();
     if (!t && attachments.length === 0) return;
     if (uploading) return;
+    if (coolDown > 0 && !editingMessage) return;
+
+    if (editingMessage) {
+      onSaveEdit?.(editingMessage.id, t);
+      setText('');
+      onCancelEdit?.();
+      return;
+    }
 
     onSend(t, attachments);
+    if (slowMode > 0) {
+      setCoolDown(slowMode);
+    }
     setText('');
     setAttachments([]);
     onTextChange?.('');
@@ -169,6 +213,18 @@ export default function MessageInput({ onSend, onTyping, onTextChange, replyTo, 
       }
     }
 
+    if (e.key === 'ArrowUp' && text === '' && attachments.length === 0) {
+      e.preventDefault();
+      onEditLastMessage?.();
+      return;
+    }
+
+    if (e.key === 'Escape' && editingMessage) {
+      e.preventDefault();
+      onCancelEdit?.();
+      return;
+    }
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       submit(e);
@@ -183,7 +239,7 @@ export default function MessageInput({ onSend, onTyping, onTextChange, replyTo, 
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   }
 
-  const canSubmit = (text.trim().length > 0 || attachments.length > 0) && !uploading;
+  const canSubmit = (text.trim().length > 0 || attachments.length > 0) && !uploading && (coolDown === 0 || !!editingMessage);
 
   return (
     <div
@@ -227,6 +283,22 @@ export default function MessageInput({ onSend, onTyping, onTextChange, replyTo, 
       {coolDown > 0 && (
         <div className="slowmode-active-bar">
           ⏳ Slow mode active: please wait <strong>{coolDown}s</strong> before sending another message.
+        </div>
+      )}
+
+      {/* Editing Mode Bar */}
+      {editingMessage && (
+        <div className="composer-reply-quote" style={{ borderLeftColor: 'var(--color-accent, #6366f1)' }}>
+          <div className="composer-reply-info">
+            <span className="composer-reply-label">Editing message</span>
+            <span className="composer-reply-name">(Press Escape to cancel, Enter to save)</span>
+          </div>
+          <span className="composer-reply-text">{editingMessage.text?.substring(0, 80) || '...'}</span>
+          <button type="button" className="composer-reply-close" onClick={onCancelEdit} title="Cancel editing">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
         </div>
       )}
 
@@ -317,10 +389,15 @@ export default function MessageInput({ onSend, onTyping, onTextChange, replyTo, 
           </span>
           <input
             ref={inputRef}
-            placeholder="Send a message... (@ to mention or drop files here)"
+            placeholder={
+              coolDown > 0 && !editingMessage
+                ? `Slow mode active: wait ${coolDown}s...`
+                : 'Send a message... (@ to mention or drop files here)'
+            }
             value={text}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
+            disabled={coolDown > 0 && !editingMessage}
             autoFocus
           />
           <button type="submit" disabled={!canSubmit} className="send-navy-btn" title="Send message">

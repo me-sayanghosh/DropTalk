@@ -17,15 +17,42 @@ export interface CallerInfo {
   isVideo?: boolean;
 }
 
-export function useWebRTC(user?: User | null, membersMap: Record<string, any> = {}) {
+export function useWebRTC(
+  user?: User | null,
+  membersMap: Record<string, any> = {},
+  onCallEnd?: (details: {
+    receiverId?: string;
+    roomId?: string;
+    type: 'voice' | 'video';
+    status: 'completed' | 'missed' | 'rejected' | 'cancelled';
+    durationSeconds: number;
+  }) => void
+) {
   // Call States: 'idle' | 'calling' | 'incoming' | 'connected'
   const [callState, setCallState] = useState<'idle' | 'calling' | 'incoming' | 'connected'>('idle');
   const [callerInfo, setCallerInfo] = useState<CallerInfo | null>(null);
+  const [callDuration, setCallDuration] = useState<number>(0);
+  const connectedAtRef = useRef<number | null>(null);
 
   const membersMapRef = useRef(membersMap);
   useEffect(() => {
     membersMapRef.current = membersMap;
   }, [membersMap]);
+
+  useEffect(() => {
+    if (callState === 'connected') {
+      connectedAtRef.current = Date.now();
+      const interval = setInterval(() => {
+        if (connectedAtRef.current) {
+          setCallDuration(Math.floor((Date.now() - connectedAtRef.current) / 1000));
+        }
+      }, 1000);
+      return () => clearInterval(interval);
+    } else {
+      connectedAtRef.current = null;
+      setCallDuration(0);
+    }
+  }, [callState]);
 
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
@@ -39,7 +66,21 @@ export function useWebRTC(user?: User | null, membersMap: Record<string, any> = 
   const peerTargetRef = useRef<{ targetUserId?: string; roomId?: string } | null>(null);
 
   // Cleanup helper
-  const endCall = useCallback((emitEnd = true) => {
+  const endCall = useCallback((emitEnd = true, customStatus?: 'completed' | 'missed' | 'rejected' | 'cancelled') => {
+    const finalDuration = connectedAtRef.current ? Math.floor((Date.now() - connectedAtRef.current) / 1000) : 0;
+    const finalStatus: 'completed' | 'missed' | 'rejected' | 'cancelled' =
+      customStatus || (connectedAtRef.current ? 'completed' : callState === 'calling' ? 'cancelled' : callState === 'incoming' ? 'missed' : 'completed');
+
+    if (onCallEnd && peerTargetRef.current) {
+      onCallEnd({
+        receiverId: peerTargetRef.current.targetUserId,
+        roomId: peerTargetRef.current.roomId,
+        type: callerInfo?.isVideo ? 'video' : 'voice',
+        status: finalStatus,
+        durationSeconds: finalDuration,
+      });
+    }
+
     if (emitEnd && peerTargetRef.current) {
       const socket = getSocket();
       socket?.emit('webrtc:call-end', {
@@ -68,7 +109,7 @@ export function useWebRTC(user?: User | null, membersMap: Record<string, any> = 
     setIsVideoOff(false);
     setIsScreenSharing(false);
     peerTargetRef.current = null;
-  }, []);
+  }, [callState, callerInfo, onCallEnd]);
 
   // Initialize Peer Connection
   const createPeerConnection = useCallback((targetUserId?: string, roomId?: string) => {
@@ -340,6 +381,7 @@ export function useWebRTC(user?: User | null, membersMap: Record<string, any> = 
   return {
     callState,
     callerInfo,
+    callDuration,
     localStream,
     remoteStream,
     isMuted,

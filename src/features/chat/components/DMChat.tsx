@@ -1,11 +1,19 @@
 import { useState, useRef, useEffect } from 'react';
 import { formatDateSeparator } from '../../../shared/utils/dateUtils';
-import { getMediaUrl } from '../../../shared/utils';
+import { getMediaUrl, getSocket } from '../../../shared/utils';
+import { api } from '../../../shared/utils/api';
 
 export default function DMChat({ room, messages, userId, onAccept, onRemove, onSend, loading, onStartCall, onBack }) {
   const [text, setText] = useState('');
+  const [attachments, setAttachments] = useState<any[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [partnerTyping, setPartnerTyping] = useState(false);
   const inputRef = useRef(null);
   const containerRef = useRef(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const isTypingRef = useRef(false);
+  const typingTimerRef = useRef<any>(null);
 
   const isPending = room?.dmStatus === 'pending';
   const isInitiator = room?.dmInitiator === userId;
@@ -19,6 +27,47 @@ export default function DMChat({ room, messages, userId, onAccept, onRemove, onS
   }, [canChat, room?.id]);
 
   useEffect(() => {
+    const socket = getSocket();
+    if (!socket || !room?.id) return;
+
+    function onTyping(data: any) {
+      if (data.roomId === room.id && (data.user?.id !== userId && data.userId !== userId)) {
+        setPartnerTyping(true);
+      }
+    }
+    function onStoppedTyping(data: any) {
+      if (data.roomId === room.id && (data.userId !== userId && data.user?.id !== userId)) {
+        setPartnerTyping(false);
+      }
+    }
+
+    socket.on('user:typing', onTyping);
+    socket.on('user:stopped-typing', onStoppedTyping);
+
+    return () => {
+      socket.off('user:typing', onTyping);
+      socket.off('user:stopped-typing', onStoppedTyping);
+    };
+  }, [room?.id, userId]);
+
+  function handleTyping() {
+    if (!room?.id) return;
+    const socket = getSocket();
+    if (!socket) return;
+
+    if (!isTypingRef.current) {
+      isTypingRef.current = true;
+      socket.emit('user:typing', { roomId: room.id });
+    }
+
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    typingTimerRef.current = setTimeout(() => {
+      isTypingRef.current = false;
+      socket.emit('user:stopped-typing', { roomId: room.id });
+    }, 2500);
+  }
+
+  useEffect(() => {
     if (containerRef.current) {
       requestAnimationFrame(() => {
         if (containerRef.current) {
@@ -28,11 +77,55 @@ export default function DMChat({ room, messages, userId, onAccept, onRemove, onS
     }
   }, [messages]);
 
+  async function handleUpload(filesList: FileList | null) {
+    if (!filesList || filesList.length === 0) return;
+    const files = Array.from(filesList);
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      if (files.length === 1) {
+        formData.append('file', files[0]);
+        const res = await api.post('/upload', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        if (res.data?.attachment) {
+          setAttachments((prev) => [...prev, res.data.attachment]);
+        }
+      } else {
+        files.slice(0, 5).forEach((f) => formData.append('files', f));
+        const res = await api.post('/upload/multiple', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        if (res.data?.attachments) {
+          setAttachments((prev) => [...prev, ...res.data.attachments]);
+        }
+      }
+    } catch (err) {
+      console.error('[dm] upload failed:', err);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      if (imageInputRef.current) imageInputRef.current.value = '';
+    }
+  }
+
   function submit(e) {
     e.preventDefault();
-    if (!text.trim() || !canChat) return;
-    onSend(text.trim());
+    const t = text.trim();
+    if ((!t && attachments.length === 0) || !canChat || uploading) return;
+
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    if (isTypingRef.current) {
+      isTypingRef.current = false;
+      const socket = getSocket();
+      if (socket && room?.id) {
+        socket.emit('user:stopped-typing', { roomId: room.id });
+      }
+    }
+
+    onSend(t, attachments);
     setText('');
+    setAttachments([]);
   }
 
   function handleKeyDown(e) {
@@ -248,21 +341,70 @@ export default function DMChat({ room, messages, userId, onAccept, onRemove, onS
       </div>
 
       {/* Composer — only if accepted */}
+      {partnerTyping && (
+        <div className="dm-typing-status">
+          <span>{partnerName} is typing...</span>
+        </div>
+      )}
       {canChat ? (
-        <form className="dm-composer" onSubmit={submit}>
+        <div className="dm-composer-container">
           <input
-            ref={inputRef}
-            placeholder={`Message ${partnerName}...`}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={handleKeyDown}
+            type="file"
+            ref={fileInputRef}
+            onChange={(e) => handleUpload(e.target.files)}
+            multiple
+            style={{ display: 'none' }}
           />
-          <button type="submit" disabled={!text.trim()} className="dm-send-btn" title="Send">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 10L4 15l5 5" /><path d="M20 4v7a4 4 0 0 1-4 4H4" />
-            </svg>
-          </button>
-        </form>
+          <input
+            type="file"
+            ref={imageInputRef}
+            accept="image/*"
+            onChange={(e) => handleUpload(e.target.files)}
+            multiple
+            style={{ display: 'none' }}
+          />
+          {attachments.length > 0 && (
+            <div className="dm-attachments-preview">
+              {attachments.map((att, i) => (
+                <div key={i} className="dm-att-chip">
+                  <span>{att.fileType === 'image' ? '🖼️' : '📄'} {att.filename}</span>
+                  <button type="button" onClick={() => setAttachments((prev) => prev.filter((_, idx) => idx !== i))}>&times;</button>
+                </div>
+              ))}
+            </div>
+          )}
+          <form className="dm-composer" onSubmit={submit}>
+            <button
+              type="button"
+              className="dm-attach-btn"
+              onClick={() => fileInputRef.current?.click()}
+              title="Attach File"
+              disabled={uploading}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+            </button>
+            <input
+              ref={inputRef}
+              placeholder={uploading ? 'Uploading attachment...' : `Message ${partnerName}...`}
+              value={text}
+              onChange={(e) => {
+                setText(e.target.value);
+                handleTyping();
+              }}
+              onKeyDown={handleKeyDown}
+              disabled={uploading}
+            />
+            <button type="submit" disabled={(!text.trim() && attachments.length === 0) || uploading} className="dm-send-btn" title="Send">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 10L4 15l5 5" /><path d="M20 4v7a4 4 0 0 1-4 4H4" />
+              </svg>
+            </button>
+          </form>
+        </div>
       ) : (
         <div className="dm-composer-locked">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

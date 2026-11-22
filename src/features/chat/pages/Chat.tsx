@@ -10,6 +10,7 @@ import {
   DMPanel, DMChat, CreateChannelModal, UserProfileCard, ForwardModal, MessageSearchModal,
   PinnedMessagesModal, ChannelSettingsModal, CallOverlay, QuickSwitcherModal, KeyboardShortcutsModal,
   CallLogsPanel, CallLogsMainView, ChannelMembersPage,
+  AIPanel, SuggestionsBar,
 } from '../components';
 import NotificationDrawer from '../../notifications/NotificationDrawer';
 import { useNotifications } from '../../notifications/useNotifications';
@@ -36,7 +37,8 @@ export default function Chat() {
     messagesContainerRef, isPrivate, hasKey, unreadCounts, mentionAlerts,
     selectRoom, leaveRoom, handleRequestJoin, createRoom,
     send, handleTyping, deleteMessage, deleteForMe, handleReadReceipt, handleReact, refreshMembers,
-    editMessage, pinMessage, unpinMessage, forwardMessage, loadOlderMessages,
+    editMessage, editingMessage, setEditingMessage, editLastSentMessage,
+    pinMessage, unpinMessage, forwardMessage, loadOlderMessages,
     markRoomAsRead, clearRoomMessages,
   } = useChat();
 
@@ -54,12 +56,12 @@ export default function Chat() {
     deleteNotification,
     clearAllNotifications,
   } = useNotifications(user);
+  const { callLogs, loading: callLogsLoading, addCallLog, deleteCallLog, clearCallHistory } = useCalls(user);
   const {
-    callState, callerInfo, localStream, remoteStream, isMuted, isVideoOff, isScreenSharing,
+    callState, callerInfo, callDuration, localStream, remoteStream, isMuted, isVideoOff, isScreenSharing,
     startCall, acceptCall, rejectCall, endCall, toggleMute, toggleVideo, toggleScreenShare,
-  } = useWebRTC(user, membersMap);
+  } = useWebRTC(user, membersMap, addCallLog);
 
-  const { callLogs, loading: callLogsLoading, addCallLog, clearCallHistory } = useCalls(user);
   const [selectedCallLog, setSelectedCallLog] = useState<CallLog | null>(null);
 
   const { theme, toggleTheme } = useTheme();
@@ -73,6 +75,7 @@ export default function Chat() {
   const [selectedProfileUser, setSelectedProfileUser] = useState<User | null>(null);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [showPinnedModal, setShowPinnedModal] = useState(false);
+  const [showAIPanel, setShowAIPanel] = useState(false);
   const [showChannelSettingsModal, setShowChannelSettingsModal] = useState(false);
   const [showQuickSwitcher, setShowQuickSwitcher] = useState(false);
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
@@ -372,6 +375,7 @@ export default function Chat() {
             loading={callLogsLoading}
             onSelectLog={(log: any) => { setSelectedCallLog(log); setMobileActiveView('chat'); }}
             onStartCall={handleStartCall}
+            onDeleteLog={deleteCallLog}
             onClearHistory={clearCallHistory}
           />
         ) : navRailTab === 'dm' ? (
@@ -436,6 +440,7 @@ export default function Chat() {
             logs={callLogs}
             selectedLog={selectedCallLog}
             onStartCall={handleStartCall}
+            onDeleteLog={deleteCallLog}
             onClearHistory={clearCallHistory}
             onBack={() => { router.push('/channels'); setNavRailTab('chat'); setMobileActiveView('sidebar'); }}
           />
@@ -585,6 +590,13 @@ export default function Chat() {
                         <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
                       </svg>
                     </button>
+                    <button
+                      className="header-icon-btn ai-copilot-btn"
+                      onClick={() => setShowAIPanel(true)}
+                      title="AI Conversation Summary (Gemini)"
+                    >
+                      <span style={{ fontSize: '1.1rem' }}>✨</span>
+                    </button>
                   </div>
                 </>
               ) : (
@@ -659,6 +671,14 @@ export default function Chat() {
 
                       </div>
                       <TypingIndicator typingUsers={typingUsers} />
+                      <SuggestionsBar
+                        roomId={currentRoom.id}
+                        currentInput={currentInput}
+                        onSelectSuggestion={(s) => {
+                          setCurrentInput(s);
+                          send(s);
+                        }}
+                      />
                       <MessageInput
                         onSend={send}
                         onTyping={handleTyping}
@@ -667,6 +687,10 @@ export default function Chat() {
                         onClearReply={() => setReplyTo(null)}
                         membersMap={membersMap}
                         slowMode={currentRoom.slowMode || 0}
+                        editingMessage={editingMessage}
+                        onSaveEdit={editMessage}
+                        onCancelEdit={() => setEditingMessage(null)}
+                        onEditLastMessage={editLastSentMessage}
                       />
                     </div>
                     {threadMessage && (
@@ -744,6 +768,9 @@ export default function Chat() {
           currentUserId={user?.id || (user as any)?._id}
           onClose={() => setSelectedProfileUser(null)}
           onStartDM={(toUserId: string) => handleDMUser(toUserId, selectedProfileUser.username)}
+          onStartCall={(targetUserId: string, isVideo: boolean) =>
+            startCall(targetUserId, undefined, isVideo, selectedProfileUser?.name || selectedProfileUser?.username, selectedProfileUser?.profileImage)
+          }
           onMention={(username: string) => {
             setCurrentInput((prev) => (prev ? `${prev} @${username} ` : `@${username} `));
           }}
@@ -767,6 +794,7 @@ export default function Chat() {
       {showPinnedModal && currentRoom && (
         <PinnedMessagesModal
           isOpen={showPinnedModal}
+          roomId={currentRoom.id}
           onClose={() => setShowPinnedModal(false)}
           pinnedMessages={currentRoom.pinnedMessages || []}
           allMessages={displayMessages}
@@ -775,6 +803,15 @@ export default function Chat() {
             const el = document.getElementById(`msg-${msgId}`);
             if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }}
+        />
+      )}
+
+      {/* AI Copilot Panel */}
+      {showAIPanel && currentRoom && (
+        <AIPanel
+          roomId={currentRoom.id}
+          roomName={currentRoom.name}
+          onClose={() => setShowAIPanel(false)}
         />
       )}
 

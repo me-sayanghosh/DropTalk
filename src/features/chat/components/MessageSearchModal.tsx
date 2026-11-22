@@ -34,6 +34,15 @@ export default function MessageSearchModal({ roomId, isOpen, onClose, onJumpToMe
     };
   }, [query, roomId, isOpen]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   function highlightQuery(text, q) {
@@ -55,7 +64,7 @@ export default function MessageSearchModal({ roomId, isOpen, onClose, onJumpToMe
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-card search-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-card search-modal" role="dialog" aria-modal="true" aria-label="Search Messages" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3>Search Messages</h3>
           <button className="modal-close" onClick={onClose}>&times;</button>

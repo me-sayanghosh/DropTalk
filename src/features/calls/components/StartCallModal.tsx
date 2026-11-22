@@ -4,7 +4,17 @@ import { api } from '../../../shared/utils/api';
 export default function StartCallModal({ isOpen, onClose, onStartCall }: any) {
   const [search, setSearch] = useState('');
   const [contacts, setContacts] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -15,7 +25,7 @@ export default function StartCallModal({ isOpen, onClose, onStartCall }: any) {
         const res = await api.get('/dm/conversations');
         const convos = res.data.conversations || [];
         const partners = convos
-          .map((c) => c.partner)
+          .map((c: any) => c.partner)
           .filter(Boolean);
         setContacts(partners);
       } catch (err) {
@@ -27,6 +37,24 @@ export default function StartCallModal({ isOpen, onClose, onStartCall }: any) {
     fetchContacts();
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!search.trim() || !isOpen) {
+      setSearchResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await api.get(`/auth/users/search?q=${encodeURIComponent(search.trim())}`);
+        if (res.data?.users) {
+          setSearchResults(res.data.users);
+        }
+      } catch {
+        // ignore search error
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [search, isOpen]);
+
   if (!isOpen) return null;
 
   const filtered = contacts.filter((c) => {
@@ -34,9 +62,16 @@ export default function StartCallModal({ isOpen, onClose, onStartCall }: any) {
     return name.toLowerCase().includes(search.toLowerCase());
   });
 
+  const displayList = [...filtered];
+  for (const u of searchResults) {
+    if (!displayList.some((c) => (c.id || c._id) === (u.id || u._id))) {
+      displayList.push(u);
+    }
+  }
+
   return (
     <div className="cc-modal-backdrop" onClick={onClose}>
-      <div className="cc-modal call-start-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="cc-modal call-start-modal" role="dialog" aria-modal="true" aria-label="Start a New Call" onClick={(e) => e.stopPropagation()}>
         <div className="cc-modal-header">
           <div className="cc-modal-title-area">
             <div className="cc-modal-icon call-modal-badge">
@@ -70,17 +105,18 @@ export default function StartCallModal({ isOpen, onClose, onStartCall }: any) {
           <div className="call-contact-list">
             {loading ? (
               <div className="call-contact-loading">Loading contacts...</div>
-            ) : filtered.length === 0 ? (
+            ) : displayList.length === 0 ? (
               <div className="call-contact-empty">
                 <p>No contacts found.</p>
                 <span>Start a conversation with a user first to place a call.</span>
               </div>
             ) : (
-              filtered.map((contact) => {
+              displayList.map((contact) => {
                 const partnerName = contact.name || contact.username || 'User';
                 const initial = (contact.username || 'U')[0].toUpperCase();
+                const contactId = contact.id || contact._id;
                 return (
-                  <div key={contact.id} className="call-contact-row">
+                  <div key={contactId} className="call-contact-row">
                     <div className="call-contact-left">
                       <div className="call-contact-avatar">
                         {contact.profileImage ? (

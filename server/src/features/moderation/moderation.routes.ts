@@ -5,6 +5,7 @@ import { Message } from '../messages/message.model';
 import { Room } from '../rooms/room.model';
 import { User } from '../auth/user.model';
 import { getIO } from '../../shared/socket/index';
+import { cacheService } from '../../shared/cache/cache.service';
 
 const router = Router();
 
@@ -105,7 +106,7 @@ router.post('/:roomId/members/:userId/role', requireRole('owner'), async (req, r
   }
 });
 
-router.delete('/:roomId/messages/:messageId', requireAtLeastRole('moderator'), async (req, res) => {
+router.delete('/:roomId/messages/:messageId', requireAtLeastRole('member'), async (req, res) => {
   try {
     const { roomId, messageId } = req.params;
 
@@ -123,6 +124,13 @@ router.delete('/:roomId/messages/:messageId', requireAtLeastRole('moderator'), a
     message.deletedBy = req.user.id;
     message.text = '';
     await message.save();
+
+    cacheService.delete(`msgs:${roomId}:*`);
+
+    const io = getIO();
+    if (io) {
+      io.to(roomId).emit('message:deleted', { roomId, messageId });
+    }
 
     res.json({ ok: true, messageId });
   } catch (err) {
@@ -244,6 +252,39 @@ router.get('/:roomId/banned', requireAtLeastRole('moderator'), async (req, res) 
     res.json({ banned });
   } catch (err) {
     console.error('[moderation] banned-list error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.get('/:roomId/members/search', requireAtLeastRole('member'), async (req: any, res) => {
+  try {
+    const q = String(req.query.q || '').trim();
+    const room = req.room;
+    const memberUserIds = (room.members || []).map((m: any) => m.user);
+
+    const query: any = { _id: { $in: memberUserIds } };
+    if (q) {
+      const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      query.$or = [
+        { username: { $regex: escaped, $options: 'i' } },
+        { name: { $regex: escaped, $options: 'i' } },
+      ];
+    }
+
+    const users = await User.find(query).select('username name profileImage').limit(50).lean();
+    const memberRoleMap = new Map((room.members || []).map((m: any) => [m.user.toString(), m.role]));
+
+    const results = users.map((u: any) => ({
+      id: u._id.toString(),
+      username: u.username,
+      name: u.name || '',
+      profileImage: u.profileImage || '',
+      role: memberRoleMap.get(u._id.toString()) || 'member',
+    }));
+
+    res.json({ members: results });
+  } catch (err: any) {
+    console.error('[moderation] members search error:', err.message);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

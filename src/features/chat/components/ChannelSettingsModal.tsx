@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '../../../shared/utils/api';
 
 export default function ChannelSettingsModal({ room, onClose, onUpdated }) {
@@ -8,6 +8,14 @@ export default function ChannelSettingsModal({ room, onClose, onUpdated }) {
   const [slowMode, setSlowMode] = useState(room?.slowMode || 0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   if (!room) return null;
 
@@ -33,7 +41,7 @@ export default function ChannelSettingsModal({ room, onClose, onUpdated }) {
 
   return (
     <div className="cc-modal-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="cc-modal">
+      <div className="cc-modal" role="dialog" aria-modal="true" aria-label="Channel Settings">
         {/* Header */}
         <div className="cc-modal-header">
           <div className="cc-modal-title-area">

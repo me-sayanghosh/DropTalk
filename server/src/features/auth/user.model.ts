@@ -29,6 +29,11 @@ const userSchema = new mongoose.Schema(
       directNotifications: { type: Boolean, default: true },
       backgroundSync: { type: Boolean, default: true },
     },
+    privacySettings: {
+      showOnlineStatus: { type: Boolean, default: true },
+      showProfilePicture: { type: Boolean, default: true },
+      blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    },
     customStatus: {
       emoji: { type: String, default: '' },
       text: { type: String, default: '' },
@@ -50,6 +55,11 @@ userSchema.methods.toClient = function () {
       groupNotifications: true,
       directNotifications: true,
       backgroundSync: true,
+    },
+    privacySettings: this.privacySettings || {
+      showOnlineStatus: true,
+      showProfilePicture: true,
+      blockedUsers: [],
     },
     customStatus: this.customStatus || { emoji: '', text: '' },
     createdAt: this.createdAt,
