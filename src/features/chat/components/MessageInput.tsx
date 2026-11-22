@@ -51,6 +51,20 @@ export default function MessageInput({
     }
   }, [editingMessage]);
 
+  useEffect(() => {
+    if (coolDown <= 0) return;
+    const interval = setInterval(() => {
+      setCoolDown((c) => {
+        if (c <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return c - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [coolDown]);
+
   function detectMention(value) {
     const cursor = inputRef.current?.selectionStart ?? value.length;
     const before = value.slice(0, cursor);
@@ -149,6 +163,7 @@ export default function MessageInput({
     const t = text.trim();
     if (!t && attachments.length === 0) return;
     if (uploading) return;
+    if (coolDown > 0 && !editingMessage) return;
 
     if (editingMessage) {
       onSaveEdit?.(editingMessage.id, t);
@@ -158,6 +173,9 @@ export default function MessageInput({
     }
 
     onSend(t, attachments);
+    if (slowMode > 0) {
+      setCoolDown(slowMode);
+    }
     setText('');
     setAttachments([]);
     onTextChange?.('');
@@ -221,7 +239,7 @@ export default function MessageInput({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   }
 
-  const canSubmit = (text.trim().length > 0 || attachments.length > 0) && !uploading;
+  const canSubmit = (text.trim().length > 0 || attachments.length > 0) && !uploading && (coolDown === 0 || !!editingMessage);
 
   return (
     <div
@@ -371,10 +389,15 @@ export default function MessageInput({
           </span>
           <input
             ref={inputRef}
-            placeholder="Send a message... (@ to mention or drop files here)"
+            placeholder={
+              coolDown > 0 && !editingMessage
+                ? `Slow mode active: wait ${coolDown}s...`
+                : 'Send a message... (@ to mention or drop files here)'
+            }
             value={text}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
+            disabled={coolDown > 0 && !editingMessage}
             autoFocus
           />
           <button type="submit" disabled={!canSubmit} className="send-navy-btn" title="Send message">
