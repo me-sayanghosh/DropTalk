@@ -677,6 +677,7 @@ export default function Chat() {
                         }}
                       />
                       <MessageInput
+                        value={currentInput}
                         onSend={send}
                         onTyping={handleTyping}
                         onTextChange={setCurrentInput}

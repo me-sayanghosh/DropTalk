@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { api, getMediaUrl } from '../../../shared/utils';
 
 export default function MessageInput({
+  value,
   onSend,
   onTyping,
   onTextChange,
@@ -13,8 +14,21 @@ export default function MessageInput({
   onSaveEdit,
   onCancelEdit,
   onEditLastMessage,
+}: {
+  value?: string;
+  onSend: (text: string, attachments?: any[]) => void;
+  onTyping?: () => void;
+  onTextChange?: (text: string) => void;
+  replyTo?: any;
+  onClearReply?: () => void;
+  membersMap?: Record<string, string>;
+  slowMode?: number;
+  editingMessage?: any;
+  onSaveEdit?: (id: string, text: string) => void;
+  onCancelEdit?: () => void;
+  onEditLastMessage?: () => void;
 }) {
-  const [text, setText] = useState('');
+  const [text, setText] = useState(value || '');
   const [mentionQuery, setMentionQuery] = useState(null); // string after @ or null
   const [mentionIndex, setMentionIndex] = useState(0);
   const [attachments, setAttachments] = useState([]); // [{ url, filename, fileType, mimeType, size }]
@@ -39,6 +53,14 @@ export default function MessageInput({
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  useEffect(() => {
+    if (value !== undefined && value !== text) {
+      setText(value);
+      detectMention(value);
+      inputRef.current?.focus();
+    }
+  }, [value]);
 
   useEffect(() => {
     if (replyTo) inputRef.current?.focus();
