@@ -146,6 +146,9 @@ router.post('/:roomId/messages', async (req, res) => {
     const room = await Room.findById(roomId);
     if (!room) return res.status(404).json({ error: 'room not found' });
 
+    const isBanned = (room.bannedUsers || []).some((b) => b.user.toString() === req.user.id);
+    if (isBanned) return res.status(403).json({ error: 'you are banned from this room' });
+
     let member = room.members.find((m) => m.user.toString() === req.user.id);
     if (!member) {
       if (room.type === 'public') {

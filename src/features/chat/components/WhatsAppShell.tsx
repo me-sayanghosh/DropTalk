@@ -646,11 +646,16 @@ export const WhatsAppShell: React.FC<WhatsAppShellProps> = ({
             if (found) {
               onSelectDM(found);
             } else {
-              api.post('/dm/send', { toUserId: targetUserId, text: 'Hi! Started a new chat.' }).then((res) => {
-                if (res.data?.room) {
-                  onSelectDM(res.data.room);
-                }
-              });
+              api
+                .post('/dm/send', { toUserId: targetUserId, text: 'Hi! Started a new chat.' })
+                .then((res) => {
+                  if (res.data?.room) {
+                    onSelectDM(res.data.room);
+                  }
+                })
+                .catch((err) => {
+                  alert(err.response?.data?.error || 'Failed to start direct message');
+                });
             }
           }}
           onGroupCreated={(newRoom) => {

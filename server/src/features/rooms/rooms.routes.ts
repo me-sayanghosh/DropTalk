@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { Router } from 'express';
+import mongoose from 'mongoose';
 import { Room } from './room.model';
 import { requireAuth } from '../../shared/middleware/auth';
 import { DEFAULT_ROOMS, ROOM_TYPES } from '../../shared/utils/constants';
@@ -112,6 +113,10 @@ router.get('/:roomId', async (req, res) => {
   try {
     const room = await Room.findById(req.params.roomId);
     if (!room) return res.status(404).json({ error: 'room not found' });
+    if (room.type === 'private') {
+      const isMember = room.members.some((m) => m.user.toString() === req.user.id);
+      if (!isMember) return res.status(403).json({ error: 'not a member of this private room' });
+    }
     res.json({ room: room.toClient() });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -371,7 +376,10 @@ router.post('/create-group', async (req, res) => {
       return res.status(400).json({ error: 'Group name is required' });
     }
 
-    const uniqueMembers = Array.from(new Set([req.user.id, ...(participantIds || [])]));
+    const validParticipants = Array.isArray(participantIds)
+      ? participantIds.filter((id: any) => typeof id === 'string' && mongoose.Types.ObjectId.isValid(id))
+      : [];
+    const uniqueMembers = Array.from(new Set([req.user.id, ...validParticipants]));
 
     const membersList = uniqueMembers.map((uid) => ({
       user: uid,
@@ -507,6 +515,9 @@ router.post('/join/:inviteCode', async (req, res) => {
   try {
     const room = await Room.findOne({ inviteCode: req.params.inviteCode });
     if (!room) return res.status(404).json({ error: 'invalid or expired invite code' });
+
+    const isBanned = (room.bannedUsers || []).some((b) => b.user.toString() === req.user.id);
+    if (isBanned) return res.status(403).json({ error: 'you are banned from this room' });
 
     const isMember = room.members.some((m) => m.user.toString() === req.user.id);
     if (isMember) {

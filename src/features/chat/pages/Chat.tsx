@@ -22,10 +22,12 @@ import { NotificationsPanel } from '../../notifications/components/Notifications
 import { NotificationsMainView } from '../../notifications/components/NotificationsMainView';
 import { formatBadgeCount } from '../../../shared/utils/dateUtils';
 import { useToast } from '../../../shared/context/ToastContext';
+import { useAuth } from '../../../shared/context/AuthContext';
 import { NotificationItem, CallLog, Room, User } from '../../../types';
 import NavRail from '../../../shared/components/NavRail';
 
 export default function Chat() {
+  const { setUser } = useAuth();
   const toastCtx = useToast();
   const showToast = toastCtx?.showToast;
   const [notifFilter, setNotifFilter] = useState('all');
@@ -368,19 +370,32 @@ export default function Chat() {
           onForwardMessage={forwardMessage}
           onLeaveRoom={leaveRoom}
           onBlockUser={(targetUserId) => {
-            if (user?.privacySettings) {
-              user.privacySettings.blockedUsers = [
-                ...(user.privacySettings.blockedUsers || []),
-                targetUserId as any,
-              ];
-            }
+            setUser((prev) => {
+              if (!prev) return prev;
+              const existing = prev.privacySettings?.blockedUsers || [];
+              if (existing.some((id: any) => id?.toString() === targetUserId?.toString())) return prev;
+              return {
+                ...prev,
+                privacySettings: {
+                  ...prev.privacySettings,
+                  blockedUsers: [...existing, targetUserId as any],
+                },
+              };
+            });
           }}
           onUnblockUser={(targetUserId) => {
-            if (user?.privacySettings?.blockedUsers) {
-              user.privacySettings.blockedUsers = user.privacySettings.blockedUsers.filter(
-                (id: any) => id?.toString() !== targetUserId?.toString()
-              );
-            }
+            setUser((prev) => {
+              if (!prev?.privacySettings?.blockedUsers) return prev;
+              return {
+                ...prev,
+                privacySettings: {
+                  ...prev.privacySettings,
+                  blockedUsers: prev.privacySettings.blockedUsers.filter(
+                    (id: any) => id?.toString() !== targetUserId?.toString()
+                  ),
+                },
+              };
+            });
           }}
           onUploadFile={async (f) => {
             const formData = new FormData();

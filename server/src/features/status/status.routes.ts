@@ -10,14 +10,15 @@ statusRouter.post('/create', requireAuth, async (req: Request, res: Response) =>
   try {
     const currentUserId = req.user.id || req.user._id;
     const { mediaUrl, mediaType = 'image', caption = '' } = req.body;
-    if (!mediaUrl) {
+    if (!mediaUrl || typeof mediaUrl !== 'string') {
       return res.status(400).json({ error: 'mediaUrl is required' });
     }
+    const normalizedMediaType = mediaType === 'video' ? 'video' : 'image';
 
     const newStatus = await Status.create({
       user: currentUserId,
       mediaUrl,
-      mediaType,
+      mediaType: normalizedMediaType,
       caption: String(caption).slice(0, 500),
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
     });
@@ -28,7 +29,26 @@ statusRouter.post('/create', requireAuth, async (req: Request, res: Response) =>
     try {
       const io = getIO();
       if (io) {
-        io.emit('status:new', clientPayload);
+        const [authorUser, usersWhoBlockedMe] = await Promise.all([
+          User.findById(currentUserId).select('privacySettings.blockedUsers').lean(),
+          User.find({ 'privacySettings.blockedUsers': currentUserId }).select('_id').lean(),
+        ]);
+        const blockedIds = new Set<string>([
+          ...((authorUser as any)?.privacySettings?.blockedUsers || []).map((id: any) => id.toString()),
+          ...usersWhoBlockedMe.map((u: any) => u._id.toString()),
+        ]);
+
+        if (blockedIds.size === 0) {
+          io.emit('status:new', clientPayload);
+        } else {
+          const sockets = await io.fetchSockets();
+          for (const s of sockets) {
+            const uid = (s as any).user?.id?.toString();
+            if (!uid || !blockedIds.has(uid)) {
+              s.emit('status:new', clientPayload);
+            }
+          }
+        }
       }
     } catch {
       // Ignore if socket not initialized

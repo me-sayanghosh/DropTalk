@@ -35,12 +35,13 @@ export function isSocketConnected(): boolean {
   return Boolean(socket && socket.connected);
 }
 
-function flushOfflineQueue(): void {
+async function flushOfflineQueue(): Promise<void> {
   const queue = getOfflineQueue();
   if (queue.length === 0) return;
 
   const sorted = queue.sort((a, b) => a.timestamp - b.timestamp);
   const remaining: OfflineQueueItem[] = [];
+  const httpPromises: Promise<void>[] = [];
 
   for (const item of sorted) {
     if (socket && socket.connected) {
@@ -49,15 +50,22 @@ function flushOfflineQueue(): void {
       });
     } else if (item.event === 'message:send' && item.data?.roomId) {
       // Drain via HTTP when socket is not available
-      api
-        .post(`/rooms/${item.data.roomId}/messages`, item.data)
-        .catch((err) => {
-          console.warn('HTTP offline queue flush failed:', err.message);
-          remaining.push(item);
-        });
+      httpPromises.push(
+        api
+          .post(`/rooms/${item.data.roomId}/messages`, item.data)
+          .then(() => undefined)
+          .catch((err) => {
+            console.warn('HTTP offline queue flush failed:', err.message);
+            remaining.push(item);
+          })
+      );
     } else {
       remaining.push(item);
     }
+  }
+
+  if (httpPromises.length > 0) {
+    await Promise.allSettled(httpPromises);
   }
   setOfflineQueue(remaining);
 }
