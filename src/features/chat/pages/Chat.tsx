@@ -366,7 +366,23 @@ export default function Chat() {
           onStartCall={(toUserId, roomId, isVideo) => {
             handleStartCall(toUserId, roomId, isVideo);
           }}
-          onCreateGroupModal={() => setShowCreateModal(true)}
+          onForwardMessage={forwardMessage}
+          onLeaveRoom={leaveRoom}
+          onBlockUser={(targetUserId) => {
+            if (user?.privacySettings) {
+              user.privacySettings.blockedUsers = [
+                ...(user.privacySettings.blockedUsers || []),
+                targetUserId as any,
+              ];
+            }
+          }}
+          onUnblockUser={(targetUserId) => {
+            if (user?.privacySettings?.blockedUsers) {
+              user.privacySettings.blockedUsers = user.privacySettings.blockedUsers.filter(
+                (id: any) => id?.toString() !== targetUserId?.toString()
+              );
+            }
+          }}
           onUploadFile={async (f) => {
             const formData = new FormData();
             formData.append('file', f);

@@ -243,7 +243,7 @@ export const WhatsAppStatusModal: React.FC<WhatsAppStatusModalProps> = ({
             {contactStatuses.length > 0 ? (
               <div className="space-y-1 divide-y divide-[var(--wa-border,rgba(255,255,255,0.06))]">
                 {contactStatuses.map((s) => {
-                  const author = s.user || {};
+                  const author: any = s.user || {};
                   const globalIdx = statusStories.findIndex((item) => item.id === s.id);
                   return (
                     <div
