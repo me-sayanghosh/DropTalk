@@ -36,10 +36,10 @@ export default function NotFound() {
           Page Not Found
         </h2>
         <p style={{ marginBottom: '24px', color: 'var(--text-muted, #4A4A4A)' }}>
-          The geometric coordinate you are looking for does not exist in this workspace.
+          The page you are looking for does not exist.
         </p>
         <Link href="/" className="bauhaus-btn bauhaus-btn-red">
-          Return to Base
+          Back to Home
         </Link>
       </div>
     </div>

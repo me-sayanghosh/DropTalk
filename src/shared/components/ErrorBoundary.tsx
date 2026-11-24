@@ -95,9 +95,9 @@ export class ErrorBoundary extends Component<Props, State> {
                 borderBottom: '3px solid #121212',
               }}
             >
-              <span>{isChunkMismatch ? '00 // BUNDLE REFRESH REQUIRED' : '00 // SYSTEM ALERT — EXECUTION HALTED'}</span>
+              <span>{isChunkMismatch ? 'UPDATE AVAILABLE' : 'ERROR'}</span>
               <span style={{ backgroundColor: '#121212', padding: '2px 8px', color: '#F0C020', fontSize: '0.7rem' }}>
-                {isChunkMismatch ? 'SYNC' : 'ERROR'}
+                {isChunkMismatch ? 'RELOAD' : 'ALERT'}
               </span>
             </div>
 
@@ -177,8 +177,8 @@ export class ErrorBoundary extends Component<Props, State> {
                 }}
               >
                 {isChunkMismatch
-                  ? 'A new build was compiled in your environment. The browser needs to reload its bundle manifest to resume encrypted chat and WebSockets.'
-                  : 'An unhandled exception occurred during UI composition. You can reload the workspace or navigate back to your channels.'}
+                  ? 'A new version of DropTalk is available. Reload the page to continue.'
+                  : 'An unexpected error occurred while rendering this page. You can reload or return to channels.'}
               </p>
 
               {/* Error Snippet Box */}
@@ -198,7 +198,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 }}
               >
                 <div style={{ color: '#121212', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>
-                  EXCEPTION PAYLOAD:
+                  ERROR DETAILS:
                 </div>
                 {errorMsg}
               </div>

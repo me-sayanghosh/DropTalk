@@ -5,10 +5,10 @@ import { Providers } from './providers';
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SERVER_URL || 'https://drop-talk.vercel.app'),
   title: {
-    default: 'DropTalk — Secure Constructivist Workspace Messaging & E2EE Team Chat',
+    default: 'DropTalk — End-to-End Encrypted Team Chat & Messaging',
     template: '%s | DropTalk',
   },
-  description: 'DropTalk is a high-performance constructivist team messaging workspace engineered with end-to-end RSA/AES encryption, instant WebSockets, and WebRTC calls.',
+  description: 'DropTalk is a real-time team messaging workspace with end-to-end RSA/AES encryption, instant WebSockets, and peer-to-peer WebRTC calls.',
   applicationName: 'DropTalk',
   authors: [{ name: 'DropTalk Team', url: 'https://drop-talk.vercel.app' }],
   creator: 'DropTalk Team',
@@ -21,8 +21,6 @@ export const metadata: Metadata = {
     'end to end encrypted messaging',
     'E2EE team chat',
     'secure workspace messaging',
-    'Bauhaus design system',
-    'Constructivist chat',
     'WebRTC video calls',
     'realtime WebSockets chat',
     'Slack alternative',
@@ -57,8 +55,8 @@ export const metadata: Metadata = {
   },
   manifest: '/site.webmanifest',
   openGraph: {
-    title: 'DropTalk — Secure Constructivist Workspace Messaging',
-    description: 'A high-performance constructivist team messaging workspace engineered with end-to-end RSA/AES encryption, instant WebSockets, and WebRTC calls.',
+    title: 'DropTalk — End-to-End Encrypted Team Messaging',
+    description: 'Real-time team messaging with end-to-end RSA/AES encryption, instant WebSockets, and peer-to-peer WebRTC calls.',
     url: 'https://drop-talk.vercel.app',
     siteName: 'DropTalk',
     images: [
@@ -66,7 +64,7 @@ export const metadata: Metadata = {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'DropTalk — Constructivist Workspace Messaging',
+        alt: 'DropTalk — Encrypted Workspace Messaging',
       },
     ],
     locale: 'en_US',
@@ -74,8 +72,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'DropTalk — Secure Constructivist Workspace Messaging',
-    description: 'High-performance constructivist team messaging with end-to-end RSA/AES encryption, instant WebSockets, and WebRTC calls.',
+    title: 'DropTalk — End-to-End Encrypted Team Messaging',
+    description: 'Real-time team messaging with end-to-end RSA/AES encryption, instant WebSockets, and peer-to-peer WebRTC calls.',
     images: ['/og-image.png'],
   },
 };
@@ -88,7 +86,7 @@ const jsonLd = {
       '@id': 'https://drop-talk.vercel.app/#website',
       url: 'https://drop-talk.vercel.app',
       name: 'DropTalk',
-      description: 'Secure Constructivist Workspace Messaging & E2EE Team Chat',
+      description: 'End-to-End Encrypted Team Messaging & Real-Time Chat',
       publisher: {
         '@id': 'https://drop-talk.vercel.app/#organization',
       },
@@ -118,7 +116,7 @@ const jsonLd = {
         price: '0',
         priceCurrency: 'USD',
       },
-      description: 'DropTalk is a high-performance constructivist team messaging workspace engineered with end-to-end RSA/AES encryption, instant WebSockets, and WebRTC calls.',
+      description: 'DropTalk is a real-time team messaging workspace with end-to-end RSA/AES encryption, instant WebSockets, and peer-to-peer WebRTC calls.',
       featureList: [
         'End-to-End Encryption (RSA-OAEP & AES-GCM)',
         'Instant WebSocket Real-Time Delivery',
@@ -126,7 +124,6 @@ const jsonLd = {
         'Structured Threaded Discussions',
         'Offline Message Synchronization & Queueing',
         'Role-Based Channel Moderation and Access Control',
-        'Constructivist Bauhaus User Interface',
       ],
       screenshot: 'https://drop-talk.vercel.app/og-image.png',
     },
@@ -139,7 +136,7 @@ const jsonLd = {
           name: 'What is DropTalk?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'DropTalk is a constructivist team messaging workspace built for high speed, absolute privacy, and zero cognitive clutter. It features client-side end-to-end encryption (RSA-OAEP and AES-GCM), real-time WebSockets, and WebRTC audio/video calls.',
+            text: 'DropTalk is a real-time team messaging workspace built for speed and privacy. It features client-side end-to-end encryption (RSA-OAEP and AES-GCM), WebSockets, and WebRTC audio/video calls.',
           },
         },
         {
@@ -155,7 +152,7 @@ const jsonLd = {
           name: 'How does DropTalk compare to Slack or Discord?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'Unlike Slack and Discord, which store unencrypted messages accessible to third parties and tracking algorithms, DropTalk prioritizes mathematical privacy, client-side encryption, high-contrast constructivist ergonomics, and zero ad telemetry.',
+            text: 'Unlike Slack and Discord, which store unencrypted messages on central servers, DropTalk prioritizes client-side encryption, fast messaging, and zero ad tracking.',
           },
         },
         {

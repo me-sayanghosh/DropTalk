@@ -9,9 +9,9 @@ export interface BauhausLoadingScreenProps {
 }
 
 export const BauhausLoadingScreen: React.FC<BauhausLoadingScreenProps> = ({
-  title = 'DROPTALK WORKSPACE',
-  subtitle = 'ESTABLISHING ENCRYPTED SESSION // PLEASE WAIT',
-  stamp = 'BOOTSTRAP',
+  title = 'DROPTALK',
+  subtitle = 'LOADING WORKSPACE',
+  stamp = 'LOADING',
 }) => {
   return (
     <div

@@ -22,7 +22,7 @@ import SlotReelText from '../components/SlotReelText';
 import {
   E2EEIllustration,
   RealTimeIllustration,
-  AIAssistantIllustration,
+  CallsIllustration,
   ThreadRepliesIllustration,
   ReactionsIllustration,
   ModerationIllustration,
@@ -49,7 +49,7 @@ const staggerContainer = {
 const FEATURES = [
   { icon: Lock, illustration: E2EEIllustration, shape: 'circle', color: '#D02020', title: 'End-to-End Encryption', desc: 'RSA-OAEP and AES-GCM keep your private room messages sealed from the server.' },
   { icon: MessageSquare, illustration: RealTimeIllustration, shape: 'square', color: '#1040C0', title: 'Real-Time Messaging', desc: 'Messages delivered instantly over WebSockets with automatic offline queue and backfill.' },
-  { icon: Radio, illustration: AIAssistantIllustration, shape: 'triangle', color: '#F0C020', title: 'Audio & Video Calls', desc: 'Peer-to-peer WebRTC voice and video calls with encrypted low-latency streams.' },
+  { icon: Radio, illustration: CallsIllustration, shape: 'triangle', color: '#F0C020', title: 'Audio & Video Calls', desc: 'Peer-to-peer WebRTC voice and video calls with encrypted low-latency streams.' },
   { icon: GitBranch, illustration: ThreadRepliesIllustration, shape: 'circle', color: '#1040C0', title: 'Thread Replies', desc: 'Keep conversations organized with side-panel threaded discussions on any message.' },
   { icon: SmilePlus, illustration: ReactionsIllustration, shape: 'square', color: '#F0C020', title: 'Message Reactions', desc: 'React with emoji to any message. Toggle reactions with a single click.' },
   { icon: Shield, illustration: ModerationIllustration, shape: 'triangle', color: '#D02020', title: 'Role-Based Moderation', desc: 'Owner and moderator roles with kick, ban, mute, and promote controls.' },
@@ -73,10 +73,10 @@ const STATS = [
 ];
 
 const MOCK_MESSAGES = [
-  { id: 1, sender: 'ALICE', text: 'Constructivist release deployed to production.', mine: false, color: '#D02020' },
+  { id: 1, sender: 'ALICE', text: 'Pushed the key rotation fix to staging.', mine: false, color: '#D02020' },
   { id: 2, sender: 'BOB', text: 'Encryption handshake completed in 14ms.', mine: false, color: '#1040C0' },
-  { id: 3, sender: 'YOU', text: 'Form follows function. The UI is exceptionally fast.', mine: true, color: '#F0C020' },
-  { id: 4, sender: 'ALICE', text: 'Agreed. Pure geometry and zero clutter.', mine: false, color: '#D02020', reaction: { emoji: '📐', count: 4 } },
+  { id: 3, sender: 'YOU', text: 'Looks solid. Voice calls and threads are synced.', mine: true, color: '#F0C020' },
+  { id: 4, sender: 'ALICE', text: 'Ready to ship when you are.', mine: false, color: '#D02020' },
 ];
 
 const SECURITY_ITEMS = [
@@ -90,23 +90,23 @@ const SECURITY_ITEMS = [
 const FAQS = [
   {
     q: 'What makes DropTalk different from Slack or Discord?',
-    a: 'Unlike centralized corporate platforms that log conversations for advertising, AI scraping, and telemetry, DropTalk is engineered with client-side cryptographic keys (RSA-OAEP + AES-GCM 256-bit). Form follows function: zero cognitive clutter, brutalist speed, and verifiable mathematical privacy.',
+    a: 'Unlike platforms that log conversations for advertising or data mining, DropTalk is built with client-side cryptographic keys (RSA-OAEP + AES-GCM 256-bit). Your messages stay fast, structured, and private by default.',
   },
   {
     q: 'How does End-to-End Encryption (E2EE) work in DropTalk?',
-    a: 'Cryptographic keys are generated directly in your web browser or client sandbox using the Web Crypto API. In private channels, messages are encrypted before touching the network. Even DropTalk servers cannot read or decrypt your private communications.',
+    a: 'Cryptographic keys are generated directly in your browser using the Web Crypto API. In private rooms and direct messages, payloads are encrypted before touching the network so DropTalk servers cannot read them.',
   },
   {
     q: 'Can I make audio and video calls on DropTalk?',
-    a: 'Yes. DropTalk features native peer-to-peer WebRTC voice and video channels. Media streams are transmitted directly between peers with encrypted low latency and zero middleman recording.',
+    a: 'Yes. DropTalk supports peer-to-peer WebRTC voice and video calls with encrypted media streams and no server-side recording.',
   },
   {
     q: 'Is DropTalk free to use for teams and individuals?',
-    a: 'Yes, DropTalk is free for creating accounts, launching public channels, establishing private encrypted rooms, and making real-time calls with zero subscription barriers.',
+    a: 'Yes. Creating an account, joining public channels, starting private encrypted rooms, and making voice or video calls are free.',
   },
   {
     q: 'Does DropTalk store offline messages?',
-    a: 'DropTalk includes an offline synchronization engine. If your connection drops, outgoing messages queue locally and automatically reconcile upon reconnecting with zero lost packets.',
+    a: 'If your connection drops, outgoing messages queue locally and sync automatically when you reconnect.',
   },
 ];
 
@@ -214,7 +214,7 @@ function MockChatDemo() {
       {/* Input row */}
       <div className="bauhaus-mock-input-row">
         <div className="bauhaus-mock-input-field">
-          <span>Type constructivist message...</span>
+          <span>Type a message...</span>
         </div>
         <button className="bauhaus-mock-send-btn" aria-label="Send">
           <ArrowRight size={18} strokeWidth={3} />
@@ -235,7 +235,7 @@ function FaqSection() {
     <section id="faq" className="bauhaus-section bauhaus-border-t-4">
       <div className="bauhaus-section-header">
         <div className="bauhaus-section-tag">
-          <span>06 // ARCHITECTURAL INTEL</span>
+          <span>06 // FAQ</span>
         </div>
         <h2 className="bauhaus-section-title">FREQUENTLY ASKED QUESTIONS</h2>
         <p className="bauhaus-section-subtitle">
@@ -360,14 +360,14 @@ export default function Home() {
           <div className="bauhaus-hero-left">
             <div className="bauhaus-stamp">
               <span className="bauhaus-stamp-num">01 //</span>
-              <span className="bauhaus-stamp-text">CONSTRUCTIVIST MESSAGING</span>
+              <span className="bauhaus-stamp-text">ENCRYPTED MESSAGING</span>
             </div>
 
             <h1 className="bauhaus-hero-title">
               FORM FOLLOWS<br />
               <span className="bauhaus-hero-highlight">
                 <SlotReelText
-                  texts={['COMMUNICATION.', 'SECURITY.', 'PRECISION.', 'STRUCTURE.']}
+                  texts={['COMMUNICATION.', 'SECURITY.', 'PRIVACY.', 'SPEED.']}
                   rotationInterval={3000}
                   staggerDuration={0.035}
                   pauseOnHover={true}
@@ -376,8 +376,8 @@ export default function Home() {
             </h1>
 
             <p className="bauhaus-hero-lead">
-              A high-velocity messaging workspace engineered with end-to-end RSA/AES cryptography,
-              instant WebSockets, structured threads, and modular constructivist channels.
+              A real-time messaging workspace with end-to-end RSA/AES encryption,
+              instant WebSockets, threaded discussions, and peer-to-peer calls.
             </p>
 
             <div className="bauhaus-hero-cta-group">
@@ -386,7 +386,7 @@ export default function Home() {
                 <ArrowRight size={20} strokeWidth={3} />
               </Link>
               <a href="#features" className="bauhaus-btn bauhaus-btn-outline lg">
-                VIEW BLUEPRINT
+                EXPLORE FEATURES
               </a>
             </div>
 
@@ -430,8 +430,8 @@ export default function Home() {
 
               <div className="bauhaus-art-center-card">
                 <div className="b-center-header">
-                  <span className="b-tag">BAUHAUS_OS</span>
-                  <span className="b-code">v2.4.0</span>
+                  <span className="b-tag">DROPTALK</span>
+                  <span className="b-code">E2EE</span>
                 </div>
                 <div className="b-center-body">
                   <div className="b-line b-line-red" />
@@ -461,11 +461,11 @@ export default function Home() {
       <section id="features" className="bauhaus-section">
         <div className="bauhaus-section-header">
           <div className="bauhaus-section-tag">
-            <span>02 // ARCHITECTURE</span>
+            <span>02 // FEATURES</span>
           </div>
-          <h2 className="bauhaus-section-title">ENGINEERED FOR SUPREME CLARITY</h2>
+          <h2 className="bauhaus-section-title">BUILT FOR PRIVATE COMMUNICATION</h2>
           <p className="bauhaus-section-subtitle">
-            Every feature is constructed for speed, mathematical privacy, and zero cognitive overhead.
+            Everything you need for fast, encrypted team and direct messaging.
           </p>
         </div>
 
@@ -480,11 +480,11 @@ export default function Home() {
       <section className="bauhaus-section bauhaus-bg-canvas bauhaus-border-t-4">
         <div className="bauhaus-section-header">
           <div className="bauhaus-section-tag">
-            <span>03 // EXECUTION</span>
+            <span>03 // HOW IT WORKS</span>
           </div>
-          <h2 className="bauhaus-section-title">THE WORKFLOW IN FOUR MOVEMENTS</h2>
+          <h2 className="bauhaus-section-title">GET STARTED IN FOUR STEPS</h2>
           <p className="bauhaus-section-subtitle">
-            From initial authentication to active encrypted channels in seconds.
+            From sign-up to encrypted channels and calls in seconds.
           </p>
         </div>
 
@@ -513,15 +513,14 @@ export default function Home() {
           <div className="bauhaus-security-content">
             <div className="bauhaus-stamp bauhaus-stamp-dark">
               <span className="bauhaus-stamp-num">04 //</span>
-              <span className="bauhaus-stamp-text">MATHEMATICAL SECURITY</span>
+              <span className="bauhaus-stamp-text">SECURITY</span>
             </div>
 
             <h2 className="bauhaus-security-title">
-              UNCOMPROMISED PRIVACY BY DEFAULT
+              PRIVATE BY DEFAULT
             </h2>
 
             <p className="bauhaus-security-desc">
-              We eliminate trusted third parties from your private communications.
               Keys are generated client-side, stored in browser isolation, and never transmitted unencrypted.
             </p>
 
@@ -552,18 +551,18 @@ export default function Home() {
       <section className="bauhaus-section">
         <div className="bauhaus-section-header">
           <div className="bauhaus-section-tag">
-            <span>05 // WORKSPACE PREVIEW</span>
+            <span>05 // PREVIEW</span>
           </div>
-          <h2 className="bauhaus-section-title">THE CONSTRUCTIVIST CHAT EXPERIENCE</h2>
+          <h2 className="bauhaus-section-title">CLEAN, FAST WORKSPACE</h2>
           <p className="bauhaus-section-subtitle">
-            Tactile controls, deliberate contrast, and lightning-fast feedback.
+            Structured channels, direct messages, and real-time feedback.
           </p>
         </div>
 
         <MockChatDemo />
       </section>
 
-      {/* ── 7. Architectural Intel (FAQ Section) ── */}
+      {/* ── 7. FAQ Section ── */}
       <FaqSection />
 
       {/* ── 8. Final Call to Action (Bauhaus Yellow Block) ── */}
@@ -580,7 +579,7 @@ export default function Home() {
           </div>
 
           <h2 className="bauhaus-cta-title">
-            READY TO COMMUNICATE WITH POWER AND CLARITY?
+            READY TO START CHATTING PRIVATELY?
           </h2>
 
           <p className="bauhaus-cta-sub">
@@ -607,7 +606,7 @@ export default function Home() {
             </div>
             <span className="bauhaus-footer-title">DROPTALK</span>
             <p className="bauhaus-footer-tagline">
-              Form follows function. Real-time constructivist messaging for teams that build.
+              Real-time end-to-end encrypted messaging for teams and friends.
             </p>
           </div>
 
@@ -638,7 +637,7 @@ export default function Home() {
 
         <div className="bauhaus-footer-bottom">
           <div className="bauhaus-footer-copy">
-            &copy; {new Date().getFullYear()} DROPTALK. CONSTRUCTIVIST MESSAGING SYSTEM.
+            &copy; {new Date().getFullYear()} DROPTALK. END-TO-END ENCRYPTED MESSAGING.
           </div>
           <div className="bauhaus-footer-palette-demo">
             <span className="p-dot" style={{ backgroundColor: '#D02020' }} title="Bauhaus Red" />

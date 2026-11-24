@@ -21,9 +21,9 @@ export function Protected({ children }: { children: ReactNode }) {
   if (!user) {
     return (
       <BauhausLoadingScreen
-        title="DROPTALK SECURITY"
-        subtitle="AUTHENTICATING ENCRYPTED SESSION // REDIRECTING"
-        stamp="AUTH VERIFICATION"
+        title="DROPTALK"
+        subtitle="CHECKING SESSION"
+        stamp="AUTH"
       />
     );
   }
@@ -31,9 +31,9 @@ export function Protected({ children }: { children: ReactNode }) {
   if (user.needsUsername) {
     return (
       <BauhausLoadingScreen
-        title="DROPTALK PROFILE"
-        subtitle="SETTING UP SECURE USERNAME // REDIRECTING"
-        stamp="ACCOUNT SETUP"
+        title="DROPTALK"
+        subtitle="REDIRECTING TO USERNAME SETUP"
+        stamp="PROFILE"
       />
     );
   }

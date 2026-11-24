@@ -273,7 +273,7 @@ export default function JoinNow() {
             </div>
             <h2 className="bauhaus-loading-title">{loadingStatusText}</h2>
             <p className="bauhaus-loading-subtitle">
-              ESTABLISHING ENCRYPTED WORKSPACE // PLEASE WAIT
+              SIGNING YOU IN — PLEASE WAIT
             </p>
             <div className="bauhaus-loading-progress-bar">
               <div className="bauhaus-loading-progress-inner" />
@@ -292,7 +292,7 @@ export default function JoinNow() {
                 JOIN DROPTALK
               </h1>
               <p className="bauhaus-auth-subtitle">
-                CONSTRUCTIVIST MESSAGING // AUTHENTICATION
+                SIGN IN TO YOUR WORKSPACE
               </p>
             </div>
 
@@ -391,7 +391,7 @@ export default function JoinNow() {
                 className="bauhaus-btn bauhaus-btn-red w-full justify-center lg"
               >
                 {busy ? (
-                  'TRANSMITTING CODE…'
+                  'SENDING CODE…'
                 ) : (
                   <>
                     <span>SEND VERIFICATION CODE</span>
@@ -411,7 +411,7 @@ export default function JoinNow() {
             >
               <div className="bauhaus-otp-notice">
                 <p>
-                  ENTER THE 6-DIGIT CODE TRANSMITTED TO:<br />
+                  ENTER THE 6-DIGIT CODE SENT TO:<br />
                   <strong>{email}</strong>
                 </p>
               </div>
@@ -441,7 +441,7 @@ export default function JoinNow() {
                 className="bauhaus-btn bauhaus-btn-blue w-full justify-center lg"
               >
                 {busy ? (
-                  'VERIFYING CRYPTO TOKEN…'
+                  'VERIFYING CODE…'
                 ) : (
                   <>
                     <KeyRound size={18} strokeWidth={3} />
