@@ -18,9 +18,9 @@ import { getSocket } from '../../../shared/utils';
 interface WhatsAppShellProps {
   currentUser: User;
   rooms: Room[];
-  conversations: DMConversation[];
+  conversations: any[];
   activeRoom: Room | null;
-  activeDM: DMConversation | null;
+  activeDM: any;
   messages: Message[];
   onlineUsers: string[];
   typingUsers: { userId: string; username: string }[];
