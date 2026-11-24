@@ -11,6 +11,8 @@ import {
 import { formatDateSeparator } from '../../../shared/utils/dateUtils';
 import { getMediaUrl } from '../../../shared/utils';
 import { MessageSkeleton } from '../../../shared/components/ui/SkeletonLoaders';
+import { useAuth } from '../../../shared/context/AuthContext';
+import VoiceNoteBubble from './VoiceNoteBubble';
 
 /**
  * Parse message text and highlight @username mentions.
@@ -95,12 +97,12 @@ function renderAttachments(attachments, setLightboxData) {
         }
         if (att.fileType === 'audio') {
           return (
-            <div key={i} className="msg-att-audio-card">
-              <div className="audio-card-icon">🎵</div>
-              <div className="audio-card-body">
-                <audio controls src={fullUrl} />
-                <span className="audio-filename">{fileName}</span>
-              </div>
+            <div key={i} className="msg-att-audio-card max-w-sm">
+              <VoiceNoteBubble
+                audioUrl={fullUrl}
+                duration={att.size ? Math.round(att.size / 16000) : 0}
+                senderUsername={fileName}
+              />
             </div>
           );
         }
@@ -140,6 +142,7 @@ export default function MessageList({
   onlineUserIds, onOpenThread, onReact, threadCounts, onReply, replyToData, membersMap, onDMUser,
   onEdit, onPin, onUnpin, onOpenForward, pinnedMessages = [], loading = false,
 }) {
+  const { user } = useAuth();
   const lastReadRef = useRef(null);
   const [contextMenuFor, setContextMenuFor] = useState(null);
   const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
@@ -224,9 +227,9 @@ export default function MessageList({
 
   function getReadStatus(msg) {
     if (msg.senderId !== meId) return null;
-    if (!readReceipts || !onlineUserIds) return null;
+    if (!readReceipts || !onlineUserIds) return 'sent';
     const onlineOthers = onlineUserIds.filter((id) => id !== meId);
-    if (onlineOthers.length === 0) return null;
+    if (onlineOthers.length === 0) return 'sent';
     let readCount = 0;
     for (const userId of onlineOthers) {
       const lastRead = readReceipts[userId];
@@ -236,7 +239,10 @@ export default function MessageList({
         if (readIdx >= msgIdx) readCount++;
       }
     }
-    if (readCount === onlineOthers.length) return 'read';
+    const myReadReceiptsEnabled = user?.privacySettings?.readReceipts !== false;
+    if (readCount === onlineOthers.length) {
+      return myReadReceiptsEnabled ? 'read' : 'delivered';
+    }
     if (readCount > 0) return 'delivered';
     return 'sent';
   }

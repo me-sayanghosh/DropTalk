@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { Router } from 'express';
 import { Room } from './room.model';
 import { requireAuth } from '../../shared/middleware/auth';
@@ -323,6 +324,212 @@ router.delete('/:roomId', async (req, res) => {
     }
 
     res.json({ ok: true, roomId: req.params.roomId });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /api/rooms/:roomId/disappearing-timer - Set disappearing messages timer
+router.put('/:roomId/disappearing-timer', async (req, res) => {
+  try {
+    const { disappearingTimer } = req.body || {};
+    if (!['off', '24h', '7d', '90d'].includes(disappearingTimer)) {
+      return res.status(400).json({ error: 'invalid disappearing timer. Must be off, 24h, 7d, or 90d' });
+    }
+
+    const room = await Room.findById(req.params.roomId);
+    if (!room) return res.status(404).json({ error: 'room not found' });
+
+    const member = room.members.find((m) => m.user.toString() === req.user.id);
+    if (!member) {
+      return res.status(403).json({ error: 'must be a member to change disappearing messages timer' });
+    }
+
+    room.disappearingTimer = disappearingTimer;
+    await room.save();
+
+    const io = getIO();
+    if (io) {
+      io.to(req.params.roomId).emit('room:disappearing-timer-updated', {
+        roomId: req.params.roomId,
+        disappearingTimer,
+        updatedBy: req.user.id,
+      });
+    }
+
+    res.json({ ok: true, roomId: req.params.roomId, disappearingTimer });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/rooms/create-group - Create a multi-contact WhatsApp-style group
+router.post('/create-group', async (req, res) => {
+  try {
+    const { name, participantIds = [], groupIcon = '', groupDescription = '' } = req.body || {};
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: 'Group name is required' });
+    }
+
+    const uniqueMembers = Array.from(new Set([req.user.id, ...(participantIds || [])]));
+
+    const membersList = uniqueMembers.map((uid) => ({
+      user: uid,
+      role: uid === req.user.id ? 'owner' : 'member',
+      joinedAt: new Date(),
+      muted: false,
+    }));
+
+    const inviteCode = crypto.randomBytes(6).toString('hex');
+
+    const groupRoom = await Room.create({
+      name: name.trim(),
+      createdBy: req.user.id,
+      type: 'private',
+      isDM: false,
+      groupIcon: groupIcon || '',
+      groupDescription: groupDescription || '',
+      members: membersList,
+      inviteCode,
+    });
+
+    res.status(201).json({ room: groupRoom.toClient() });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /api/rooms/:roomId/group-info - Update group icon & description
+router.put('/:roomId/group-info', async (req, res) => {
+  try {
+    const { groupIcon, groupDescription, name } = req.body || {};
+    const room = await Room.findById(req.params.roomId);
+    if (!room) return res.status(404).json({ error: 'room not found' });
+
+    const member = room.members.find((m) => m.user.toString() === req.user.id);
+    if (!member) {
+      return res.status(403).json({ error: 'must be a group member' });
+    }
+
+    if (name && name.trim()) room.name = name.trim();
+    if (groupIcon !== undefined) room.groupIcon = groupIcon;
+    if (groupDescription !== undefined) room.groupDescription = String(groupDescription).slice(0, 500);
+
+    await room.save();
+
+    const io = getIO();
+    if (io) {
+      io.to(req.params.roomId).emit('room:group-info-updated', {
+        roomId: room._id.toString(),
+        name: room.name,
+        groupIcon: room.groupIcon,
+        groupDescription: room.groupDescription,
+      });
+    }
+
+    res.json({ room: room.toClient() });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /api/rooms/:roomId/permissions - Toggle onlyAdminsCanMessage
+router.put('/:roomId/permissions', async (req, res) => {
+  try {
+    const { onlyAdminsCanMessage } = req.body || {};
+    const room = await Room.findById(req.params.roomId);
+    if (!room) return res.status(404).json({ error: 'room not found' });
+
+    const member = room.members.find((m) => m.user.toString() === req.user.id);
+    if (!member || (member.role !== 'owner' && member.role !== 'moderator')) {
+      return res.status(403).json({ error: 'only admins can change group permissions' });
+    }
+
+    room.onlyAdminsCanMessage = !!onlyAdminsCanMessage;
+    await room.save();
+
+    const io = getIO();
+    if (io) {
+      io.to(req.params.roomId).emit('room:permissions-updated', {
+        roomId: room._id.toString(),
+        onlyAdminsCanMessage: room.onlyAdminsCanMessage,
+      });
+    }
+
+    res.json({ room: room.toClient() });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/rooms/:roomId/invite-code - Generate or get invite code
+router.post('/:roomId/invite-code', async (req, res) => {
+  try {
+    const room = await Room.findById(req.params.roomId);
+    if (!room) return res.status(404).json({ error: 'room not found' });
+
+    const member = room.members.find((m) => m.user.toString() === req.user.id);
+    if (!member || (member.role !== 'owner' && member.role !== 'moderator')) {
+      return res.status(403).json({ error: 'only admins can generate invite links' });
+    }
+
+    if (!room.inviteCode || req.body.regenerate) {
+      room.inviteCode = crypto.randomBytes(6).toString('hex');
+      await room.save();
+    }
+
+    res.json({ inviteCode: room.inviteCode });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/rooms/invite/:inviteCode - Preview group info by invite code
+router.get('/invite/:inviteCode', async (req, res) => {
+  try {
+    const room = await Room.findOne({ inviteCode: req.params.inviteCode });
+    if (!room) return res.status(404).json({ error: 'invalid or expired invite code' });
+
+    res.json({
+      id: room._id.toString(),
+      name: room.name,
+      groupIcon: room.groupIcon,
+      groupDescription: room.groupDescription,
+      membersCount: room.members.length,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/rooms/join/:inviteCode - Join group using invite code
+router.post('/join/:inviteCode', async (req, res) => {
+  try {
+    const room = await Room.findOne({ inviteCode: req.params.inviteCode });
+    if (!room) return res.status(404).json({ error: 'invalid or expired invite code' });
+
+    const isMember = room.members.some((m) => m.user.toString() === req.user.id);
+    if (isMember) {
+      return res.json({ room: room.toClient(), alreadyMember: true });
+    }
+
+    room.members.push({
+      user: req.user.id,
+      role: 'member',
+      joinedAt: new Date(),
+      muted: false,
+    });
+    await room.save();
+
+    const io = getIO();
+    if (io) {
+      io.to(room._id.toString()).emit('room:user-joined', {
+        roomId: room._id.toString(),
+        userId: req.user.id,
+      });
+    }
+
+    res.json({ room: room.toClient(), joined: true });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

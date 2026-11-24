@@ -32,6 +32,23 @@ router.post('/send', async (req, res) => {
     const toUser = await User.findById(toUserId);
     if (!toUser) return res.status(404).json({ error: 'User not found' });
 
+    const fromUser = await User.findById(fromUserId);
+    if (!fromUser) return res.status(404).json({ error: 'Sender not found' });
+
+    const toUserBlockedFrom = (toUser.privacySettings?.blockedUsers || []).some(
+      (id: any) => id.toString() === fromUserId
+    );
+    if (toUserBlockedFrom) {
+      return res.status(403).json({ error: 'You cannot message this user' });
+    }
+
+    const fromUserBlockedTo = (fromUser.privacySettings?.blockedUsers || []).some(
+      (id: any) => id.toString() === toUserId
+    );
+    if (fromUserBlockedTo) {
+      return res.status(400).json({ error: 'You have blocked this user. Unblock to send a message.' });
+    }
+
     // Reuse existing DM room between these two users (either direction)
     let room = await Room.findOne({
       isDM: true,
@@ -132,6 +149,17 @@ router.get('/conversations', async (req, res) => {
           ? await User.findById(partnerMember.user).lean()
           : null;
 
+        let partnerProfileImage = partner?.profileImage || '';
+        if (partner) {
+          const partnerBlockedMe = (partner.privacySettings?.blockedUsers || []).some(
+            (id: any) => id.toString() === userId
+          );
+          const hideDP = !partner.privacySettings?.showProfilePicture || partner.privacySettings?.profilePhoto === 'nobody' || partnerBlockedMe;
+          if (hideDP) {
+            partnerProfileImage = '';
+          }
+        }
+
         const lastMsg = await Message.findOne({ room: room._id })
           .sort({ createdAt: -1 })
           .lean();
@@ -143,7 +171,7 @@ router.get('/conversations', async (req, res) => {
                 id: partner._id.toString(),
                 username: partner.username,
                 name: partner.name || '',
-                profileImage: partner.profileImage || '',
+                profileImage: partnerProfileImage,
               }
             : null,
           lastMessage: lastMsg
@@ -182,6 +210,27 @@ router.post('/:roomId/accept', async (req, res) => {
     // Only the non-initiator can accept
     if (room.dmInitiator?.toString() === userId) {
       return res.status(403).json({ error: 'Initiator cannot accept their own request' });
+    }
+
+    const partnerMember = (room.members || []).find((m) => m.user.toString() !== userId);
+    if (partnerMember) {
+      const partnerId = partnerMember.user.toString();
+      const [currentUser, partnerUser] = await Promise.all([
+        User.findById(userId),
+        User.findById(partnerId),
+      ]);
+      const blockedByPartner = (partnerUser?.privacySettings?.blockedUsers || []).some(
+        (id: any) => id.toString() === userId
+      );
+      if (blockedByPartner) {
+        return res.status(403).json({ error: 'You cannot accept requests from this user' });
+      }
+      const blockedPartner = (currentUser?.privacySettings?.blockedUsers || []).some(
+        (id: any) => id.toString() === partnerId
+      );
+      if (blockedPartner) {
+        return res.status(400).json({ error: 'You have blocked this user. Unblock to accept request.' });
+      }
     }
 
     room.dmStatus = 'accepted';
@@ -318,10 +367,22 @@ router.post('/:roomId/messages', async (req, res) => {
   try {
     const { roomId } = req.params;
     const userId = req.user.id;
-    const { text = '', attachments = [], clientMsgId, replyTo } = req.body || {};
+    const {
+      text = '',
+      attachments = [],
+      clientMsgId,
+      replyTo,
+      isVoiceNote = false,
+      voiceDuration = 0,
+      voiceWaveform = [],
+      isForwarded = false,
+      forwardedCount = 0,
+      location = null,
+      caption = '',
+    } = req.body || {};
     const trimmedText = typeof text === 'string' ? text.trim() : '';
 
-    if (!roomId || (!trimmedText && (!attachments || attachments.length === 0))) {
+    if (!roomId || (!trimmedText && !location && (!attachments || attachments.length === 0))) {
       return res.status(400).json({ error: 'message text or attachment required' });
     }
 
@@ -331,6 +392,27 @@ router.post('/:roomId/messages', async (req, res) => {
       'members.user': userId,
     });
     if (!room) return res.status(404).json({ error: 'DM not found' });
+
+    const partnerMember = (room.members || []).find((m) => m.user.toString() !== userId);
+    if (partnerMember) {
+      const partnerId = partnerMember.user.toString();
+      const [senderUser, recipientUser] = await Promise.all([
+        User.findById(userId),
+        User.findById(partnerId),
+      ]);
+      const toUserBlockedFrom = (recipientUser?.privacySettings?.blockedUsers || []).some(
+        (id: any) => id.toString() === userId
+      );
+      if (toUserBlockedFrom) {
+        return res.status(403).json({ error: 'You cannot message this user' });
+      }
+      const fromUserBlockedTo = (senderUser?.privacySettings?.blockedUsers || []).some(
+        (id: any) => id.toString() === partnerId
+      );
+      if (fromUserBlockedTo) {
+        return res.status(400).json({ error: 'You have blocked this user. Unblock to send a message.' });
+      }
+    }
 
     if (room.dmStatus === 'pending') {
       if (room.dmInitiator?.toString() !== userId) {
@@ -360,6 +442,16 @@ router.post('/:roomId/messages', async (req, res) => {
       }
     }
 
+    // Calculate disappearing message expiration
+    let expiresAt: Date | null = null;
+    if (room.disappearingTimer === '24h') {
+      expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    } else if (room.disappearingTimer === '7d') {
+      expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    } else if (room.disappearingTimer === '90d') {
+      expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
+    }
+
     const msg = await Message.create({
       room: roomId,
       sender: userId,
@@ -367,6 +459,15 @@ router.post('/:roomId/messages', async (req, res) => {
       attachments: Array.isArray(attachments) ? attachments : [],
       clientMsgId: clientMsgId || null,
       replyTo: replyTo || null,
+      deliveryStatus: 'sent',
+      expiresAt,
+      isVoiceNote: !!isVoiceNote,
+      voiceDuration: typeof voiceDuration === 'number' ? voiceDuration : 0,
+      voiceWaveform: Array.isArray(voiceWaveform) ? voiceWaveform : [],
+      isForwarded: !!isForwarded,
+      forwardedCount: typeof forwardedCount === 'number' ? forwardedCount : 0,
+      location: location && location.latitude != null ? location : undefined,
+      caption: typeof caption === 'string' ? caption.slice(0, 500) : '',
     });
 
     // Touch room updatedAt to bump conversation in list
@@ -393,7 +494,6 @@ router.post('/:roomId/messages', async (req, res) => {
     });
 
     // Notify partner
-    const partnerMember = room.members.find((m) => m.user.toString() !== userId);
     if (partnerMember) {
       const partnerId = partnerMember.user.toString();
       io?.to(`user:${partnerId}`).emit('message:new', {

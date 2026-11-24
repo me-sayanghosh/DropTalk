@@ -21,6 +21,12 @@ export interface NotificationSettings {
 export interface PrivacySettings {
   showOnlineStatus?: boolean;
   showProfilePicture?: boolean;
+  readReceipts?: boolean;
+  lastSeen?: 'everyone' | 'contacts' | 'nobody';
+  online?: 'everyone' | 'same_as_last_seen';
+  profilePhoto?: 'everyone' | 'contacts' | 'nobody';
+  about?: 'everyone' | 'contacts' | 'nobody';
+  disappearingTimer?: 'off' | '24h' | '7d' | '90d';
   blockedUsers?: string[];
 }
 
@@ -80,6 +86,11 @@ export interface Room {
   category?: string;
   slowMode?: number;
   expiresAt?: string;
+  disappearingTimer?: 'off' | '24h' | '7d' | '90d';
+  groupIcon?: string;
+  groupDescription?: string;
+  onlyAdminsCanMessage?: boolean;
+  inviteCode?: string;
   members?: RoomMember[];
   encryptedKeys?: EncryptedKeyEntry[];
   pendingRequests?: PendingRequest[];
@@ -141,6 +152,22 @@ export interface Message {
   mentions?: string[];
   reactions?: Reaction[];
   status?: 'sending' | 'sent' | 'delivered' | 'read' | 'failed' | string;
+  deliveryStatus?: 'sent' | 'delivered' | 'read';
+  deliveredAt?: string;
+  readAt?: string;
+  expiresAt?: string;
+  isVoiceNote?: boolean;
+  voiceDuration?: number;
+  voiceWaveform?: number[];
+  isForwarded?: boolean;
+  forwardedCount?: number;
+  location?: {
+    latitude: number;
+    longitude: number;
+    name?: string;
+    address?: string;
+  };
+  caption?: string;
   createdAt?: string;
   updatedAt?: string;
   encrypted?: boolean;
@@ -204,4 +231,21 @@ export interface DMConversation {
   unreadCount?: number;
   status: 'pending' | 'accepted';
   isInitiator: boolean;
+}
+
+export interface StatusViewer {
+  user: User | string;
+  viewedAt: string;
+}
+
+export interface StatusStory {
+  id: string;
+  _id?: string;
+  user: User;
+  mediaUrl: string;
+  mediaType: 'image' | 'video';
+  caption?: string;
+  viewers?: StatusViewer[];
+  expiresAt: string;
+  createdAt: string;
 }

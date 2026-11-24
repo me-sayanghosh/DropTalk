@@ -23,3 +23,13 @@ export { default as CallLogsMainView } from '../../calls/components/CallLogsMain
 export { default as ChannelMembersPage } from './ChannelMembersPage';
 export { default as AIPanel } from './AIPanel';
 export { default as SuggestionsBar } from './SuggestionsBar';
+export { default as WhatsAppShell } from './WhatsAppShell';
+export { default as WhatsAppHeader } from './WhatsAppHeader';
+export { default as WhatsAppComposer } from './WhatsAppComposer';
+export { default as MessageBubble } from './MessageBubble';
+export { default as MessageStatusTick } from './MessageStatusTick';
+export { default as VoiceNoteBubble } from './VoiceNoteBubble';
+export { default as ChatItemRow } from './ChatItemRow';
+export { default as ContactInfoDrawer } from './ContactInfoDrawer';
+export { default as MediaLightbox } from './MediaLightbox';
+export { default as StatusViewerModal } from './StatusViewerModal';
