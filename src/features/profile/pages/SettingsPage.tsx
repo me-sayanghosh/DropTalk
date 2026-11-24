@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { ShieldCheck, Download, Trash2 } from 'lucide-react';
 import { useAuth } from '../../../shared/context/AuthContext';
 import { useTheme } from '../../../shared/hooks/useTheme';
 import { useNotifications } from '../../notifications/useNotifications';
@@ -1182,7 +1183,7 @@ export default function SettingsPage() {
                 {/* Sub-section: End-to-End Encryption Security Fingerprint */}
                 <div style={{ marginTop: '28px', background: 'var(--card-bg, #111b21)', border: '1px solid var(--border-color, #222d34)', borderRadius: '16px', padding: '18px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-                    <span style={{ fontSize: '20px' }}>🔐</span>
+                    <ShieldCheck size={20} color="#00a884" />
                     <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>End-to-End Encryption Verification</h3>
                   </div>
                   <p style={{ fontSize: '13px', color: 'var(--text-muted, #8696a0)', lineHeight: '1.5', margin: '0 0 12px 0' }}>
@@ -1213,15 +1214,19 @@ export default function SettingsPage() {
                       className="button-secondary-pill"
                       onClick={handleExportData}
                       disabled={isExporting}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                     >
-                      {isExporting ? 'Exporting...' : '📥 Export My Data (JSON)'}
+                      <Download size={14} />
+                      {isExporting ? 'Exporting...' : 'Export My Data (JSON)'}
                     </button>
                     <button
                       type="button"
                       className="button-danger-pill"
                       onClick={() => setShowDeleteModal(true)}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                     >
-                      🗑 Delete Account
+                      <Trash2 size={14} />
+                      Delete Account
                     </button>
                   </div>
 
@@ -1404,8 +1409,8 @@ export default function SettingsPage() {
                     </div>
                     <h3>Help Center</h3>
                     <p>Browse tutorials, FAQs, and guides on workspace setup and E2EE encryption.</p>
-                    <a href="#help-faq" onClick={(e) => { e.preventDefault(); alert('Help Center: Visit https://droptalk.ai/help'); }} className="help-card-link">
-                      Visit Help Center &rarr;
+                    <a href="/privacy" className="help-card-link">
+                      Read Privacy &amp; Security Docs &rarr;
                     </a>
                   </div>
 
@@ -1417,8 +1422,8 @@ export default function SettingsPage() {
                       </svg>
                     </div>
                     <h3>Contact Us</h3>
-                    <p>Need urgent assistance? Reach our support team 24/7 at support@droptalk.ai.</p>
-                    <a href="mailto:support@droptalk.ai" className="help-card-link">Email Support &rarr;</a>
+                    <p>Need assistance? Reach our support team at support@droptalk.app.</p>
+                    <a href="mailto:support@droptalk.app" className="help-card-link">Email Support &rarr;</a>
                   </div>
                 </div>
 

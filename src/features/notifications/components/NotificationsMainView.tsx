@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { MessageSquare, Phone, Bell } from 'lucide-react';
 import { formatCardTime } from '../../../shared/utils/dateUtils';
 
 export function NotificationsMainView({
@@ -58,19 +59,19 @@ export function NotificationsMainView({
       case 'dm':
         return (
           <span className="notif-icon-badge dm">
-            💬
+            <MessageSquare size={14} />
           </span>
         );
       case 'call':
         return (
           <span className="notif-icon-badge call">
-            📞
+            <Phone size={14} />
           </span>
         );
       default:
         return (
           <span className="notif-icon-badge info">
-            📢
+            <Bell size={14} />
           </span>
         );
     }

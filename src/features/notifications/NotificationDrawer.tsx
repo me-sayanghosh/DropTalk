@@ -26,15 +26,15 @@ export default function NotificationDrawer({
   function getTypeBadge(type) {
     switch (type) {
       case 'dm':
-        return <span className="notif-type-pill dm">💬 Direct Message</span>;
+        return <span className="notif-type-pill dm">Direct Message</span>;
       case 'channel':
-        return <span className="notif-type-pill channel">🌐 Channel</span>;
+        return <span className="notif-type-pill channel">Channel</span>;
       case 'mention':
-        return <span className="notif-type-pill mention">🏷️ Mention</span>;
+        return <span className="notif-type-pill mention">Mention</span>;
       case 'reaction':
-        return <span className="notif-type-pill reaction">❤️ Reaction</span>;
+        return <span className="notif-type-pill reaction">Reaction</span>;
       default:
-        return <span className="notif-type-pill system">⚙️ Notification</span>;
+        return <span className="notif-type-pill system">Notification</span>;
     }
   }
 
