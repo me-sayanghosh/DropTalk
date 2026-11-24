@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { MessageSquarePlus } from 'lucide-react';
 import { api } from '../../../shared/utils/api';
 import { Room } from '../../../types';
 
@@ -97,7 +98,7 @@ export const WhatsAppNewChatModal: React.FC<WhatsAppNewChatModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-[var(--wa-border,rgba(255,255,255,0.1))]">
           <div className="flex items-center gap-2">
-            <span className="text-xl">💬</span>
+            <MessageSquarePlus size={18} className="text-[var(--wa-green-primary,#00a884)]" />
             <h3 className="font-bold text-base">New Conversation</h3>
           </div>
           <button onClick={onClose} className="wa-icon-btn text-xs" title="Close">
@@ -277,7 +278,7 @@ export const WhatsAppNewChatModal: React.FC<WhatsAppNewChatModalProps> = ({
                 disabled={creatingGroup || !groupName.trim()}
                 className="w-full py-2.5 rounded-full bg-[var(--wa-green-primary,#00a884)] hover:bg-[var(--wa-green-dark,#008069)] text-white font-bold text-xs shadow-md transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {creatingGroup ? 'Creating Group...' : 'Create WhatsApp Group'}
+                {creatingGroup ? 'Creating Group...' : 'Create Group'}
               </button>
             </div>
           </form>

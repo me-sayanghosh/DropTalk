@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Trash2, Eye, SendHorizontal } from 'lucide-react';
 import { StatusStory } from '../../../types';
 
 interface StatusViewerModalProps {
@@ -174,7 +175,7 @@ export const StatusViewerModal: React.FC<StatusViewerModalProps> = ({
                 className="wa-icon-btn text-red-400 hover:bg-red-500/20"
                 title="Delete update"
               >
-                🗑
+                <Trash2 size={16} />
               </button>
             )}
             <button onClick={onClose} className="wa-icon-btn text-white hover:bg-white/20" title="Close (Esc)">
@@ -235,7 +236,7 @@ export const StatusViewerModal: React.FC<StatusViewerModalProps> = ({
             onClick={() => setShowViewersSheet((v) => !v)}
             className="flex items-center gap-1.5 text-xs text-white/90 bg-white/10 hover:bg-white/20 px-4 py-1.5 rounded-full"
           >
-            <span>👁</span>
+            <Eye size={14} />
             <span>{currentStatus.viewers?.length || 0} views</span>
           </button>
         ) : (
@@ -257,7 +258,7 @@ export const StatusViewerModal: React.FC<StatusViewerModalProps> = ({
               disabled={!replyText.trim()}
               className="w-9 h-9 rounded-full bg-[var(--wa-green-primary)] text-white flex items-center justify-center font-bold disabled:opacity-50"
             >
-              ➤
+              <SendHorizontal size={16} />
             </button>
           </form>
         )}

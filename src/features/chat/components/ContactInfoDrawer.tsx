@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { Clock, Link2, Lock } from 'lucide-react';
 import { Room, User } from '../../../types';
 
 interface ContactInfoDrawerProps {
@@ -89,7 +90,7 @@ export const ContactInfoDrawer: React.FC<ContactInfoDrawerProps> = ({
           <div className="p-3 bg-[var(--wa-panel-header)] rounded-lg">
             <div className="flex items-center justify-between mb-2">
               <span className="font-semibold text-sm text-[var(--wa-text-primary)] flex items-center gap-1.5">
-                <span>⏱</span> Disappearing messages
+                <Clock size={15} /> Disappearing messages
               </span>
               <span className="text-xs text-[var(--wa-green-primary)] font-bold uppercase">
                 {room?.disappearingTimer || 'off'}
@@ -140,7 +141,7 @@ export const ContactInfoDrawer: React.FC<ContactInfoDrawerProps> = ({
             className="w-full p-3 bg-[var(--wa-panel-header)] rounded-lg flex items-center gap-3 text-sm text-[var(--wa-text-primary)] hover:bg-[var(--wa-border)] transition-colors"
           >
             <div className="w-8 h-8 rounded-full bg-[var(--wa-green-primary)] text-white flex items-center justify-center font-bold">
-              🔗
+              <Link2 size={16} />
             </div>
             <span className="font-semibold">Invite to group via link</span>
           </button>
@@ -172,7 +173,7 @@ export const ContactInfoDrawer: React.FC<ContactInfoDrawerProps> = ({
         {/* End-to-End Encryption Security Card */}
         <div className="p-3 bg-[var(--wa-panel-header)] rounded-lg flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-[var(--wa-green-primary)]/15 text-[var(--wa-green-primary)] flex items-center justify-center font-bold flex-shrink-0">
-            🔒
+            <Lock size={15} />
           </div>
           <div className="text-xs text-[var(--wa-text-secondary)] leading-relaxed">
             Messages and calls are end-to-end encrypted. No one outside of this chat, not even DropTalk, can read or listen to them.

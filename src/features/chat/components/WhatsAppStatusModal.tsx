@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
+import { CircleDashed, Eye, Trash2 } from 'lucide-react';
 import { StatusStory, User } from '../../../types';
 import { api } from '../../../shared/utils/api';
 
@@ -95,7 +96,7 @@ export const WhatsAppStatusModal: React.FC<WhatsAppStatusModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-[var(--wa-border,rgba(255,255,255,0.1))]">
           <div className="flex items-center gap-2">
-            <span className="text-xl">⭕</span>
+            <CircleDashed size={18} className="text-[var(--wa-green-primary,#00a884)]" />
             <h3 className="font-bold text-base">Status Updates</h3>
           </div>
           <button onClick={onClose} className="wa-icon-btn text-xs" title="Close">
@@ -174,15 +175,15 @@ export const WhatsAppStatusModal: React.FC<WhatsAppStatusModalProps> = ({
                       {s.caption || (s.mediaType === 'video' ? 'Video update' : 'Photo update')}
                     </span>
                     <div className="flex items-center gap-2">
-                      <span className="text-[0.7rem] text-[var(--wa-text-secondary,#8696a0)]">
-                        👁 {s.viewers?.length || 0}
+                      <span className="text-[0.7rem] text-[var(--wa-text-secondary,#8696a0)] inline-flex items-center gap-1">
+                        <Eye size={12} /> {s.viewers?.length || 0}
                       </span>
                       <button
                         onClick={(e) => handleDeleteStatus(s.id, e)}
-                        className="text-red-400 hover:text-red-300 text-xs px-1"
+                        className="text-red-400 hover:text-red-300 text-xs px-1 inline-flex items-center"
                         title="Delete update"
                       >
-                        🗑
+                        <Trash2 size={13} />
                       </button>
                     </div>
                   </div>
@@ -229,7 +230,7 @@ export const WhatsAppStatusModal: React.FC<WhatsAppStatusModalProps> = ({
                 disabled={isUploading}
                 className="w-full py-2 rounded-lg bg-[var(--wa-green-primary,#00a884)] hover:bg-[var(--wa-green-dark,#008069)] text-white font-bold text-xs shadow transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {isUploading ? 'Posting Status...' : 'Post to WhatsApp Status'}
+                {isUploading ? 'Posting Status...' : 'Post Status'}
               </button>
             </form>
           )}

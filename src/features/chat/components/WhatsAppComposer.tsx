@@ -247,7 +247,7 @@ export const WhatsAppComposer: React.FC<WhatsAppComposerProps> = ({
             onClick={() => imageInputRef.current?.click()}
           >
             <div className="w-8 h-8 rounded-full bg-purple-500 text-white flex items-center justify-center">
-              📷
+              <ImageIcon size={16} />
             </div>
             <span>Photos & Videos</span>
           </div>
@@ -257,7 +257,7 @@ export const WhatsAppComposer: React.FC<WhatsAppComposerProps> = ({
             onClick={() => fileInputRef.current?.click()}
           >
             <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center">
-              📄
+              <FileText size={16} />
             </div>
             <span>Document</span>
           </div>
@@ -267,7 +267,7 @@ export const WhatsAppComposer: React.FC<WhatsAppComposerProps> = ({
             onClick={handleShareLocation}
           >
             <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center">
-              📍
+              <MapPin size={16} />
             </div>
             <span>Location</span>
           </div>

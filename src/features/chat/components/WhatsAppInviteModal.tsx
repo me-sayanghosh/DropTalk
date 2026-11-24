@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { Link2, Copy, RefreshCw, Check } from 'lucide-react';
 import { api } from '../../../shared/utils/api';
 
 interface WhatsAppInviteModalProps {
@@ -58,7 +59,7 @@ export const WhatsAppInviteModal: React.FC<WhatsAppInviteModalProps> = ({
       >
         <div className="flex items-center justify-between pb-4 border-b border-[var(--wa-border,rgba(255,255,255,0.1))]">
           <div className="flex items-center gap-2">
-            <span className="text-xl">🔗</span>
+            <Link2 size={18} className="text-[var(--wa-green-primary,#00a884)]" />
             <h3 className="font-bold text-base">Invite to {roomName}</h3>
           </div>
           <button onClick={onClose} className="wa-icon-btn text-xs" title="Close">
@@ -78,9 +79,9 @@ export const WhatsAppInviteModal: React.FC<WhatsAppInviteModalProps> = ({
             </span>
             <button
               onClick={handleCopy}
-              className="px-3 py-1.5 rounded-lg bg-[var(--wa-green-primary,#00a884)] hover:bg-[var(--wa-green-dark,#008069)] text-white text-xs font-semibold flex-shrink-0 transition-colors"
+              className="px-3 py-1.5 rounded-lg bg-[var(--wa-green-primary,#00a884)] hover:bg-[var(--wa-green-dark,#008069)] text-white text-xs font-semibold flex-shrink-0 transition-colors inline-flex items-center gap-1"
             >
-              {copied ? '✓ Copied' : 'Copy'}
+              {copied ? <><Check size={13} /> Copied</> : 'Copy'}
             </button>
           </div>
 
@@ -92,7 +93,7 @@ export const WhatsAppInviteModal: React.FC<WhatsAppInviteModalProps> = ({
               onClick={handleCopy}
               className="w-full py-2.5 px-4 rounded-xl bg-[var(--wa-panel-header,#111b21)] hover:bg-[var(--wa-border,rgba(255,255,255,0.1))] text-xs font-medium text-left flex items-center gap-3 transition-colors"
             >
-              <span className="text-base">📋</span>
+              <Copy size={15} className="text-[var(--wa-text-secondary,#8696a0)]" />
               <span>Copy link to clipboard</span>
             </button>
 
@@ -101,7 +102,7 @@ export const WhatsAppInviteModal: React.FC<WhatsAppInviteModalProps> = ({
               disabled={revoking}
               className="w-full py-2.5 px-4 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-medium text-left flex items-center gap-3 transition-colors disabled:opacity-50"
             >
-              <span className="text-base">🔄</span>
+              <RefreshCw size={15} />
               <span>{revoking ? 'Resetting...' : 'Revoke link & create new one'}</span>
             </button>
           </div>
