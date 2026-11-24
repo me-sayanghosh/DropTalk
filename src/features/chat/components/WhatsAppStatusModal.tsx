@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { CircleDashed, Eye, Trash2 } from 'lucide-react';
 import { StatusStory, User } from '../../../types';
 import { api } from '../../../shared/utils/api';
@@ -39,8 +39,15 @@ export const WhatsAppStatusModal: React.FC<WhatsAppStatusModalProps> = ({
     (s) => (s.user?.id || (s.user as any)?._id)?.toString() !== myId
   );
 
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
   const handleFileChange = (files: FileList | null) => {
     if (!files || files.length === 0) return;
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
     const file = files[0];
     setSelectedFile(file);
     setPreviewUrl(URL.createObjectURL(file));

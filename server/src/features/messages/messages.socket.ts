@@ -44,7 +44,7 @@ export function registerMessageHandlers(socket, io, { joined }) {
   }, ack) => {
     try {
       const trimmedText = typeof text === 'string' ? text.trim() : '';
-      if (!roomId && !location && (!trimmedText && (!attachments || attachments.length === 0))) {
+      if (!roomId || (!trimmedText && !location && (!attachments || attachments.length === 0))) {
         throw new Error('roomId and message text or attachment required');
       }
 
@@ -53,6 +53,9 @@ export function registerMessageHandlers(socket, io, { joined }) {
 
       const room = await Room.findById(roomId);
       if (!room) throw new Error('room not found');
+
+      const isBanned = (room.bannedUsers || []).some((b) => b.user.toString() === socket.user.id);
+      if (isBanned) throw new Error('you are banned from this room');
 
       if (!joined.has(roomId)) {
         const existingMember = room.members.find((m) => m.user.toString() === socket.user.id);
