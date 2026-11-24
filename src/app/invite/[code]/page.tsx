@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { api } from '../../../shared/utils/api';
 import Link from 'next/link';
+import { AlertTriangle, Lock } from 'lucide-react';
 
 interface GroupPreview {
   id: string;
@@ -83,8 +84,8 @@ export default function InvitePage() {
           </div>
         ) : error ? (
           <div className="py-8 flex flex-col items-center gap-3">
-            <div className="w-16 h-16 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center text-2xl mb-2">
-              ⚠️
+            <div className="w-16 h-16 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center mb-2">
+              <AlertTriangle size={28} />
             </div>
             <h2 className="text-lg font-bold text-[var(--wa-text-primary,#e9edef)]">Link Expired or Invalid</h2>
             <p className="text-xs text-[var(--wa-text-secondary,#8696a0)] max-w-xs">{error}</p>
@@ -152,7 +153,7 @@ export default function InvitePage() {
 
       {/* Security notice */}
       <div className="mt-6 flex items-center gap-1.5 text-xs text-[var(--wa-text-secondary,#8696a0)]">
-        <span>🔒</span>
+        <Lock size={13} />
         <span>End-to-end encrypted group chat</span>
       </div>
     </div>

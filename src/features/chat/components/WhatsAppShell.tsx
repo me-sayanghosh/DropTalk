@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { MessageSquare, Lock } from 'lucide-react';
 import { Room, User, Message, DMConversation, StatusStory } from '../../../types';
 import WhatsAppHeader from './WhatsAppHeader';
 import WhatsAppComposer from './WhatsAppComposer';
@@ -530,15 +531,15 @@ export const WhatsAppShell: React.FC<WhatsAppShellProps> = ({
         ) : (
           /* Empty Chat Splash */
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-[var(--wa-text-secondary)] wa-doodle-bg select-none">
-            <div className="w-16 h-16 rounded-full bg-[var(--wa-panel-bg)] border border-[var(--wa-border)] flex items-center justify-center text-3xl mb-4 shadow-sm">
-              💬
+            <div className="w-16 h-16 rounded-full bg-[var(--wa-panel-bg)] border border-[var(--wa-border)] flex items-center justify-center text-[var(--wa-green-primary)] mb-4 shadow-sm">
+              <MessageSquare size={28} />
             </div>
             <h2 className="text-xl font-bold text-[var(--wa-text-primary)] mb-2">DropTalk for Web</h2>
             <p className="text-xs max-w-sm leading-relaxed mb-6">
               Send and receive messages without keeping your phone online. Use DropTalk on your browser with zero-knowledge encryption.
             </p>
             <div className="flex items-center gap-1.5 text-xs text-[var(--wa-text-secondary)]">
-              <span>🔒</span>
+              <Lock size={13} />
               <span>End-to-end encrypted</span>
             </div>
           </div>

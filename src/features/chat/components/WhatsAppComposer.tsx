@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Image as ImageIcon, FileText, MapPin } from 'lucide-react';
 import useAudioRecorder from '../hooks/useAudioRecorder';
 
 interface WhatsAppComposerProps {

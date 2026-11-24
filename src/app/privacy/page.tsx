@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { Lock } from 'lucide-react';
 
 export default function PrivacyPolicyPage() {
   return (
@@ -44,17 +45,17 @@ export default function PrivacyPolicyPage() {
           </p>
         </div>
 
-        {/* WhatsApp-Style Privacy Guarantee Callout */}
+        {/* Privacy Guarantee Callout */}
         <div className="bg-[#182229] border border-[#00a884]/30 rounded-2xl p-6 mb-12 flex flex-col sm:flex-row items-start gap-4">
-          <div className="w-12 h-12 rounded-xl bg-[#00a884]/20 flex items-center justify-center text-[#00a884] shrink-0 text-2xl font-bold">
-            🔒
+          <div className="w-12 h-12 rounded-xl bg-[#00a884]/20 flex items-center justify-center text-[#00a884] shrink-0">
+            <Lock size={22} />
           </div>
           <div>
             <h3 className="text-lg font-bold text-[#e9edef] mb-1">
               Zero-Knowledge Privacy: We cannot read your personal messages or listen to your calls
             </h3>
             <p className="text-sm text-[#8696a0]">
-              Like WhatsApp, DropTalk is engineered with client-side End-to-End Encryption (E2EE) using native Web Crypto 
+              DropTalk is engineered with client-side End-to-End Encryption (E2EE) using native Web Crypto 
               RSA-OAEP 2048-bit key exchange and AES-GCM 256-bit symmetric encryption. Your messages and call streams are 
               encrypted on your device before they ever touch the network and can only be decrypted by the intended recipient.
             </p>
@@ -110,7 +111,7 @@ export default function PrivacyPolicyPage() {
 
           <section>
             <h2 className="text-2xl font-bold text-[#e9edef] mb-3 flex items-center gap-2">
-              <span className="text-[#00a884]">3.</span> WhatsApp-Parity Privacy Controls
+              <span className="text-[#00a884]">3.</span> Privacy Controls
             </h2>
             <p className="mb-4 text-[#8696a0]">
               You have granular, direct control over your visibility and security settings in DropTalk:

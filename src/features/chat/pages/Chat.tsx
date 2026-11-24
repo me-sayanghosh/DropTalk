@@ -10,7 +10,7 @@ import {
   DMPanel, DMChat, CreateChannelModal, UserProfileCard, ForwardModal, MessageSearchModal,
   PinnedMessagesModal, ChannelSettingsModal, CallOverlay, QuickSwitcherModal, KeyboardShortcutsModal,
   CallLogsPanel, CallLogsMainView, ChannelMembersPage,
-  AIPanel, SuggestionsBar, WhatsAppShell,
+  WhatsAppShell,
 } from '../components';
 import { api } from '../../../shared/utils/api';
 import NotificationDrawer from '../../notifications/NotificationDrawer';
@@ -76,7 +76,6 @@ export default function Chat() {
   const [selectedProfileUser, setSelectedProfileUser] = useState<User | null>(null);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [showPinnedModal, setShowPinnedModal] = useState(false);
-  const [showAIPanel, setShowAIPanel] = useState(false);
   const [showChannelSettingsModal, setShowChannelSettingsModal] = useState(false);
   const [showQuickSwitcher, setShowQuickSwitcher] = useState(false);
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
@@ -612,7 +611,7 @@ export default function Chat() {
                           </svg>
                         </h2>
                         <span className="header-members-hint-pill">
-                          {channelView === 'members' ? '← Chat' : '👥 Members'}
+                          {channelView === 'members' ? 'Back to Chat' : 'Members'}
                         </span>
                       </div>
                       <div className="header-room-meta">
@@ -699,13 +698,6 @@ export default function Chat() {
                         <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
                       </svg>
                     </button>
-                    <button
-                      className="header-icon-btn ai-copilot-btn"
-                      onClick={() => setShowAIPanel(true)}
-                      title="AI Conversation Summary (Gemini)"
-                    >
-                      <span style={{ fontSize: '1.1rem' }}>✨</span>
-                    </button>
                   </div>
                 </>
               ) : (
@@ -780,14 +772,6 @@ export default function Chat() {
 
                       </div>
                       <TypingIndicator typingUsers={typingUsers} />
-                      <SuggestionsBar
-                        roomId={currentRoom.id}
-                        currentInput={currentInput}
-                        onSelectSuggestion={(s) => {
-                          setCurrentInput(s);
-                          send(s);
-                        }}
-                      />
                       <MessageInput
                         value={currentInput}
                         onSend={send}
@@ -821,8 +805,8 @@ export default function Chat() {
                     <span className="shape-square" />
                     <span className="shape-triangle" />
                   </div>
-                  <h3 style={{ marginTop: '0.5rem' }}>LAUNCHING CHANNELS</h3>
-                  <p>CONNECTING TO WORKSPACE // PLEASE WAIT</p>
+                  <h3 style={{ marginTop: '0.5rem' }}>LOADING CHANNELS</h3>
+                  <p>CONNECTING TO WORKSPACE</p>
                 </div>
               ) : (
                 <div className="empty-state">
@@ -913,15 +897,6 @@ export default function Chat() {
             const el = document.getElementById(`msg-${msgId}`);
             if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }}
-        />
-      )}
-
-      {/* AI Copilot Panel */}
-      {showAIPanel && currentRoom && (
-        <AIPanel
-          roomId={currentRoom.id}
-          roomName={currentRoom.name}
-          onClose={() => setShowAIPanel(false)}
         />
       )}
 
