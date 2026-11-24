@@ -200,12 +200,6 @@ function MockChatDemo() {
             )}
             <div className={`bauhaus-msg-box ${msg.mine ? 'b-box-mine' : 'b-box-theirs'}`}>
               <div className="bauhaus-msg-text">{msg.text}</div>
-              {msg.reaction && (
-                <div className="bauhaus-reaction-chip">
-                  <span>{msg.reaction.emoji}</span>
-                  <span className="count">{msg.reaction.count}</span>
-                </div>
-              )}
             </div>
           </motion.div>
         ))}
