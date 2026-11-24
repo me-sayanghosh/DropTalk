@@ -403,11 +403,27 @@ router.get('/users/search', requireAuth, async (req, res) => {
       _id: { $ne: req.user.id },
       $or: [{ username: reg }, { name: reg }, { email: reg }],
     })
-      .select('username name profileImage customStatus createdAt')
+      .select('username name profileImage customStatus privacySettings createdAt')
       .limit(20);
 
+    const requesterId = req.user.id;
+    const sanitizedUsers = users.map((u: any) => {
+      const client = u.toClient();
+      const blockedMe = (u.privacySettings?.blockedUsers || []).some(
+        (id: any) => id.toString() === requesterId
+      );
+      const hideDP = !u.privacySettings?.showProfilePicture || u.privacySettings?.profilePhoto === 'nobody' || blockedMe;
+      const hideAbout = u.privacySettings?.about === 'nobody' || blockedMe;
+
+      return {
+        ...client,
+        profileImage: hideDP ? '' : client.profileImage,
+        customStatus: hideAbout ? { emoji: '', text: '' } : client.customStatus,
+      };
+    });
+
     return res.json({
-      users: users.map((u) => u.toClient()),
+      users: sanitizedUsers,
     });
   } catch (err: any) {
     console.error('[auth] user-search error:', err?.message || err);
@@ -675,17 +691,37 @@ router.get('/export-data', requireAuth, async (req, res) => {
 router.delete('/delete-account', requireAuth, async (req, res) => {
   try {
     const userId = req.user.id;
+    const userObjectId = new mongoose.Types.ObjectId(userId);
     const { Room } = await import('../rooms/room.model');
+    const { Notification } = await import('../notifications/notification.model');
 
-    // Remove user from room memberships & encrypted keys
+    // Delete direct message rooms involving this user first
+    await Room.deleteMany({
+      isDM: true,
+      'members.user': userObjectId,
+    });
+
+    // Remove user from remaining room memberships, encrypted keys & pending requests
     await Room.updateMany(
-      { 'members.user': userId },
+      { 'members.user': userObjectId },
       {
         $pull: {
-          members: { user: userId },
-          encryptedKeys: { user: userId },
+          members: { user: userObjectId },
+          encryptedKeys: { user: userObjectId },
+          pendingRequests: { user: userObjectId },
         },
       }
+    );
+
+    // Clean up notifications for or by this user
+    await Notification.deleteMany({
+      $or: [{ user: userObjectId }, { actor: userObjectId }],
+    });
+
+    // Remove this user's ID from other users' blocked list
+    await User.updateMany(
+      { 'privacySettings.blockedUsers': userObjectId },
+      { $pull: { 'privacySettings.blockedUsers': userObjectId } }
     );
 
     // Delete user OTPs

@@ -8,9 +8,11 @@ process.env.JWT_SECRET = 'test-secret-for-jest';
 import { setupMongo, teardownMongo, randomSuffix } from './setup';
 import { User } from '../src/features/auth/user.model';
 import { Room } from '../src/features/rooms/room.model';
+import { Notification } from '../src/features/notifications/notification.model';
 import authRoutes from '../src/features/auth/auth.routes';
 import dmRoutes from '../src/features/dm/dm.routes';
 import callsRoutes from '../src/features/calls/calls.routes';
+import messagesRoutes from '../src/features/messages/messages.routes';
 import { JWT_SECRET } from '../src/shared/utils/constants';
 
 let app: express.Express;
@@ -66,6 +68,7 @@ beforeAll(async () => {
   app.use('/api/auth', authRoutes);
   app.use('/api/dm', dmRoutes);
   app.use('/api/calls', callsRoutes);
+  app.use('/api/rooms', messagesRoutes);
 
   await new Promise<void>((resolve) => {
     server = app.listen(0, '127.0.0.1', () => {
@@ -226,6 +229,186 @@ describe('WhatsApp Privacy & Security API', () => {
     expect(callRes.body.error).toMatch(/cannot call this user/i);
   });
 
+  test('Call logging with roomId only (without receiverId) still enforces blocking in DM rooms', async () => {
+    const aliceToken = makeToken(alice);
+    const bobToken = makeToken(bob);
+
+    // Create DM room between Alice and Bob
+    const dmRoom = await Room.create({
+      name: `dm-${alice._id}-${bob._id}`,
+      createdBy: alice._id,
+      isDM: true,
+      dmStatus: 'accepted',
+      members: [
+        { user: alice._id, role: 'member' },
+        { user: bob._id, role: 'member' },
+      ],
+    });
+
+    // Alice blocks Bob
+    await request('POST', '/api/auth/block-user', aliceToken, {
+      targetUserId: bob._id.toString(),
+    });
+
+    // Bob logs a call providing only roomId
+    const callRes = await request('POST', '/api/calls/log', bobToken, {
+      roomId: dmRoom._id.toString(),
+      type: 'voice',
+      status: 'completed',
+      durationSeconds: 30,
+    });
+
+    expect(callRes.status).toBe(403);
+    expect(callRes.body.error).toMatch(/cannot call this user/i);
+  });
+
+  test('Blocked user cannot send message in existing DM via POST /api/dm/:roomId/messages (403 forbidden)', async () => {
+    const aliceToken = makeToken(alice);
+    const bobToken = makeToken(bob);
+
+    // Existing accepted DM room
+    const dmRoom = await Room.create({
+      name: `dm-${alice._id}-${bob._id}`,
+      createdBy: alice._id,
+      isDM: true,
+      dmStatus: 'accepted',
+      members: [
+        { user: alice._id, role: 'member' },
+        { user: bob._id, role: 'member' },
+      ],
+    });
+
+    // Alice blocks Bob
+    await request('POST', '/api/auth/block-user', aliceToken, {
+      targetUserId: bob._id.toString(),
+    });
+
+    // Bob attempts to message Alice in the existing DM room
+    const msgRes = await request('POST', `/api/dm/${dmRoom._id}/messages`, bobToken, {
+      text: 'Bypassing block in existing DM room',
+    });
+
+    expect(msgRes.status).toBe(403);
+    expect(msgRes.body.error).toMatch(/cannot message this user/i);
+
+    // Alice also cannot message Bob without unblocking
+    const aliceSendRes = await request('POST', `/api/dm/${dmRoom._id}/messages`, aliceToken, {
+      text: 'Trying to reach Bob while having him blocked',
+    });
+    expect(aliceSendRes.status).toBe(400);
+    expect(aliceSendRes.body.error).toMatch(/have blocked this user/i);
+  });
+
+  test('Blocked user cannot send message via general messages route POST /api/messages/:roomId in DM room', async () => {
+    const aliceToken = makeToken(alice);
+    const bobToken = makeToken(bob);
+
+    const dmRoom = await Room.create({
+      name: `dm-${alice._id}-${bob._id}`,
+      createdBy: alice._id,
+      isDM: true,
+      dmStatus: 'accepted',
+      members: [
+        { user: alice._id, role: 'member' },
+        { user: bob._id, role: 'member' },
+      ],
+    });
+
+    // Alice blocks Bob
+    await request('POST', '/api/auth/block-user', aliceToken, {
+      targetUserId: bob._id.toString(),
+    });
+
+    // Bob calls /api/rooms/:roomId/messages
+    const msgRes = await request('POST', `/api/rooms/${dmRoom._id}/messages`, bobToken, {
+      text: 'Trying /api/rooms/:roomId/messages route in DM',
+    });
+
+    expect(msgRes.status).toBe(403);
+    expect(msgRes.body.error).toMatch(/cannot message this user/i);
+  });
+
+  test('Blocked user cannot accept a pending DM request via POST /api/dm/:roomId/accept', async () => {
+    const aliceToken = makeToken(alice);
+    const bobToken = makeToken(bob);
+
+    const pendingRoom = await Room.create({
+      name: `dm-${alice._id}-${bob._id}`,
+      createdBy: alice._id,
+      isDM: true,
+      dmStatus: 'pending',
+      dmInitiator: alice._id,
+      members: [
+        { user: alice._id, role: 'member' },
+        { user: bob._id, role: 'member' },
+      ],
+    });
+
+    // Alice blocks Bob
+    await request('POST', '/api/auth/block-user', aliceToken, {
+      targetUserId: bob._id.toString(),
+    });
+
+    // Bob tries to accept
+    const acceptRes = await request('POST', `/api/dm/${pendingRoom._id}/accept`, bobToken);
+    expect(acceptRes.status).toBe(403);
+  });
+
+  test('GET /api/auth/users/search sanitizes profilePhoto and customStatus according to privacy settings and blocks', async () => {
+    const aliceToken = makeToken(alice);
+    const bobToken = makeToken(bob);
+
+    alice.profileImage = 'https://droptalk.app/avatar/alice.png';
+    alice.customStatus = { emoji: '🔒', text: 'Top Secret Status' };
+    alice.privacySettings.profilePhoto = 'nobody';
+    alice.privacySettings.about = 'nobody';
+    await alice.save();
+
+    // Bob searches for Alice
+    const res = await request('GET', `/api/auth/users/search?q=${alice.username}`, bobToken);
+    expect(res.status).toBe(200);
+    expect(res.body.users.length).toBe(1);
+    const foundAlice = res.body.users[0];
+    expect(foundAlice.profileImage).toBe('');
+    expect(foundAlice.customStatus.text).toBe('');
+
+    // If Alice resets privacy but blocks Bob:
+    alice.privacySettings.profilePhoto = 'everyone';
+    alice.privacySettings.about = 'everyone';
+    alice.privacySettings.blockedUsers = [bob._id];
+    await alice.save();
+
+    const res2 = await request('GET', `/api/auth/users/search?q=${alice.username}`, bobToken);
+    expect(res2.status).toBe(200);
+    const foundAlice2 = res2.body.users[0];
+    expect(foundAlice2.profileImage).toBe('');
+    expect(foundAlice2.customStatus.text).toBe('');
+  });
+
+  test('GET /api/dm/conversations sanitizes partner profileImage when partner blocked user or has profilePhoto: nobody', async () => {
+    const bobToken = makeToken(bob);
+
+    alice.profileImage = 'https://droptalk.app/avatar/alice.png';
+    alice.privacySettings.blockedUsers = [bob._id];
+    await alice.save();
+
+    await Room.create({
+      name: `dm-${alice._id}-${bob._id}`,
+      createdBy: alice._id,
+      isDM: true,
+      dmStatus: 'accepted',
+      members: [
+        { user: alice._id, role: 'member' },
+        { user: bob._id, role: 'member' },
+      ],
+    });
+
+    const res = await request('GET', '/api/dm/conversations', bobToken);
+    expect(res.status).toBe(200);
+    expect(res.body.conversations.length).toBe(1);
+    expect(res.body.conversations[0].partner.profileImage).toBe('');
+  });
+
   test('GET /api/auth/export-data downloads user GDPR data package', async () => {
     const aliceToken = makeToken(alice);
     const res = await request('GET', '/api/auth/export-data', aliceToken);
@@ -237,14 +420,62 @@ describe('WhatsApp Privacy & Security API', () => {
     expect(res.body.activityMetrics).toBeDefined();
   });
 
-  test('DELETE /api/auth/delete-account permanently deletes account', async () => {
+  test('DELETE /api/auth/delete-account permanently deletes account and cleans up memberships, notifications, and blocks', async () => {
     const aliceToken = makeToken(alice);
+
+    // Alice is in a room and has notifications and is blocked by Bob
+    const room = await Room.create({
+      name: 'general_alice',
+      createdBy: bob._id,
+      members: [
+        { user: alice._id, role: 'member' },
+        { user: bob._id, role: 'owner' },
+      ],
+      encryptedKeys: [{ user: alice._id, key: 'abc', keyId: '1' }],
+    });
+
+    const dmRoom = await Room.create({
+      name: `dm-${alice._id}-${bob._id}`,
+      createdBy: alice._id,
+      isDM: true,
+      members: [
+        { user: alice._id, role: 'member' },
+        { user: bob._id, role: 'member' },
+      ],
+    });
+
+    await Notification.create({
+      user: alice._id,
+      type: 'system',
+      title: 'Welcome Alice',
+    });
+
+    bob.privacySettings.blockedUsers = [alice._id];
+    await bob.save();
+
     const res = await request('DELETE', '/api/auth/delete-account', aliceToken);
 
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
 
-    const check = await User.findById(alice._id);
-    expect(check).toBeNull();
+    const checkUser = await User.findById(alice._id);
+    expect(checkUser).toBeNull();
+
+    // Verify room pulled alice
+    const updatedRoom = await Room.findById(room._id);
+    expect(updatedRoom?.members.some((m) => m.user.toString() === alice._id.toString())).toBe(false);
+    expect(updatedRoom?.encryptedKeys.some((k) => k.user.toString() === alice._id.toString())).toBe(false);
+
+    // Verify DM room deleted
+    const updatedDmRoom = await Room.findById(dmRoom._id);
+    expect(updatedDmRoom).toBeNull();
+
+    // Verify notifications deleted
+    const notifs = await Notification.find({ user: alice._id });
+    expect(notifs.length).toBe(0);
+
+    // Verify pulled from bob's blocked users
+    const updatedBob = await User.findById(bob._id);
+    expect(updatedBob?.privacySettings.blockedUsers.some((id: any) => id.toString() === alice._id.toString())).toBe(false);
   });
 });

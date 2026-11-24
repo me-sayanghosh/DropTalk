@@ -149,6 +149,17 @@ router.get('/conversations', async (req, res) => {
           ? await User.findById(partnerMember.user).lean()
           : null;
 
+        let partnerProfileImage = partner?.profileImage || '';
+        if (partner) {
+          const partnerBlockedMe = (partner.privacySettings?.blockedUsers || []).some(
+            (id: any) => id.toString() === userId
+          );
+          const hideDP = !partner.privacySettings?.showProfilePicture || partner.privacySettings?.profilePhoto === 'nobody' || partnerBlockedMe;
+          if (hideDP) {
+            partnerProfileImage = '';
+          }
+        }
+
         const lastMsg = await Message.findOne({ room: room._id })
           .sort({ createdAt: -1 })
           .lean();
@@ -160,7 +171,7 @@ router.get('/conversations', async (req, res) => {
                 id: partner._id.toString(),
                 username: partner.username,
                 name: partner.name || '',
-                profileImage: partner.profileImage || '',
+                profileImage: partnerProfileImage,
               }
             : null,
           lastMessage: lastMsg
@@ -199,6 +210,27 @@ router.post('/:roomId/accept', async (req, res) => {
     // Only the non-initiator can accept
     if (room.dmInitiator?.toString() === userId) {
       return res.status(403).json({ error: 'Initiator cannot accept their own request' });
+    }
+
+    const partnerMember = (room.members || []).find((m) => m.user.toString() !== userId);
+    if (partnerMember) {
+      const partnerId = partnerMember.user.toString();
+      const [currentUser, partnerUser] = await Promise.all([
+        User.findById(userId),
+        User.findById(partnerId),
+      ]);
+      const blockedByPartner = (partnerUser?.privacySettings?.blockedUsers || []).some(
+        (id: any) => id.toString() === userId
+      );
+      if (blockedByPartner) {
+        return res.status(403).json({ error: 'You cannot accept requests from this user' });
+      }
+      const blockedPartner = (currentUser?.privacySettings?.blockedUsers || []).some(
+        (id: any) => id.toString() === partnerId
+      );
+      if (blockedPartner) {
+        return res.status(400).json({ error: 'You have blocked this user. Unblock to accept request.' });
+      }
     }
 
     room.dmStatus = 'accepted';
@@ -349,6 +381,27 @@ router.post('/:roomId/messages', async (req, res) => {
     });
     if (!room) return res.status(404).json({ error: 'DM not found' });
 
+    const partnerMember = (room.members || []).find((m) => m.user.toString() !== userId);
+    if (partnerMember) {
+      const partnerId = partnerMember.user.toString();
+      const [senderUser, recipientUser] = await Promise.all([
+        User.findById(userId),
+        User.findById(partnerId),
+      ]);
+      const toUserBlockedFrom = (recipientUser?.privacySettings?.blockedUsers || []).some(
+        (id: any) => id.toString() === userId
+      );
+      if (toUserBlockedFrom) {
+        return res.status(403).json({ error: 'You cannot message this user' });
+      }
+      const fromUserBlockedTo = (senderUser?.privacySettings?.blockedUsers || []).some(
+        (id: any) => id.toString() === partnerId
+      );
+      if (fromUserBlockedTo) {
+        return res.status(400).json({ error: 'You have blocked this user. Unblock to send a message.' });
+      }
+    }
+
     if (room.dmStatus === 'pending') {
       if (room.dmInitiator?.toString() !== userId) {
         return res.status(403).json({ error: 'DM request is pending acceptance' });
@@ -410,7 +463,6 @@ router.post('/:roomId/messages', async (req, res) => {
     });
 
     // Notify partner
-    const partnerMember = room.members.find((m) => m.user.toString() !== userId);
     if (partnerMember) {
       const partnerId = partnerMember.user.toString();
       io?.to(`user:${partnerId}`).emit('message:new', {

@@ -69,13 +69,36 @@ export function registerMessageHandlers(socket, io, { joined }) {
         slowModeMap.set(slowKey, now);
       }
 
-      if (room.isDM && room.dmStatus === 'pending') {
-        if (room.dmInitiator?.toString() !== socket.user.id) {
-          throw new Error('DM request is pending acceptance');
+      if (room.isDM) {
+        const partnerMember = (room.members || []).find((m) => m.user?.toString() !== socket.user.id);
+        if (partnerMember) {
+          const partnerId = partnerMember.user.toString();
+          const [senderUser, recipientUser] = await Promise.all([
+            User.findById(socket.user.id),
+            User.findById(partnerId),
+          ]);
+          const toUserBlockedFrom = (recipientUser?.privacySettings?.blockedUsers || []).some(
+            (id: any) => id.toString() === socket.user.id
+          );
+          if (toUserBlockedFrom) {
+            throw new Error('You cannot message this user');
+          }
+          const fromUserBlockedTo = (senderUser?.privacySettings?.blockedUsers || []).some(
+            (id: any) => id.toString() === partnerId
+          );
+          if (fromUserBlockedTo) {
+            throw new Error('You have blocked this user. Unblock to send a message.');
+          }
         }
-        const existingCount = await Message.countDocuments({ room: roomId });
-        if (existingCount > 0) {
-          throw new Error('Wait for the recipient to accept your DM request');
+
+        if (room.dmStatus === 'pending') {
+          if (room.dmInitiator?.toString() !== socket.user.id) {
+            throw new Error('DM request is pending acceptance');
+          }
+          const existingCount = await Message.countDocuments({ room: roomId });
+          if (existingCount > 0) {
+            throw new Error('Wait for the recipient to accept your DM request');
+          }
         }
       }
 

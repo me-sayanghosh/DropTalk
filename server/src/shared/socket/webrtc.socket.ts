@@ -7,9 +7,25 @@ export function registerWebRTCHandlers(socket, io) {
     try {
       if (!targetUserId && !roomId) throw new Error('targetUserId or roomId required');
 
-      if (targetUserId) {
+      let effectiveTargetUserId = targetUserId;
+      if (!effectiveTargetUserId && roomId) {
+        const { Room } = await import('../../features/rooms/room.model');
+        const room = await Room.findById(roomId);
+        if (room?.isDM) {
+          const partner = room.members.find((m) => m.user.toString() !== socket.user.id);
+          if (partner) {
+            effectiveTargetUserId = partner.user.toString();
+          }
+        }
+      }
+
+      if (effectiveTargetUserId) {
         const { User } = await import('../../features/auth/user.model');
-        const targetUser = await User.findById(targetUserId);
+        const [targetUser, callerUser] = await Promise.all([
+          User.findById(effectiveTargetUserId),
+          User.findById(socket.user.id),
+        ]);
+
         if (
           targetUser &&
           (targetUser.privacySettings?.blockedUsers || []).some(
@@ -17,6 +33,15 @@ export function registerWebRTCHandlers(socket, io) {
           )
         ) {
           return ack?.({ ok: false, error: 'User is unavailable' });
+        }
+
+        if (
+          callerUser &&
+          (callerUser.privacySettings?.blockedUsers || []).some(
+            (id: any) => id.toString() === effectiveTargetUserId
+          )
+        ) {
+          return ack?.({ ok: false, error: 'You have blocked this user' });
         }
       }
 
@@ -35,14 +60,50 @@ export function registerWebRTCHandlers(socket, io) {
       }
 
       ack?.({ ok: true });
-    } catch (err) {
+    } catch (err: any) {
       ack?.({ ok: false, error: err.message });
     }
   });
 
   // Accept incoming call
-  socket.on('webrtc:call-accept', ({ toUserId, roomId }, ack) => {
+  socket.on('webrtc:call-accept', async ({ toUserId, roomId }, ack) => {
     try {
+      let effectiveToUserId = toUserId;
+      if (!effectiveToUserId && roomId) {
+        const { Room } = await import('../../features/rooms/room.model');
+        const room = await Room.findById(roomId);
+        if (room?.isDM) {
+          const partner = room.members.find((m) => m.user.toString() !== socket.user.id);
+          if (partner) {
+            effectiveToUserId = partner.user.toString();
+          }
+        }
+      }
+
+      if (effectiveToUserId) {
+        const { User } = await import('../../features/auth/user.model');
+        const [toUser, currentUser] = await Promise.all([
+          User.findById(effectiveToUserId),
+          User.findById(socket.user.id),
+        ]);
+        if (
+          toUser &&
+          (toUser.privacySettings?.blockedUsers || []).some(
+            (id: any) => id.toString() === socket.user.id
+          )
+        ) {
+          return ack?.({ ok: false, error: 'User is unavailable' });
+        }
+        if (
+          currentUser &&
+          (currentUser.privacySettings?.blockedUsers || []).some(
+            (id: any) => id.toString() === effectiveToUserId
+          )
+        ) {
+          return ack?.({ ok: false, error: 'You have blocked this user' });
+        }
+      }
+
       const payload = {
         acceptedBy: socket.user.id,
         acceptedUsername: socket.user.username,
@@ -56,7 +117,7 @@ export function registerWebRTCHandlers(socket, io) {
       }
 
       ack?.({ ok: true });
-    } catch (err) {
+    } catch (err: any) {
       ack?.({ ok: false, error: err.message });
     }
   });

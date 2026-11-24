@@ -73,9 +73,21 @@ router.post('/log', async (req, res) => {
       return res.status(400).json({ error: 'Valid receiverId or roomId is required' });
     }
 
-    if (validReceiver) {
+    let effectiveReceiverId = validReceiver;
+    if (!effectiveReceiverId && validRoom) {
+      const { Room } = await import('../rooms/room.model');
+      const room = await Room.findById(validRoom);
+      if (room?.isDM) {
+        const partner = (room.members || []).find((m) => m.user.toString() !== callerId);
+        if (partner) {
+          effectiveReceiverId = partner.user.toString();
+        }
+      }
+    }
+
+    if (effectiveReceiverId) {
       const { User } = await import('../auth/user.model');
-      const receiverUser = await User.findById(validReceiver);
+      const receiverUser = await User.findById(effectiveReceiverId);
       const callerUser = await User.findById(callerId);
       if (
         receiverUser &&
@@ -85,7 +97,7 @@ router.post('/log', async (req, res) => {
       }
       if (
         callerUser &&
-        (callerUser.privacySettings?.blockedUsers || []).some((id: any) => id.toString() === validReceiver)
+        (callerUser.privacySettings?.blockedUsers || []).some((id: any) => id.toString() === effectiveReceiverId)
       ) {
         return res.status(400).json({ error: 'You have blocked this user' });
       }

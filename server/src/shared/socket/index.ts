@@ -53,6 +53,7 @@ export function attachSocket(httpServer) {
         name: user.name || user.username,
         profileImage: user.profileImage || '',
         publicKeyJwk: socket.handshake.auth?.publicKeyJwk || null,
+        privacySettings: user.privacySettings || {},
       };
       next();
     } catch (err) {
@@ -69,7 +70,15 @@ export function attachSocket(httpServer) {
     setPresence(socket.user.id, { status: 'online', currentRoom: null }).catch(() => {});
     incrementPresence(socket.user.id, socket.id).catch(() => {});
     const heartbeatInterval = startHeartbeat(socket.user.id, socket.id);
-    io.emit('presence:update', { userId: socket.user.id, status: 'online', currentRoom: null });
+
+    const showOnline = socket.user.privacySettings?.showOnlineStatus !== false;
+    const onlineRule = socket.user.privacySettings?.online || 'everyone';
+    const lastSeenRule = socket.user.privacySettings?.lastSeen || 'everyone';
+    const isOnlineHidden = !showOnline || (onlineRule === 'same_as_last_seen' && lastSeenRule === 'nobody');
+
+    if (!isOnlineHidden) {
+      io.emit('presence:update', { userId: socket.user.id, status: 'online', currentRoom: null });
+    }
 
     registerRoomHandlers(socket, io, { joined });
     registerMessageHandlers(socket, io, { joined });
@@ -85,7 +94,9 @@ export function attachSocket(httpServer) {
         }
         const remaining = await decrementPresence(socket.user.id, socket.id).catch(() => 0);
         if (remaining === 0) {
-          io.emit('presence:update', { userId: socket.user.id, status: 'offline', currentRoom: null });
+          if (!isOnlineHidden) {
+            io.emit('presence:update', { userId: socket.user.id, status: 'offline', currentRoom: null });
+          }
         } else {
           clearUserCurrentRoom(socket.user.id).catch(() => {});
         }
