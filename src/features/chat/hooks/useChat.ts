@@ -276,6 +276,10 @@ export default function useChat() {
         showDesktopNotification(username ? `@${username}` : 'New message', {
           body: message.text || 'Sent an attachment',
         });
+        // Acknowledge receipt to server -> marks delivered (double grey tick)
+        if (message.id) {
+          socket.emit('message:ack-received', { roomId, messageId: message.id });
+        }
       }
 
       // Update lastMessage preview for room card
@@ -296,6 +300,10 @@ export default function useChat() {
       );
 
       if (roomId === currentRoomRef.current) {
+        if (!isMine && message.id) {
+          // Immediately mark read if currently in this room
+          socket.emit('message:read', { roomId, lastReadMessageId: message.id });
+        }
         if (message.parentMessage) {
           const parentId = typeof message.parentMessage === 'string' ? message.parentMessage : message.parentMessage.id;
           setThreadCounts((prev) => ({
@@ -430,11 +438,36 @@ export default function useChat() {
       }
     });
 
+    socket.on('message:delivered', ({ roomId, messageId }: any) => {
+      if (roomId === currentRoomRef.current) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === messageId || (m as any)._id === messageId
+              ? { ...m, deliveryStatus: 'delivered', status: 'delivered' }
+              : m
+          )
+        );
+      }
+    });
+
     socket.on('message:read', ({ roomId, userId, lastReadMessageId }: any) => {
       if (roomId === currentRoomRef.current) {
         setReadReceipts((prev) => ({ ...prev, [userId]: lastReadMessageId }));
         if (userId === userRef.current?.id) {
           setLastSeenMessage(roomId, lastReadMessageId);
+        } else {
+          // Peer read our outgoing messages up to lastReadMessageId
+          setMessages((prev) =>
+            prev.map((m) => {
+              const isMine =
+                (m as any).senderId === userRef.current?.id ||
+                (typeof m.sender === 'object' ? m.sender?.id : m.sender) === userRef.current?.id;
+              if (isMine) {
+                return { ...m, deliveryStatus: 'read', status: 'read' };
+              }
+              return m;
+            })
+          );
         }
       }
     });
@@ -504,6 +537,7 @@ export default function useChat() {
       socket.off('room:kicked');
       socket.off('user:typing');
       socket.off('user:stopped-typing');
+      socket.off('message:delivered');
       socket.off('message:read');
       socket.off('presence:update');
       socket.off('room:key-receive');
@@ -1036,20 +1070,24 @@ export default function useChat() {
       roomName: currentRoom?.name || 'chat',
     };
 
+    const nextForwardCount = ((message as any).forwardedCount || 0) + 1;
+
     if (target.type === 'channel') {
       socket.emit('message:send', {
         roomId: target.id,
         text: message.text || '',
         attachments: message.attachments || [],
+        isForwarded: true,
+        forwardedCount: nextForwardCount,
         forwardedFrom,
       });
     } else {
       await api.post('/dm/send', {
         toUserId: target.id,
-        text: message.text
-          ? `[Forwarded from @${forwardedFrom.senderUsername}]: ${message.text}`
-          : `[Forwarded attachment from @${forwardedFrom.senderUsername}]`,
+        text: message.text || '',
         attachments: message.attachments || [],
+        isForwarded: true,
+        forwardedCount: nextForwardCount,
       });
     }
   }

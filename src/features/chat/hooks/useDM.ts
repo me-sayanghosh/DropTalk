@@ -90,7 +90,13 @@ export default function useDM() {
       socket?.emit('room:join', { roomId: roomIdStr });
 
       // Fetch fresh messages
-      await fetchDMMessages(roomIdStr);
+      const msgs = await fetchDMMessages(roomIdStr);
+      if (msgs && msgs.length > 0) {
+        const lastMsg = msgs[msgs.length - 1];
+        if (lastMsg?.id) {
+          socket?.emit('message:read', { roomId: roomIdStr, lastReadMessageId: lastMsg.id });
+        }
+      }
     },
     [fetchDMMessages]
   );
@@ -252,18 +258,27 @@ export default function useDM() {
     function onMessageNew({ roomId, message }: { roomId: string; message: Message }) {
       const activeDmId = (currentDM?.id || (currentDM as any)?._id)?.toString();
       const targetRoomId = roomId?.toString();
+      const senderId = (message as any).senderId || (typeof message.sender === 'object' ? (message.sender as any)?.id : message.sender);
+      const isMine = senderId === user?.id;
+
+      if (!isMine && message.id) {
+        socket.emit('message:ack-received', { roomId: targetRoomId, messageId: message.id });
+      }
 
       // Update conversation list preview
       setConversations((prev) =>
         prev.map((c) =>
           (c.id?.toString() === targetRoomId || c._id?.toString() === targetRoomId)
-            ? { ...c, lastMessage: { text: message.text, createdAt: message.createdAt } }
+            ? { ...c, lastMessage: { text: message.text, createdAt: message.createdAt, deliveryStatus: message.deliveryStatus || 'sent' } }
             : c
         )
       );
 
       // If viewing this DM, append or replace message dynamically
       if (activeDmId && targetRoomId === activeDmId) {
+        if (!isMine && message.id) {
+          socket.emit('message:read', { roomId: targetRoomId, lastReadMessageId: message.id });
+        }
         setDmMessages((prev) => {
           if (message.clientMsgId && prev.some((m) => m.clientMsgId === message.clientMsgId)) {
             return prev.map((m) => (m.clientMsgId === message.clientMsgId ? message : m));
@@ -272,6 +287,36 @@ export default function useDM() {
           return [...prev, message];
         });
         cacheManager.appendRoomMessage(targetRoomId, message);
+      }
+    }
+
+    function onMessageDelivered({ roomId, messageId }: any) {
+      const activeDmId = (currentDM?.id || (currentDM as any)?._id)?.toString();
+      if (activeDmId && roomId?.toString() === activeDmId) {
+        setDmMessages((prev) =>
+          prev.map((m) =>
+            m.id === messageId || (m as any)._id === messageId
+              ? { ...m, deliveryStatus: 'delivered', status: 'delivered' }
+              : m
+          )
+        );
+      }
+    }
+
+    function onMessageRead({ roomId, userId, lastReadMessageId }: any) {
+      const activeDmId = (currentDM?.id || (currentDM as any)?._id)?.toString();
+      if (activeDmId && roomId?.toString() === activeDmId && userId !== user?.id) {
+        setDmMessages((prev) =>
+          prev.map((m) => {
+            const isMine =
+              (m as any).senderId === user?.id ||
+              (typeof m.sender === 'object' ? (m.sender as any)?.id : m.sender) === user?.id;
+            if (isMine) {
+              return { ...m, deliveryStatus: 'read', status: 'read' };
+            }
+            return m;
+          })
+        );
       }
     }
 
@@ -341,6 +386,8 @@ export default function useDM() {
     }
 
     socket.on('message:new', onMessageNew);
+    socket.on('message:delivered', onMessageDelivered);
+    socket.on('message:read', onMessageRead);
     socket.on('message:edited', onMessageEdited);
     socket.on('message:deleted', onMessageDeleted);
     socket.on('message:deleted-for-me', onMessageDeletedForMe);
@@ -351,6 +398,8 @@ export default function useDM() {
 
     return () => {
       socket.off('message:new', onMessageNew);
+      socket.off('message:delivered', onMessageDelivered);
+      socket.off('message:read', onMessageRead);
       socket.off('message:edited', onMessageEdited);
       socket.off('message:deleted', onMessageDeleted);
       socket.off('message:deleted-for-me', onMessageDeletedForMe);
