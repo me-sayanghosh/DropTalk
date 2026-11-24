@@ -100,6 +100,7 @@ export default function Chat() {
   const [channelView, setChannelView] = useState<'chat' | 'members'>('chat');
   const [dmRequestToast, setDmRequestToast] = useState<string | null>(null);
   const [mobileActiveView, setMobileActiveView] = useState<'sidebar' | 'chat'>(getInitialMobileView);
+  const [layoutMode, setLayoutMode] = useState<'whatsapp' | 'classic'>('whatsapp');
 
   // Reset channel view to chat whenever room changes
   useEffect(() => {
