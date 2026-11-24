@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { Users, Search, Crown, Shield } from 'lucide-react';
 import { api } from '../../../shared/utils';
 import PendingRequests from './PendingRequests';
 import { Room, RoomMember, User } from '../../../types';
@@ -145,7 +146,7 @@ export default function ChannelMembersPage({
         {/* Quick Stats Badges */}
         <div className="cmp-stats-row">
           <div className="cmp-stat-badge cmp-stat-total">
-            <span className="cmp-stat-icon">👥</span>
+            <span className="cmp-stat-icon" style={{ display: 'inline-flex', alignItems: 'center' }}><Users size={15} /></span>
             <span className="cmp-stat-num">{members.length}</span>
             <span className="cmp-stat-label">Total</span>
           </div>
@@ -222,7 +223,7 @@ export default function ChannelMembersPage({
       <div className="cmp-content-area">
         {filteredMembers.length === 0 ? (
           <div className="cmp-empty-state">
-            <div className="cmp-empty-icon">🔍</div>
+            <div className="cmp-empty-icon" style={{ display: 'flex', justifyContent: 'center' }}><Search size={28} /></div>
             <h3>No members found</h3>
             <p>No channel members matched your search "{searchQuery}".</p>
           </div>
@@ -289,9 +290,12 @@ export default function ChannelMembersPage({
                           backgroundColor: roleTheme.bg,
                           color: roleTheme.text,
                           borderColor: roleTheme.border,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
                         }}
                       >
-                        {m.role === 'owner' ? '★ OWNER' : m.role === 'moderator' ? '🛡 MODERATOR' : 'MEMBER'}
+                        {m.role === 'owner' ? <><Crown size={11} /> OWNER</> : m.role === 'moderator' ? <><Shield size={11} /> MODERATOR</> : 'MEMBER'}
                       </span>
 
                       {m.muted && <span className="cmp-muted-badge">MUTED</span>}

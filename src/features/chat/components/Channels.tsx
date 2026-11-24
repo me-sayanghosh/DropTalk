@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Pin, Heart, BellOff } from 'lucide-react';
 import { formatBadgeCount, formatCardTime } from '../../../shared/utils/dateUtils';
 import { ChannelSkeleton } from '../../../shared/components/ui/SkeletonLoaders';
 
@@ -170,11 +171,11 @@ export default function Channels({
 
     let cat;
     if (isArchived) {
-      cat = '📥 Archived';
+      cat = 'Archived';
     } else if (isPinned) {
-      cat = '📌 Pinned';
+      cat = 'Pinned';
     } else if (isFav) {
-      cat = '❤️ Favourites';
+      cat = 'Favourites';
     } else {
       cat = customRoomCategories[r.id] || r.category || 'General';
     }
@@ -228,10 +229,10 @@ export default function Channels({
               {hasMention && !isActive && <span className="conv-mention-dot">@</span>}
               {room.name}
               {(isPinned || isFav || isMuted) && (
-                <span className="channel-status-badges">
-                  {isPinned && <span title="Pinned">📌</span>}
-                  {isFav && <span title="Favourite">❤️</span>}
-                  {isMuted && <span title="Muted">🔕</span>}
+                <span className="channel-status-badges" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  {isPinned && <span title="Pinned" style={{ display: 'inline-flex' }}><Pin size={12} /></span>}
+                  {isFav && <span title="Favourite" style={{ display: 'inline-flex' }}><Heart size={12} /></span>}
+                  {isMuted && <span title="Muted" style={{ display: 'inline-flex' }}><BellOff size={12} /></span>}
                 </span>
               )}
             </span>
