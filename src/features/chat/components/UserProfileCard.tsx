@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Lock, MessageSquare } from 'lucide-react';
 
 export default function UserProfileCard({
   user,
@@ -49,7 +50,9 @@ export default function UserProfileCard({
           {/* Custom Status Chip */}
           {user.customStatus?.text && (
             <div className="user-card-custom-status">
-              <span className="status-emoji">{user.customStatus.emoji || '💬'}</span>
+              <span className="status-emoji" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                {user.customStatus.emoji || <MessageSquare size={13} />}
+              </span>
               <span className="status-text">{user.customStatus.text}</span>
             </div>
           )}
@@ -59,7 +62,9 @@ export default function UserProfileCard({
               <span className={`dot ${isOnline ? 'online' : 'offline'}`} />
               {isOnline ? 'Active Now' : 'Offline'}
             </span>
-            <span className="meta-badge e2ee">E2EE Ready 🔒</span>
+            <span className="meta-badge e2ee" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <Lock size={12} /> E2EE Ready
+            </span>
           </div>
 
           {/* Action buttons */}

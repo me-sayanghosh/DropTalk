@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { Timer } from 'lucide-react';
 
 interface WhatsAppHeaderProps {
   title: string;
@@ -93,8 +94,8 @@ export const WhatsAppHeader: React.FC<WhatsAppHeaderProps> = ({
           <div className="flex items-center gap-1.5">
             <span className="wa-header-title">{title}</span>
             {hasDisappearingTimer && (
-              <span title="Disappearing messages active" className="text-xs">
-                ⏱
+              <span title="Disappearing messages active" className="text-[var(--wa-text-secondary)] inline-flex items-center">
+                <Timer size={13} />
               </span>
             )}
           </div>

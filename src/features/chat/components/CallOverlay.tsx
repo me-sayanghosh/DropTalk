@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Video, Phone, Clock } from 'lucide-react';
 
 export default function CallOverlay({
   callState,
@@ -146,8 +147,8 @@ export default function CallOverlay({
             )}
             <div className="outgoing-pulse-ring" />
           </div>
-          <div className="call-type-indicator-badge">
-            {callerInfo?.isVideo ? '📹 Video Call' : '📞 Voice Call'}
+          <div className="call-type-indicator-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            {callerInfo?.isVideo ? <><Video size={14} /> Video Call</> : <><Phone size={14} /> Voice Call</>}
           </div>
           <h4>Calling {callerInfo?.fromUsername || 'User'}...</h4>
           <p className="call-status-subtitle">Ringing & establishing connection...</p>
@@ -240,7 +241,7 @@ export default function CallOverlay({
                 <span className="call-hd-tag">HD 1080p</span>
               </div>
               <div className="call-timer-badge">
-                <span className="timer-icon">⏱</span>
+                <span className="timer-icon" style={{ display: 'inline-flex', alignItems: 'center' }}><Clock size={13} /></span>
                 <span>{formatTime(callDuration)}</span>
               </div>
             </div>

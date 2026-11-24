@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { Clock, Film, Music, FileText } from 'lucide-react';
 import { api, getMediaUrl } from '../../../shared/utils';
 
 export default function MessageInput({
@@ -303,8 +304,8 @@ export default function MessageInput({
 
       {/* Slow Mode Indicator */}
       {coolDown > 0 && (
-        <div className="slowmode-active-bar">
-          ⏳ Slow mode active: please wait <strong>{coolDown}s</strong> before sending another message.
+        <div className="slowmode-active-bar" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <Clock size={14} /> Slow mode active: please wait <strong>{coolDown}s</strong> before sending another message.
         </div>
       )}
 
@@ -349,7 +350,7 @@ export default function MessageInput({
                 <img src={getMediaUrl(att.url)} alt={att.filename} className="att-thumb" />
               ) : (
                 <div className="att-file-icon">
-                  {att.fileType === 'video' ? '🎬' : att.fileType === 'audio' ? '🎵' : '📄'}
+                  {att.fileType === 'video' ? <Film size={16} /> : att.fileType === 'audio' ? <Music size={16} /> : <FileText size={16} />}
                 </div>
               )}
               <div className="att-info">

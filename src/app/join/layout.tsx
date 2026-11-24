@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'Join DropTalk — Encrypted Team Chat Workspace',
-    description: 'Sign up or log in to DropTalk to join secure constructivist channels and encrypted rooms.',
+    description: 'Sign up or log in to DropTalk to join encrypted channels and direct chats.',
     url: 'https://drop-talk.vercel.app/join',
   },
 };

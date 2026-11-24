@@ -46,6 +46,13 @@ statusRouter.get('/feed', requireAuth, async (req: Request, res: Response) => {
     const currentUser = await User.findById(currentUserId);
     const blockedList = (currentUser?.privacySettings?.blockedUsers || []).map((id: any) => id.toString());
 
+    // Bidirectional blocking: find users who have blocked current user
+    const usersWhoBlockedMe = await User.find({
+      'privacySettings.blockedUsers': currentUserId,
+    }).select('_id');
+    const blockedByOthersList = usersWhoBlockedMe.map((u) => u._id.toString());
+    const allBlockedIds = new Set([...blockedList, ...blockedByOthersList]);
+
     const activeStatuses = await Status.find({
       expiresAt: { $gt: new Date() },
     })
@@ -56,7 +63,7 @@ statusRouter.get('/feed', requireAuth, async (req: Request, res: Response) => {
     // Filter out statuses from blocked users or users who blocked current user
     const filtered = activeStatuses.filter((s: any) => {
       const userId = s.user?._id?.toString() || s.user?.toString();
-      return !blockedList.includes(userId);
+      return !allBlockedIds.has(userId);
     });
 
     return res.json({
@@ -73,6 +80,27 @@ statusRouter.post('/:id/view', requireAuth, async (req: Request, res: Response) 
     const status = await Status.findById(req.params.id);
     if (!status) {
       return res.status(404).json({ error: 'Status not found' });
+    }
+
+    const statusAuthorId = (status.user?._id || status.user).toString();
+
+    // Bidirectional blocking check: cannot view status if either user blocked the other
+    if (statusAuthorId !== currentUserId.toString()) {
+      const [authorUser, currentUser] = await Promise.all([
+        User.findById(statusAuthorId).select('privacySettings'),
+        User.findById(currentUserId).select('privacySettings'),
+      ]);
+
+      const authorBlockedMe = (authorUser?.privacySettings?.blockedUsers || []).some(
+        (id: any) => id.toString() === currentUserId.toString()
+      );
+      const meBlockedAuthor = (currentUser?.privacySettings?.blockedUsers || []).some(
+        (id: any) => id.toString() === statusAuthorId
+      );
+
+      if (authorBlockedMe || meBlockedAuthor) {
+        return res.status(403).json({ error: 'Cannot view status of blocked user' });
+      }
     }
 
     const alreadyViewed = status.viewers.some(

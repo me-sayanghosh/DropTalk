@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { FileText, Image as ImageIcon } from 'lucide-react';
 import { formatDateSeparator } from '../../../shared/utils/dateUtils';
 import { getMediaUrl, getSocket } from '../../../shared/utils';
 import { api } from '../../../shared/utils/api';
@@ -329,8 +330,8 @@ export default function DMChat({ room, messages, userId, onAccept, onRemove, onS
                           return att.fileType === 'image' ? (
                             <img key={attKey} src={fullUrl} alt={att.filename || 'attachment'} className="dm-att-img" />
                           ) : (
-                            <a key={attKey} href={fullUrl} download={att.filename} target="_blank" rel="noopener noreferrer" className="dm-att-doc">
-                              📄 {att.filename}
+                            <a key={attKey} href={fullUrl} download={att.filename} target="_blank" rel="noopener noreferrer" className="dm-att-doc" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                              <FileText size={14} /> {att.filename}
                             </a>
                           );
                         })}
@@ -379,7 +380,9 @@ export default function DMChat({ room, messages, userId, onAccept, onRemove, onS
             <div className="dm-attachments-preview">
               {attachments.map((att, i) => (
                 <div key={i} className="dm-att-chip">
-                  <span>{att.fileType === 'image' ? '🖼️' : '📄'} {att.filename}</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    {att.fileType === 'image' ? <ImageIcon size={13} /> : <FileText size={13} />} {att.filename}
+                  </span>
                   <button type="button" onClick={() => setAttachments((prev) => prev.filter((_, idx) => idx !== i))}>&times;</button>
                 </div>
               ))}

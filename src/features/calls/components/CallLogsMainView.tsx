@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Video, Phone, PhoneMissed, Trash2, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 import { formatCardTime } from '../../../shared/utils/dateUtils';
 import StartCallModal from './StartCallModal';
 
@@ -216,17 +217,17 @@ export default function CallLogsMainView({ logs = [], selectedLog, onStartCall, 
                           </div>
                         </td>
                         <td>
-                          <span className={`call-type-tag ${log.type}`}>
-                            {log.type === 'video' ? '📹 Video' : '📞 Voice'}
+                          <span className={`call-type-tag ${log.type}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                            {log.type === 'video' ? <><Video size={14} /> Video</> : <><Phone size={14} /> Voice</>}
                           </span>
                         </td>
                         <td>
-                          <span className={`call-status-tag ${log.direction} ${isMissed ? 'missed' : ''}`}>
+                          <span className={`call-status-tag ${log.direction} ${isMissed ? 'missed' : ''}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
                             {isMissed
-                              ? '❌ Missed'
+                              ? <><PhoneMissed size={13} /> Missed</>
                               : log.direction === 'outgoing'
-                              ? '↗ Outgoing'
-                              : '↙ Incoming'}
+                              ? <><ArrowUpRight size={13} /> Outgoing</>
+                              : <><ArrowDownLeft size={13} /> Incoming</>}
                           </span>
                         </td>
                         <td className="duration-cell">
@@ -240,15 +241,17 @@ export default function CallLogsMainView({ logs = [], selectedLog, onStartCall, 
                                 className="call-btn-voice"
                                 onClick={() => onStartCall?.(log.partner.id, null, false, log.partner)}
                                 title={`Voice Call ${partnerName}`}
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}
                               >
-                                📞 Voice
+                                <Phone size={13} /> Voice
                               </button>
                               <button
                                 className="call-btn-video"
                                 onClick={() => onStartCall?.(log.partner.id, null, true, log.partner)}
                                 title={`Video Call ${partnerName}`}
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}
                               >
-                                📹 Video
+                                <Video size={13} /> Video
                               </button>
                               {onDeleteLog && (
                                 <button
@@ -262,9 +265,11 @@ export default function CallLogsMainView({ logs = [], selectedLog, onStartCall, 
                                     padding: '4px 8px',
                                     cursor: 'pointer',
                                     marginLeft: '6px',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
                                   }}
                                 >
-                                  🗑️
+                                  <Trash2 size={14} />
                                 </button>
                               )}
                             </div>
@@ -296,8 +301,8 @@ export default function CallLogsMainView({ logs = [], selectedLog, onStartCall, 
                     <div key={log.id} className={`call-item ${isMissed ? 'call-item--missed' : ''}`}>
                       <div className="call-avatar">
                         {avatar ? <img src={avatar} alt={partnerName} /> : <span>{initial}</span>}
-                        <span className={`call-type-badge ${log.type}`}>
-                          {log.type === 'video' ? '📹' : '📞'}
+                        <span className={`call-type-badge ${log.type}`} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {log.type === 'video' ? <Video size={11} /> : <Phone size={11} />}
                         </span>
                       </div>
 

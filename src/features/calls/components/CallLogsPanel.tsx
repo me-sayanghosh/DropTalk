@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Video, Phone } from 'lucide-react';
 import { formatCardTime } from '../../../shared/utils/dateUtils';
 import { CallLogSkeleton } from '../../../shared/components/ui/SkeletonLoaders';
 
@@ -132,8 +133,8 @@ export default function CallLogsPanel({ logs = [], loading, onSelectLog, onStart
                   ) : (
                     <span>{initial}</span>
                   )}
-                  <span className={`call-type-badge ${log.type}`}>
-                    {log.type === 'video' ? '📹' : '📞'}
+                  <span className={`call-type-badge ${log.type}`} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {log.type === 'video' ? <Video size={11} /> : <Phone size={11} />}
                   </span>
                 </div>
 

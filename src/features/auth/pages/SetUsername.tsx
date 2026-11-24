@@ -58,8 +58,8 @@ export default function SetUsername() {
             <span className="b-square" />
             <span className="b-triangle" />
           </div>
-          <h1 className="bauhaus-auth-title">IDENTIFIER SETUP</h1>
-          <p className="bauhaus-auth-subtitle">SELECT YOUR UNIQUE CONSTRUCTIVIST HANDLE</p>
+          <h1 className="bauhaus-auth-title">CHOOSE A USERNAME</h1>
+          <p className="bauhaus-auth-subtitle">PICK A HANDLE FOR YOUR ACCOUNT</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bauhaus-auth-form">
@@ -67,7 +67,7 @@ export default function SetUsername() {
             <label className="bauhaus-label">USERNAME (3-24 CHARACTERS)</label>
             <input
               type="text"
-              placeholder="e.g. walter_gropius"
+              placeholder="e.g. alex_morgan"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               autoFocus
@@ -87,7 +87,7 @@ export default function SetUsername() {
           )}
 
           <button type="submit" disabled={busy} className="bauhaus-btn bauhaus-btn-red w-full justify-center lg">
-            {busy ? 'REGISTERING HANDLE…' : 'CONFIRM & ENTER WORKSPACE'}
+            {busy ? 'SAVING…' : 'CONTINUE TO WORKSPACE'}
           </button>
         </form>
 

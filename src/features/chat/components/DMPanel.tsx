@@ -103,9 +103,9 @@ export default function DMPanel({
           <div className="dm-item-footer">
             <span className="dm-preview-text" title={preview}>
               {isPending && isRecipient
-                ? '📨 DM Request'
+                ? 'DM Request'
                 : isPending && !isRecipient
-                ? '⏳ Waiting for acceptance...'
+                ? 'Waiting for acceptance...'
                 : preview.length > 42
                 ? preview.substring(0, 42) + '…'
                 : preview}
@@ -180,7 +180,7 @@ export default function DMPanel({
       {search.trim().length > 0 && (
         <div className="dm-section dm-discovery-section">
           <div className="dm-section-label">
-            User Discovery {searching && '🔍 Searching...'}
+            User Discovery {searching && '· Searching...'}
           </div>
           {searchResults.length > 0 ? (
             searchResults.map((user) => {

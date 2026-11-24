@@ -60,12 +60,12 @@ export default function ToastContainer() {
 
   function getBadgeLabel(toast: ToastItem) {
     const key = (toast.category || toast.type || '').toLowerCase();
-    if (key.includes('dm') || key.includes('direct')) return { label: '💬 Direct Message', cls: 'dm' };
-    if (key.includes('channel')) return { label: '🌐 Channel Message', cls: 'channel' };
-    if (key.includes('mention')) return { label: '🏷️ Mention', cls: 'mention' };
-    if (key.includes('success')) return { label: '✓ Success', cls: 'info' };
-    if (key.includes('error')) return { label: '⚠ Error', cls: 'info' };
-    return { label: '🔔 Notification', cls: 'info' };
+    if (key.includes('dm') || key.includes('direct')) return { label: 'Direct Message', cls: 'dm' };
+    if (key.includes('channel')) return { label: 'Channel Message', cls: 'channel' };
+    if (key.includes('mention')) return { label: 'Mention', cls: 'mention' };
+    if (key.includes('success')) return { label: 'Success', cls: 'info' };
+    if (key.includes('error')) return { label: 'Error', cls: 'info' };
+    return { label: 'Notification', cls: 'info' };
   }
 
   return (

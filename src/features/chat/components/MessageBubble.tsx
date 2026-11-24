@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { Reply, Forward, Trash2, X } from 'lucide-react';
 import { Message } from '../../../types';
 import MessageStatusTick from './MessageStatusTick';
 import VoiceNoteBubble from './VoiceNoteBubble';
@@ -100,7 +101,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             }}
             className="w-full text-left px-3 py-1.5 hover:bg-[var(--wa-panel-header)] flex items-center gap-2"
           >
-            <span>↩</span> Reply
+            <Reply size={13} /> Reply
           </button>
           <button
             onClick={() => {
@@ -109,7 +110,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             }}
             className="w-full text-left px-3 py-1.5 hover:bg-[var(--wa-panel-header)] flex items-center gap-2"
           >
-            <span>↪</span> Forward
+            <Forward size={13} /> Forward
           </button>
           {isMe && !message.deleted && (
             <button
@@ -119,7 +120,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               }}
               className="w-full text-left px-3 py-1.5 hover:bg-[var(--wa-panel-header)] text-red-500 flex items-center gap-2"
             >
-              <span>🗑</span> Delete for everyone
+              <Trash2 size={13} /> Delete for everyone
             </button>
           )}
           <button
@@ -129,7 +130,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             }}
             className="w-full text-left px-3 py-1.5 hover:bg-[var(--wa-panel-header)] flex items-center gap-2"
           >
-            <span>✕</span> Delete for me
+            <X size={13} /> Delete for me
           </button>
         </div>
       )}

@@ -121,7 +121,7 @@ describe('WhatsApp Status & Stories API', () => {
     expect(new Date(res.body.status.expiresAt).getTime()).toBeGreaterThan(Date.now());
   });
 
-  test('GET /api/status/feed lists active statuses and filters blocked users', async () => {
+  test('GET /api/status/feed lists active statuses and filters blocked users bidirectionally', async () => {
     await Status.create({
       user: userA._id,
       mediaUrl: 'https://example.com/status1.jpg',
@@ -137,19 +137,26 @@ describe('WhatsApp Status & Stories API', () => {
     userB.privacySettings = { blockedUsers: [userA._id] };
     await userB.save();
 
+    // Bob should not see Alice's status
     const resBob = await request('GET', '/api/status/feed', makeToken(userB));
     expect(resBob.status).toBe(200);
-    // Bob should not see Alice's status
     expect(resBob.body.statuses.length).toBe(1);
     expect(resBob.body.statuses[0].caption).toBe('From Bob');
+
+    // Alice also should not see Bob's status because Bob blocked Alice (bidirectional)
+    const resAlice = await request('GET', '/api/status/feed', makeToken(userA));
+    expect(resAlice.status).toBe(200);
+    expect(resAlice.body.statuses.length).toBe(1);
+    expect(resAlice.body.statuses[0].caption).toBe('From Alice');
   });
 
-  test('POST /api/status/:id/view records viewer count', async () => {
+  test('POST /api/status/:id/view records viewer count and blocks unauthorized/blocked viewers', async () => {
     const status = await Status.create({
       user: userA._id,
       mediaUrl: 'https://example.com/status1.jpg',
     });
 
+    // Bob views Alice's status
     const res = await request('POST', `/api/status/${status._id}/view`, makeToken(userB));
     expect(res.status).toBe(200);
     expect(res.body.viewersCount).toBe(1);
@@ -157,6 +164,15 @@ describe('WhatsApp Status & Stories API', () => {
     // Duplicate view does not double count
     const res2 = await request('POST', `/api/status/${status._id}/view`, makeToken(userB));
     expect(res2.body.viewersCount).toBe(1);
+
+    // Now Alice blocks Charlie
+    userA.privacySettings = { blockedUsers: [userC._id] };
+    await userA.save();
+
+    // Charlie cannot view Alice's status (returns 403)
+    const resBlocked = await request('POST', `/api/status/${status._id}/view`, makeToken(userC));
+    expect(resBlocked.status).toBe(403);
+    expect(resBlocked.body.error).toMatch(/blocked/i);
   });
 
   test('DELETE /api/status/:id deletes status only by owner', async () => {

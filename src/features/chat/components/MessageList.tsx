@@ -7,6 +7,8 @@ import {
   MoreHorizontal,
   MessageSquare,
   MessageCircle,
+  Clock,
+  AlertTriangle,
 } from 'lucide-react';
 import { formatDateSeparator } from '../../../shared/utils/dateUtils';
 import { getMediaUrl } from '../../../shared/utils';
@@ -475,13 +477,13 @@ export default function MessageList({
               <span className="msg-time">{formatTime(m.createdAt)}</span>
               {m.reported && <span className="msg-reported">{'\u26A0'} reported</span>}
               {mine && m.status === 'sending' && (
-                <span className="read-receipt sending" title="Sending..." style={{ opacity: 0.7, fontSize: '0.75rem' }}>
-                  ⏳
+                <span className="read-receipt sending" title="Sending..." style={{ opacity: 0.7, display: 'inline-flex', alignItems: 'center' }}>
+                  <Clock size={12} />
                 </span>
               )}
               {mine && m.status === 'failed' && (
-                <span className="read-receipt failed text-red-500 font-bold" title="Failed to deliver">
-                  ⚠️
+                <span className="read-receipt failed text-red-500 font-bold" title="Failed to deliver" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                  <AlertTriangle size={12} />
                 </span>
               )}
               {mine && (!m.status || m.status === 'sent') && readStatus && (

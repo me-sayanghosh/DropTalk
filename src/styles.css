@@ -7499,14 +7499,6 @@ kbd, .kbd-group kbd {
     display: none;
   }
 
-  .suggestions-bar {
-    overflow-x: auto;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-    padding: 4px 6px;
-    gap: 6px;
-  }
-
   /* ── 7. Settings Responsive Layout ── */
   .settings-sidebar {
     width: 100% !important;

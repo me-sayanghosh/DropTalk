@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { MessageSquare, Lock } from 'lucide-react';
 import { Room, User, Message, DMConversation, StatusStory } from '../../../types';
 import WhatsAppHeader from './WhatsAppHeader';
 import WhatsAppComposer from './WhatsAppComposer';
@@ -11,6 +12,10 @@ import ContactInfoDrawer from './ContactInfoDrawer';
 import MediaLightbox from './MediaLightbox';
 import StatusViewerModal from './StatusViewerModal';
 import ScrollToBottom from './ScrollToBottom';
+import ForwardModal from './ForwardModal';
+import WhatsAppInviteModal from './WhatsAppInviteModal';
+import WhatsAppNewChatModal from './WhatsAppNewChatModal';
+import WhatsAppStatusModal from './WhatsAppStatusModal';
 import { formatDateSeparator } from '../../../shared/utils/dateUtils';
 import { api } from '../../../shared/utils/api';
 import { getSocket } from '../../../shared/utils';
@@ -32,7 +37,10 @@ interface WhatsAppShellProps {
   onDeleteForMe: (messageId: string) => void;
   onReact: (messageId: string, emoji: string) => void;
   onStartCall: (toUserId: string | null, roomId: string, isVideo: boolean) => void;
-  onCreateGroupModal?: () => void;
+  onForwardMessage?: (target: any, message: Message) => Promise<void>;
+  onLeaveRoom?: (roomId: string) => void;
+  onBlockUser?: (userId: string) => void;
+  onUnblockUser?: (userId: string) => void;
   onUploadFile?: (file: File) => Promise<any>;
 }
 
@@ -53,23 +61,36 @@ export const WhatsAppShell: React.FC<WhatsAppShellProps> = ({
   onDeleteForMe,
   onReact,
   onStartCall,
-  onCreateGroupModal,
+  onForwardMessage,
+  onLeaveRoom,
+  onBlockUser,
+  onUnblockUser,
   onUploadFile,
 }) => {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Mobile state: 'sidebar' (chat list) or 'chat' (active conversation)
+  // Mobile navigation state
   const [mobileView, setMobileView] = useState<'sidebar' | 'chat'>('sidebar');
   const [searchFilter, setSearchFilter] = useState('');
   const [activeTabFilter, setActiveTabFilter] = useState<'all' | 'unread' | 'groups' | 'contacts'>('all');
   const [showRightDrawer, setShowRightDrawer] = useState(false);
   const [replyMessage, setReplyMessage] = useState<Message | null>(null);
 
+  // In-chat message search
+  const [showInChatSearch, setShowInChatSearch] = useState(false);
+  const [chatSearchTerm, setChatSearchTerm] = useState('');
+
   // Status stories state
   const [statusStories, setStatusStories] = useState<StatusStory[]>([]);
   const [activeStoryIndex, setActiveStoryIndex] = useState<number | null>(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showStatusViewer, setShowStatusViewer] = useState(false);
+
+  // Modals state
+  const [showNewChatModal, setShowNewChatModal] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [forwardingMessage, setForwardingMessage] = useState<Message | null>(null);
 
   // Lightbox state
   const [lightboxMedia, setLightboxMedia] = useState<any[]>([]);
@@ -135,6 +156,8 @@ export const WhatsAppShell: React.FC<WhatsAppShellProps> = ({
   const handleBackToSidebar = () => {
     setMobileView('sidebar');
     setShowRightDrawer(false);
+    setShowInChatSearch(false);
+    setChatSearchTerm('');
   };
 
   // Combine and sort chat items (DMs + Group Channels)
@@ -145,6 +168,10 @@ export const WhatsAppShell: React.FC<WhatsAppShellProps> = ({
     for (const c of conversations) {
       const partnerUser = c.partner;
       const lastMsg = c.lastMessage || c.room?.lastMessage;
+      const senderId = lastMsg?.senderId || (typeof lastMsg?.sender === 'object' ? lastMsg.sender?.id || lastMsg.sender?._id : lastMsg?.sender);
+      const isLastMsgMe = senderId ? String(senderId) === String(myId) : false;
+      const lastMsgStatus = lastMsg?.deliveryStatus || lastMsg?.status || 'sent';
+
       list.push({
         type: 'dm',
         id: c.id,
@@ -154,6 +181,8 @@ export const WhatsAppShell: React.FC<WhatsAppShellProps> = ({
         lastMessageTime: lastMsg?.createdAt ? new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
         unreadCount: c.unreadCount || 0,
         rawTime: lastMsg?.createdAt ? new Date(lastMsg.createdAt).getTime() : 0,
+        isLastMsgMe,
+        lastMsgStatus,
         partner: partnerUser,
         room: c.room,
         dm: c,
@@ -164,6 +193,12 @@ export const WhatsAppShell: React.FC<WhatsAppShellProps> = ({
     for (const r of rooms) {
       if (r.isDM) continue;
       const lastMsg = r.lastMessage;
+      const senderId = lastMsg?.senderId || (typeof lastMsg?.sender === 'object' ? lastMsg.sender?.id || lastMsg.sender?._id : lastMsg?.sender);
+      const isLastMsgMe = senderId
+        ? String(senderId) === String(myId)
+        : (lastMsg?.senderUsername && lastMsg.senderUsername === currentUser.username);
+      const lastMsgStatus = lastMsg?.deliveryStatus || lastMsg?.status || 'sent';
+
       list.push({
         type: 'group',
         id: r.id,
@@ -173,6 +208,8 @@ export const WhatsAppShell: React.FC<WhatsAppShellProps> = ({
         lastMessageTime: lastMsg?.createdAt ? new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
         unreadCount: r.unreadCount || 0,
         rawTime: lastMsg?.createdAt ? new Date(lastMsg.createdAt).getTime() : 0,
+        isLastMsgMe: !!isLastMsgMe,
+        lastMsgStatus,
         room: r,
       });
     }
@@ -190,7 +227,7 @@ export const WhatsAppShell: React.FC<WhatsAppShellProps> = ({
       if (activeTabFilter === 'contacts' && item.type !== 'dm') return false;
       return true;
     });
-  }, [conversations, rooms, searchFilter, activeTabFilter]);
+  }, [conversations, rooms, searchFilter, activeTabFilter, myId, currentUser.username]);
 
   // Active chat details
   const currentPartner = activeDM?.partner;
@@ -207,7 +244,6 @@ export const WhatsAppShell: React.FC<WhatsAppShellProps> = ({
 
   // Media lightbox trigger
   const handleOpenMedia = (mediaItem: any) => {
-    // Gather all media items in current messages
     const allMedia: any[] = [];
     messages.forEach((m) => {
       (m.attachments || []).forEach((att) => {
@@ -227,12 +263,24 @@ export const WhatsAppShell: React.FC<WhatsAppShellProps> = ({
     setIsLightboxOpen(true);
   };
 
+  // Filter messages by in-chat keyword search
+  const filteredMessages = useMemo(() => {
+    if (!chatSearchTerm.trim()) return messages;
+    const term = chatSearchTerm.toLowerCase();
+    return messages.filter(
+      (m) =>
+        m.text?.toLowerCase().includes(term) ||
+        m.senderUsername?.toLowerCase().includes(term) ||
+        m.caption?.toLowerCase().includes(term)
+    );
+  }, [messages, chatSearchTerm]);
+
   // Group messages by date with sticky pills
   const renderMessagesWithDatePills = () => {
     const elements: React.ReactNode[] = [];
     let lastDateStr = '';
 
-    messages.forEach((msg, idx) => {
+    filteredMessages.forEach((msg, idx) => {
       const msgDate = msg.createdAt ? formatDateSeparator(msg.createdAt) : '';
       if (msgDate && msgDate !== lastDateStr) {
         elements.push(
@@ -251,7 +299,7 @@ export const WhatsAppShell: React.FC<WhatsAppShellProps> = ({
           isGroup={!activeDM}
           readReceiptsEnabled={currentUser.privacySettings?.readReceipts !== false}
           onReply={(m) => setReplyMessage(m)}
-          onForward={(m) => console.log('Forward', m)}
+          onForward={(m) => setForwardingMessage(m)}
           onReact={onReact}
           onDelete={onDeleteMessage}
           onDeleteForMe={onDeleteForMe}
@@ -294,14 +342,7 @@ export const WhatsAppShell: React.FC<WhatsAppShellProps> = ({
           <div className="wa-header-actions">
             {/* Status Story Ring Trigger */}
             <button
-              onClick={() => {
-                if (statusStories.length > 0) {
-                  setActiveStoryIndex(0);
-                  setShowStatusModal(true);
-                } else {
-                  alert('No active status stories right now.');
-                }
-              }}
+              onClick={() => setShowStatusModal(true)}
               className="wa-icon-btn relative"
               title="Status updates"
             >
@@ -314,21 +355,19 @@ export const WhatsAppShell: React.FC<WhatsAppShellProps> = ({
               )}
             </button>
 
-            {/* New Group / Chat */}
-            {onCreateGroupModal && (
-              <button
-                onClick={onCreateGroupModal}
-                className="wa-icon-btn"
-                title="New group"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <line x1="19" y1="8" x2="19" y2="14" />
-                  <line x1="22" y1="11" x2="16" y2="11" />
-                </svg>
-              </button>
-            )}
+            {/* New Chat / New Group */}
+            <button
+              onClick={() => setShowNewChatModal(true)}
+              className="wa-icon-btn"
+              title="New chat or group"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <line x1="19" y1="8" x2="19" y2="14" />
+                <line x1="22" y1="11" x2="16" y2="11" />
+              </svg>
+            </button>
 
             {/* Settings */}
             <button
@@ -371,20 +410,19 @@ export const WhatsAppShell: React.FC<WhatsAppShellProps> = ({
               <button
                 key={tab}
                 onClick={() => setActiveTabFilter(tab)}
-                className={`px-3 py-1 rounded-full font-medium capitalize transition-colors ${
-                  activeTabFilter === tab
-                    ? 'bg-[var(--wa-green-primary)]/15 text-[var(--wa-green-primary)] font-bold'
-                    : 'bg-[var(--wa-panel-search)] text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)]'
-                }`}
+                className={`wa-tab-pill ${activeTabFilter === tab ? 'active' : ''}`}
               >
-                {tab}
+                {tab === 'all' && 'All'}
+                {tab === 'unread' && 'Unread'}
+                {tab === 'groups' && 'Groups'}
+                {tab === 'contacts' && 'Contacts'}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Conversation List */}
-        <div className="flex-1 overflow-y-auto divide-y divide-[var(--wa-border)]">
+        {/* Conversations Scrollable List */}
+        <div className="wa-chat-list">
           {combinedChatItems.length === 0 ? (
             <div className="p-8 text-center text-xs text-[var(--wa-text-secondary)]">
               No conversations found.
@@ -392,13 +430,15 @@ export const WhatsAppShell: React.FC<WhatsAppShellProps> = ({
           ) : (
             combinedChatItems.map((item) => (
               <ChatItemRow
-                key={`${item.type}-${item.id}`}
+                key={item.id}
                 id={item.id}
                 name={item.name}
                 avatar={item.avatar}
                 lastMessage={item.lastMessage}
                 lastMessageTime={item.lastMessageTime}
                 unreadCount={item.unreadCount}
+                isLastMsgMe={item.isLastMsgMe}
+                lastMsgStatus={item.lastMsgStatus}
                 isActive={
                   item.type === 'dm'
                     ? activeDM?.id === item.id
@@ -418,7 +458,7 @@ export const WhatsAppShell: React.FC<WhatsAppShellProps> = ({
                   );
                   if (idx >= 0) {
                     setActiveStoryIndex(idx);
-                    setShowStatusModal(true);
+                    setShowStatusViewer(true);
                   }
                 }}
               />
@@ -442,8 +482,32 @@ export const WhatsAppShell: React.FC<WhatsAppShellProps> = ({
               onBackMobile={handleBackToSidebar}
               onVoiceCall={() => onStartCall(currentPartner?.id || null, (activeDM?.id || activeRoom?.id)!, false)}
               onVideoCall={() => onStartCall(currentPartner?.id || null, (activeDM?.id || activeRoom?.id)!, true)}
+              onSearchClick={() => setShowInChatSearch((prev) => !prev)}
               onOpenInfo={() => setShowRightDrawer((prev) => !prev)}
             />
+
+            {/* In-chat search bar toggle */}
+            {showInChatSearch && (
+              <div className="flex items-center gap-2 px-4 py-2 bg-[var(--wa-panel-search)] border-b border-[var(--wa-border)] animate-in slide-in-from-top duration-150">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[var(--wa-text-secondary)]">
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Search in conversation..."
+                  value={chatSearchTerm}
+                  onChange={(e) => setChatSearchTerm(e.target.value)}
+                  autoFocus
+                  className="w-full bg-transparent border-none outline-none text-xs text-[var(--wa-text-primary)]"
+                />
+                {chatSearchTerm && (
+                  <button onClick={() => setChatSearchTerm('')} className="text-xs text-[var(--wa-text-secondary)]">
+                    ✕
+                  </button>
+                )}
+              </div>
+            )}
 
             {/* WhatsApp Doodle Wallpaper Messages Container */}
             <div
@@ -467,15 +531,15 @@ export const WhatsAppShell: React.FC<WhatsAppShellProps> = ({
         ) : (
           /* Empty Chat Splash */
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-[var(--wa-text-secondary)] wa-doodle-bg select-none">
-            <div className="w-16 h-16 rounded-full bg-[var(--wa-panel-bg)] border border-[var(--wa-border)] flex items-center justify-center text-3xl mb-4 shadow-sm">
-              💬
+            <div className="w-16 h-16 rounded-full bg-[var(--wa-panel-bg)] border border-[var(--wa-border)] flex items-center justify-center text-[var(--wa-green-primary)] mb-4 shadow-sm">
+              <MessageSquare size={28} />
             </div>
             <h2 className="text-xl font-bold text-[var(--wa-text-primary)] mb-2">DropTalk for Web</h2>
             <p className="text-xs max-w-sm leading-relaxed mb-6">
               Send and receive messages without keeping your phone online. Use DropTalk on your browser with zero-knowledge encryption.
             </p>
             <div className="flex items-center gap-1.5 text-xs text-[var(--wa-text-secondary)]">
-              <span>🔒</span>
+              <Lock size={13} />
               <span>End-to-end encrypted</span>
             </div>
           </div>
@@ -489,36 +553,139 @@ export const WhatsAppShell: React.FC<WhatsAppShellProps> = ({
           partner={currentPartner}
           currentUserId={myId}
           onClose={() => setShowRightDrawer(false)}
-          onUpdateDisappearingTimer={(timer) => {
-            const roomId = activeDM?.id || activeRoom?.id;
-            if (roomId) {
-              api.put(`/rooms/${roomId}/disappearing-timer`, { disappearingTimer: timer });
+          isBlocked={(currentUser.privacySettings?.blockedUsers || []).some(
+            (id: any) => id?.toString() === currentPartner?.id?.toString()
+          )}
+          onBlockUser={async (targetId) => {
+            try {
+              await api.post('/auth/block-user', { targetUserId: targetId });
+              onBlockUser?.(targetId);
+            } catch (err: any) {
+              alert(err.response?.data?.error || 'Failed to block user');
             }
           }}
-          onToggleAdminOnly={(enabled) => {
+          onUnblockUser={async (targetId) => {
+            try {
+              await api.post('/auth/unblock-user', { targetUserId: targetId });
+              onUnblockUser?.(targetId);
+            } catch (err: any) {
+              alert(err.response?.data?.error || 'Failed to unblock user');
+            }
+          }}
+          onLeaveRoom={() => {
             if (activeRoom?.id) {
-              api.put(`/rooms/${activeRoom.id}/permissions`, { onlyAdminsCanMessage: enabled });
+              onLeaveRoom?.(activeRoom.id);
+              setShowRightDrawer(false);
+            }
+          }}
+          onInviteLinkClick={() => setShowInviteModal(true)}
+          onUpdateDisappearingTimer={async (timer) => {
+            const roomId = activeDM?.id || activeRoom?.id;
+            if (roomId) {
+              await api.put(`/rooms/${roomId}/disappearing-timer`, { disappearingTimer: timer });
+              if (activeRoom) activeRoom.disappearingTimer = timer;
+              if (activeDM?.room) activeDM.room.disappearingTimer = timer;
+            }
+          }}
+          onToggleAdminOnly={async (enabled) => {
+            if (activeRoom?.id) {
+              await api.put(`/rooms/${activeRoom.id}/permissions`, { onlyAdminsCanMessage: enabled });
+              activeRoom.onlyAdminsCanMessage = enabled;
             }
           }}
         />
       )}
 
-      {/* ── 4. FULLSCREEN STATUS STORIES MODAL ── */}
-      {showStatusModal && statusStories.length > 0 && activeStoryIndex !== null && (
+      {/* ── 4. STATUS UPDATES MODAL (List + Create + Delete) ── */}
+      {showStatusModal && (
+        <WhatsAppStatusModal
+          currentUser={currentUser}
+          statusStories={statusStories}
+          onClose={() => setShowStatusModal(false)}
+          onOpenStoryIndex={(idx) => {
+            setActiveStoryIndex(idx);
+            setShowStatusViewer(true);
+          }}
+          onRefreshFeed={fetchStatusFeed}
+          onUploadFile={onUploadFile}
+        />
+      )}
+
+      {/* ── 5. FULLSCREEN STATUS STORY VIEWER ── */}
+      {showStatusViewer && statusStories.length > 0 && activeStoryIndex !== null && (
         <StatusViewerModal
-          isOpen={showStatusModal}
+          isOpen={showStatusViewer}
           statuses={statusStories}
           initialIndex={activeStoryIndex}
           currentUserId={myId}
           onClose={() => {
-            setShowStatusModal(false);
+            setShowStatusViewer(false);
             setActiveStoryIndex(null);
           }}
           onRecordView={(statusId) => api.post(`/status/${statusId}/view`)}
+          onReplyToStatus={(partnerId, text) => {
+            onSendMessage(text);
+          }}
+          onDeleteStatus={async (statusId) => {
+            await api.delete(`/status/${statusId}`);
+            await fetchStatusFeed();
+            setShowStatusViewer(false);
+          }}
         />
       )}
 
-      {/* ── 5. FULLSCREEN MEDIA LIGHTBOX ── */}
+      {/* ── 6. NEW CONVERSATION & GROUP MODAL ── */}
+      {showNewChatModal && (
+        <WhatsAppNewChatModal
+          currentUserId={myId}
+          onClose={() => setShowNewChatModal(false)}
+          onStartDM={(targetUserId) => {
+            const found = conversations.find(
+              (c: any) => c.partner?.id === targetUserId || c.partner?._id === targetUserId
+            );
+            if (found) {
+              onSelectDM(found);
+            } else {
+              api.post('/dm/send', { toUserId: targetUserId, text: 'Hi! Started a new chat.' }).then((res) => {
+                if (res.data?.room) {
+                  onSelectDM(res.data.room);
+                }
+              });
+            }
+          }}
+          onGroupCreated={(newRoom) => {
+            onSelectRoom(newRoom);
+          }}
+        />
+      )}
+
+      {/* ── 7. GROUP INVITE LINK MODAL ── */}
+      {showInviteModal && activeRoom && (
+        <WhatsAppInviteModal
+          roomId={activeRoom.id}
+          roomName={activeRoom.name}
+          initialCode={activeRoom.inviteCode || ''}
+          onClose={() => setShowInviteModal(false)}
+        />
+      )}
+
+      {/* ── 8. FORWARD MESSAGE MODAL ── */}
+      {forwardingMessage && (
+        <ForwardModal
+          message={forwardingMessage}
+          rooms={rooms}
+          conversations={conversations}
+          onClose={() => setForwardingMessage(null)}
+          onForward={async (target, msg) => {
+            if (onForwardMessage) {
+              await onForwardMessage(target, msg);
+            }
+            setForwardingMessage(null);
+          }}
+        />
+      )}
+
+      {/* ── 9. FULLSCREEN MEDIA LIGHTBOX ── */}
       {isLightboxOpen && (
         <MediaLightbox
           isOpen={isLightboxOpen}
