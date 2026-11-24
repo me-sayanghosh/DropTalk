@@ -335,6 +335,100 @@ export default function Chat() {
     }
   };
 
+  if (user && layoutMode === 'whatsapp' && (navRailTab === 'chat' || navRailTab === 'dm')) {
+    return (
+      <div className="w-full h-full relative" data-theme={theme}>
+        {dmRequestToast && (
+          <div className="dm-toast">{dmRequestToast}</div>
+        )}
+        <WhatsAppShell
+          currentUser={user}
+          rooms={rooms}
+          conversations={conversations}
+          activeRoom={currentRoom}
+          activeDM={currentDM}
+          messages={currentDM ? dmMessages : displayMessages}
+          onlineUsers={online.map((o: any) => o.id || o._id || o)}
+          typingUsers={typingUsers}
+          onSelectRoom={handleSelectRoom}
+          onSelectDM={handleOpenDM}
+          onSendMessage={(t, atts, loc, isVoice, vMeta) => {
+            if (currentDM) {
+              sendDMMessage(t, atts || [], loc, isVoice, vMeta);
+            } else {
+              send(t, atts || [], loc, isVoice, vMeta);
+            }
+          }}
+          onSendTyping={handleTyping}
+          onDeleteMessage={deleteMessage}
+          onDeleteForMe={deleteForMe}
+          onReact={handleReact}
+          onStartCall={(toUserId, roomId, isVideo) => {
+            handleStartCall(toUserId, roomId, isVideo);
+          }}
+          onCreateGroupModal={() => setShowCreateModal(true)}
+          onUploadFile={async (f) => {
+            const formData = new FormData();
+            formData.append('file', f);
+            const res = await api.post('/upload', formData, {
+              headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            return res.data?.attachment || null;
+          }}
+        />
+
+        {/* Global Modals & Overlays */}
+        <CallOverlay
+          callState={callState}
+          callerInfo={callerInfo}
+          callDuration={callDuration}
+          localStream={localStream}
+          remoteStream={remoteStream}
+          isMuted={isMuted}
+          isVideoOff={isVideoOff}
+          isScreenSharing={isScreenSharing}
+          onAccept={acceptCall}
+          onReject={rejectCall}
+          onEnd={endCall}
+          onToggleMute={toggleMute}
+          onToggleVideo={toggleVideo}
+          onToggleScreenShare={toggleScreenShare}
+        />
+        {showCreateModal && (
+          <CreateChannelModal
+            onClose={() => setShowCreateModal(false)}
+            onCreate={createRoom}
+          />
+        )}
+        {showQuickSwitcher && (
+          <QuickSwitcherModal
+            rooms={rooms}
+            onSelectRoom={(r) => {
+              handleSelectRoom(r);
+              setShowQuickSwitcher(false);
+            }}
+            onClose={() => setShowQuickSwitcher(false)}
+          />
+        )}
+        {selectedProfileUser && (
+          <UserProfileCard
+            user={selectedProfileUser}
+            isOnline={online.some((o: any) => o.id === selectedProfileUser.id || o._id === selectedProfileUser.id)}
+            currentUserId={user?.id || (user as any)?._id}
+            onClose={() => setSelectedProfileUser(null)}
+            onStartDM={(toUserId: string) => handleDMUser(toUserId, selectedProfileUser.username)}
+            onStartCall={(targetUserId: string, isVideo: boolean, partnerData?: any) =>
+              handleStartCall(targetUserId, undefined, isVideo, partnerData || selectedProfileUser)
+            }
+            onMention={(username: string) => {
+              setCurrentInput((prev) => (prev ? `${prev} @${username} ` : `@${username} `));
+            }}
+          />
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className={`chat-app-shell mobile-view-${mobileActiveView}`}>
       {/* Toast */}

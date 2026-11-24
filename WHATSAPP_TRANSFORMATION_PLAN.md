@@ -91,136 +91,136 @@ Every single step is bite-sized, verifiable, and follows standard engineering co
 ---
 
 ### Phase 2: Dual WhatsApp Web & Mobile Shell & Adaptive Layouts (Steps 26–45)
-- [ ] **Step 26:** Define WhatsApp design tokens in CSS variables (`--wa-green-primary: #00a884`, `--wa-bg-deep: #111b21`, `--wa-panel-bg: #202c33`, `--wa-bubble-out: #005c4b`, `--wa-bubble-in: #202c33`).
-- [ ] **Step 27:** Build `WhatsAppShell.tsx` container supporting 2-pane desktop split and single-pane mobile stack.
-- [ ] **Step 28:** Implement viewport breakpoint hook `useIsMobile(768)` for responsive transitions.
-- [ ] **Step 29:** Build WhatsApp Web top header with Profile Avatar, Status Ring icon, New Chat icon, Menu dropdown.
-- [ ] **Step 30:** Build WhatsApp-style Chat List search bar with filter icons (Unread, Groups, Contacts).
-- [ ] **Step 31:** Create `ChatItemRow.tsx` displaying contact avatar, name, last message preview, timestamp, and unread badge.
-- [ ] **Step 32:** Add delivery tick indicator icon inside `ChatItemRow.tsx` for the last sent message.
-- [ ] **Step 33:** Implement active chat selection highlighting with smooth transition.
-- [ ] **Step 34:** Build Mobile back navigation button (`< ArrowLeft`) at top-left of conversation header.
-- [ ] **Step 35:** Implement URL deep-linking sync: mobile back button returns to `/chat` list view without full reload.
-- [ ] **Step 36:** Build WhatsApp chat header showing avatar, name, presence ("online" or "last seen at..."), Call icons, Search icon.
-- [ ] **Step 37:** Implement WhatsApp classic doodle wallpaper background pattern for message container.
-- [ ] **Step 38:** Build sticky date pill divider ("Today", "Yesterday", "November 24, 2026") grouping messages.
-- [ ] **Step 39:** Build WhatsApp message bubble component (`MessageBubble.tsx`) with tail pointers (in vs out).
-- [ ] **Step 40:** Implement floating scroll-to-bottom button with unread counter badge.
-- [ ] **Step 41:** Build WhatsApp bottom composer bar with Emoji picker trigger, Attachment paperclip, Text input, Mic/Send button.
-- [ ] **Step 42:** Implement keyboard navigation: `Escape` closes active drawer/search, `Enter` sends message, `Shift+Enter` newline.
-- [ ] **Step 43:** Build Right-side Contact/Group Info Drawer (`ContactInfoDrawer.tsx`) showing media, docs, mute, block, disappear timer.
-- [ ] **Step 44:** Add responsive touch swipe gesture to open/close chat on mobile touchscreens.
-- [ ] **Step 45:** Write integration tests verifying responsive layout switching at `<768px` vs `>=768px`.
+- [x] **Step 26:** Define WhatsApp design tokens in CSS variables (`--wa-green-primary: #00a884`, `--wa-bg-deep: #111b21`, `--wa-panel-bg: #202c33`, `--wa-bubble-out: #005c4b`, `--wa-bubble-in: #202c33`).
+- [x] **Step 27:** Build `WhatsAppShell.tsx` container supporting 2-pane desktop split and single-pane mobile stack.
+- [x] **Step 28:** Implement viewport breakpoint hook `useIsMobile(768)` for responsive transitions.
+- [x] **Step 29:** Build WhatsApp Web top header with Profile Avatar, Status Ring icon, New Chat icon, Menu dropdown.
+- [x] **Step 30:** Build WhatsApp-style Chat List search bar with filter icons (Unread, Groups, Contacts).
+- [x] **Step 31:** Create `ChatItemRow.tsx` displaying contact avatar, name, last message preview, timestamp, and unread badge.
+- [x] **Step 32:** Add delivery tick indicator icon inside `ChatItemRow.tsx` for the last sent message.
+- [x] **Step 33:** Implement active chat selection highlighting with smooth transition.
+- [x] **Step 34:** Build Mobile back navigation button (`< ArrowLeft`) at top-left of conversation header.
+- [x] **Step 35:** Implement URL deep-linking sync: mobile back button returns to `/chat` list view without full reload.
+- [x] **Step 36:** Build WhatsApp chat header showing avatar, name, presence ("online" or "last seen at..."), Call icons, Search icon.
+- [x] **Step 37:** Implement WhatsApp classic doodle wallpaper background pattern for message container.
+- [x] **Step 38:** Build sticky date pill divider ("Today", "Yesterday", "November 24, 2026") grouping messages.
+- [x] **Step 39:** Build WhatsApp message bubble component (`MessageBubble.tsx`) with tail pointers (in vs out).
+- [x] **Step 40:** Implement floating scroll-to-bottom button with unread counter badge.
+- [x] **Step 41:** Build WhatsApp bottom composer bar with Emoji picker trigger, Attachment paperclip, Text input, Mic/Send button.
+- [x] **Step 42:** Implement keyboard navigation: `Escape` closes active drawer/search, `Enter` sends message, `Shift+Enter` newline.
+- [x] **Step 43:** Build Right-side Contact/Group Info Drawer (`ContactInfoDrawer.tsx`) showing media, docs, mute, block, disappear timer.
+- [x] **Step 44:** Add responsive touch swipe gesture to open/close chat on mobile touchscreens.
+- [x] **Step 45:** Write integration tests verifying responsive layout switching at `<768px` vs `>=768px`.
 
 ---
 
 ### Phase 3: Real-Time Message Delivery Status Ticks (Steps 46–60)
-- [ ] **Step 46:** Add `deliveryStatus` field (`enum: ['sent', 'delivered', 'read']`) to `Message` model schema.
-- [ ] **Step 47:** Update `Message.toClient()` to serialize `deliveryStatus` and delivery timestamps.
-- [ ] **Step 48:** Add Socket.IO event `message:ack-received` triggered when client receives a new message.
-- [ ] **Step 49:** In backend socket gateway, broadcast `message:delivered` to the message sender when recipient's socket acknowledges.
-- [ ] **Step 50:** In backend `presence.socket.ts`, update `message:read` handler to update `deliveryStatus: 'read'` in MongoDB for DM messages.
-- [ ] **Step 51:** Create SVG component `MessageStatusTick.tsx`:
+- [x] **Step 46:** Add `deliveryStatus` field (`enum: ['sent', 'delivered', 'read']`) to `Message` model schema.
+- [x] **Step 47:** Update `Message.toClient()` to serialize `deliveryStatus` and delivery timestamps.
+- [x] **Step 48:** Add Socket.IO event `message:ack-received` triggered when client receives a new message.
+- [x] **Step 49:** In backend socket gateway, broadcast `message:delivered` to the message sender when recipient's socket acknowledges.
+- [x] **Step 50:** In backend `presence.socket.ts`, update `message:read` handler to update `deliveryStatus: 'read'` in MongoDB for DM messages.
+- [x] **Step 51:** Create SVG component `MessageStatusTick.tsx`:
   - `status === 'sending'`: clock icon 🕒
   - `status === 'sent'`: single grey checkmark ✓
   - `status === 'delivered'`: double grey checkmark ✓✓
   - `status === 'read'`: double blue checkmark ✓✓ (`#53bdeb`)
-- [ ] **Step 52:** Embed `MessageStatusTick` in the lower right corner of outgoing message bubbles beside timestamp.
-- [ ] **Step 53:** Respect `privacySettings.readReceipts`: if recipient turned off read receipts in DM, sender sees double grey checkmarks even when read.
-- [ ] **Step 54:** Implement optimistic UI update: immediately render single grey check on send before network confirmation.
-- [ ] **Step 55:** Transition to double grey check when server responds with socket broadcast `message:delivered`.
-- [ ] **Step 56:** Transition to double blue check when server emits `message:read`.
-- [ ] **Step 57:** Support group chat read receipts: display double blue check only when all active members have read.
-- [ ] **Step 58:** Build "Message Info" modal displaying exact "Delivered" and "Read" timestamps for any outgoing message.
-- [ ] **Step 59:** Write unit tests for message delivery status transitions (`sent` -> `delivered` -> `read`).
-- [ ] **Step 60:** Verify delivery ticks render correctly in both light mode and dark mode.
+- [x] **Step 52:** Embed `MessageStatusTick` in the lower right corner of outgoing message bubbles beside timestamp.
+- [x] **Step 53:** Respect `privacySettings.readReceipts`: if recipient turned off read receipts in DM, sender sees double grey checkmarks even when read.
+- [x] **Step 54:** Implement optimistic UI update: immediately render single grey check on send before network confirmation.
+- [x] **Step 55:** Transition to double grey check when server responds with socket broadcast `message:delivered`.
+- [x] **Step 56:** Transition to double blue check when server emits `message:read`.
+- [x] **Step 57:** Support group chat read receipts: display double blue check only when all active members have read.
+- [x] **Step 58:** Build "Message Info" modal displaying exact "Delivered" and "Read" timestamps for any outgoing message.
+- [x] **Step 59:** Write unit tests for message delivery status transitions (`sent` -> `delivered` -> `read`).
+- [x] **Step 60:** Verify delivery ticks render correctly in both light mode and dark mode.
 
 ---
 
 ### Phase 4: Voice Notes & Audio Recording Engine (Steps 61–72)
-- [ ] **Step 61:** Create `useAudioRecorder.ts` hook leveraging browser `navigator.mediaDevices.getUserMedia` and `MediaRecorder`.
-- [ ] **Step 62:** Add mimeType auto-detection (`audio/webm;codecs=opus` for Chrome/Firefox, `audio/mp4` for Safari/iOS).
-- [ ] **Step 63:** Build WhatsApp push-to-talk mic button with hold-to-record or tap-to-lock recording modes.
-- [ ] **Step 64:** Implement live recording timer (`0:01`, `0:02`, ...) with pulsating red recording dot.
-- [ ] **Step 65:** Implement audio visualizer bar displaying live mic frequency amplitudes during recording.
-- [ ] **Step 66:** Add "Slide to Cancel" drag gesture on mobile / cancel trash can button on desktop.
-- [ ] **Step 67:** Add instant audio preview & playback prior to sending recorded voice note.
-- [ ] **Step 68:** Build `VoiceNoteBubble.tsx` displaying play/pause button, waveform scrub bar, duration, and sender avatar.
-- [ ] **Step 69:** Add playback speed toggle button: cycle through `1x` -> `1.5x` -> `2x` with pitch preservation.
-- [ ] **Step 70:** Integrate Web Audio API `AudioContext` for generating static waveform visual data from uploaded audio files.
-- [ ] **Step 71:** Implement auto-play next voice message when current voice note finishes playing.
-- [ ] **Step 72:** Write unit tests verifying audio recording blob creation, upload handling, and playback speed switching.
+- [x] **Step 61:** Create `useAudioRecorder.ts` hook leveraging browser `navigator.mediaDevices.getUserMedia` and `MediaRecorder`.
+- [x] **Step 62:** Add mimeType auto-detection (`audio/webm;codecs=opus` for Chrome/Firefox, `audio/mp4` for Safari/iOS).
+- [x] **Step 63:** Build WhatsApp push-to-talk mic button with hold-to-record or tap-to-lock recording modes.
+- [x] **Step 64:** Implement live recording timer (`0:01`, `0:02`, ...) with pulsating red recording dot.
+- [x] **Step 65:** Implement audio visualizer bar displaying live mic frequency amplitudes during recording.
+- [x] **Step 66:** Add "Slide to Cancel" drag gesture on mobile / cancel trash can button on desktop.
+- [x] **Step 67:** Add instant audio preview & playback prior to sending recorded voice note.
+- [x] **Step 68:** Build `VoiceNoteBubble.tsx` displaying play/pause button, waveform scrub bar, duration, and sender avatar.
+- [x] **Step 69:** Add playback speed toggle button: cycle through `1x` -> `1.5x` -> `2x` with pitch preservation.
+- [x] **Step 70:** Integrate Web Audio API `AudioContext` for generating static waveform visual data from uploaded audio files.
+- [x] **Step 71:** Implement auto-play next voice message when current voice note finishes playing.
+- [x] **Step 72:** Write unit tests verifying audio recording blob creation, upload handling, and playback speed switching.
 
 ---
 
 ### Phase 5: Rich Media Gallery, Document Previews & Lightbox (Steps 73–84)
-- [ ] **Step 73:** Build WhatsApp-style attachment menu popping up from paperclip (Photos & Videos, Camera, Document, Contact, Poll).
-- [ ] **Step 74:** Support drag-and-drop file upload directly onto chat conversation window.
-- [ ] **Step 75:** Support clipboard paste of images/screenshots (`Ctrl+V` / `Cmd+V`) with instant upload preview modal.
-- [ ] **Step 76:** Build Image/Video caption input in preview modal prior to dispatch.
-- [ ] **Step 77:** Implement multi-image gallery grid layout for messages containing 2, 3, or 4+ images.
-- [ ] **Step 78:** Build WhatsApp-style full-screen Media Viewer (`MediaLightbox.tsx`):
+- [x] **Step 73:** Build WhatsApp-style attachment menu popping up from paperclip (Photos & Videos, Camera, Document, Contact, Poll).
+- [x] **Step 74:** Support drag-and-drop file upload directly onto chat conversation window.
+- [x] **Step 75:** Support clipboard paste of images/screenshots (`Ctrl+V` / `Cmd+V`) with instant upload preview modal.
+- [x] **Step 76:** Build Image/Video caption input in preview modal prior to dispatch.
+- [x] **Step 77:** Implement multi-image gallery grid layout for messages containing 2, 3, or 4+ images.
+- [x] **Step 78:** Build WhatsApp-style full-screen Media Viewer (`MediaLightbox.tsx`):
   - Black translucent background (`rgba(11, 20, 26, 0.95)`)
   - Zoom in / zoom out controls and mouse wheel zoom
   - Left / Right arrows to navigate through chat media
   - Download file button with original filename
   - Sender info and timestamp in top bar
-- [ ] **Step 79:** Build Document attachment card showing file extension badge (PDF, DOCX, ZIP), file size, and download button.
-- [ ] **Step 80:** Support inline PDF preview modal for instant reading without leaving the app.
-- [ ] **Step 81:** Implement video player bubble with inline controls, duration overlay, and fullscreen toggle.
-- [ ] **Step 82:** Implement media link preview generator (extracting OpenGraph metadata `og:title`, `og:image`, `og:description`).
-- [ ] **Step 83:** Add "Media, Links, and Docs" tab in Contact Info Drawer categorizing past shared files.
-- [ ] **Step 84:** Write tests verifying image grid rendering, lightbox keyboard navigation, and media downloads.
+- [x] **Step 79:** Build Document attachment card showing file extension badge (PDF, DOCX, ZIP), file size, and download button.
+- [x] **Step 80:** Support inline PDF preview modal for instant reading without leaving the app.
+- [x] **Step 81:** Implement video player bubble with inline controls, duration overlay, and fullscreen toggle.
+- [x] **Step 82:** Implement media link preview generator (extracting OpenGraph metadata `og:title`, `og:image`, `og:description`).
+- [x] **Step 83:** Add "Media, Links, and Docs" tab in Contact Info Drawer categorizing past shared files.
+- [x] **Step 84:** Write tests verifying image grid rendering, lightbox keyboard navigation, and media downloads.
 
 ---
 
 ### Phase 6: Disappearing Messages & Ephemeral Retention (Steps 85–94)
-- [ ] **Step 85:** Add `disappearingTimer` field (`enum: ['off', '24h', '7d', '90d']`) to `Room` schema.
-- [ ] **Step 86:** Add `expiresAt` calculation to `Message` model schema based on room's `disappearingTimer`.
-- [ ] **Step 87:** Create MongoDB TTL index on `Message.expiresAt`: `{ expiresAt: 1 }, { expireAfterSeconds: 0 }`.
-- [ ] **Step 88:** Create `PUT /api/rooms/:roomId/disappearing-timer` endpoint to update chat timer.
-- [ ] **Step 89:** Emit real-time socket event `room:disappearing-timer-updated` when timer is toggled.
-- [ ] **Step 90:** Display system message in chat: *"You updated the disappearing messages timer. Messages will disappear 24 hours after they are sent."*
-- [ ] **Step 91:** Display small clock icon ⏱ on contact avatar and in header when disappearing messages is active.
-- [ ] **Step 92:** Add timer countdown badge on message bubbles indicating remaining retention time.
-- [ ] **Step 93:** Build Disappearing Messages selection drawer in Contact Info permitting owner/members to modify duration.
-- [ ] **Step 94:** Write tests verifying message expiration scheduling, TTL index configuration, and real-time socket notifications.
+- [x] **Step 85:** Add `disappearingTimer` field (`enum: ['off', '24h', '7d', '90d']`) to `Room` schema.
+- [x] **Step 86:** Add `expiresAt` calculation to `Message` model schema based on room's `disappearingTimer`.
+- [x] **Step 87:** Create MongoDB TTL index on `Message.expiresAt`: `{ expiresAt: 1 }, { expireAfterSeconds: 0 }`.
+- [x] **Step 88:** Create `PUT /api/rooms/:roomId/disappearing-timer` endpoint to update chat timer.
+- [x] **Step 89:** Emit real-time socket event `room:disappearing-timer-updated` when timer is toggled.
+- [x] **Step 90:** Display system message in chat: *"You updated the disappearing messages timer. Messages will disappear 24 hours after they are sent."*
+- [x] **Step 91:** Display small clock icon ⏱ on contact avatar and in header when disappearing messages is active.
+- [x] **Step 92:** Add timer countdown badge on message bubbles indicating remaining retention time.
+- [x] **Step 93:** Build Disappearing Messages selection drawer in Contact Info permitting owner/members to modify duration.
+- [x] **Step 94:** Write tests verifying message expiration scheduling, TTL index configuration, and real-time socket notifications.
 
 ---
 
 ### Phase 7: WhatsApp Status / Stories (24-Hour Broadcasts) (Steps 95–104)
-- [ ] **Step 95:** Create `Status` model schema: `user`, `mediaUrl`, `caption`, `viewers: [{ user, viewedAt }]`, `expiresAt` (24h TTL).
-- [ ] **Step 96:** Create `POST /api/status/create` endpoint accepting image/video and optional caption.
-- [ ] **Step 97:** Create `GET /api/status/feed` endpoint returning active status stories grouped by user.
-- [ ] **Step 98:** Create `POST /api/status/:id/view` endpoint registering viewer with view timestamp.
-- [ ] **Step 99:** Create `DELETE /api/status/:id` endpoint for deleting own status story.
-- [ ] **Step 100:** Build WhatsApp-style green circular ring around contact avatars in chat list when active status exists.
-- [ ] **Step 101:** Build dedicated Status tab in navigation rail / sidebar with "My Status" (+ button) and "Recent updates".
-- [ ] **Step 102:** Build full-screen Story Viewer (`StatusViewerModal.tsx`):
+- [x] **Step 95:** Create `Status` model schema: `user`, `mediaUrl`, `caption`, `viewers: [{ user, viewedAt }]`, `expiresAt` (24h TTL).
+- [x] **Step 96:** Create `POST /api/status/create` endpoint accepting image/video and optional caption.
+- [x] **Step 97:** Create `GET /api/status/feed` endpoint returning active status stories grouped by user.
+- [x] **Step 98:** Create `POST /api/status/:id/view` endpoint registering viewer with view timestamp.
+- [x] **Step 99:** Create `DELETE /api/status/:id` endpoint for deleting own status story.
+- [x] **Step 100:** Build WhatsApp-style green circular ring around contact avatars in chat list when active status exists.
+- [x] **Step 101:** Build dedicated Status tab in navigation rail / sidebar with "My Status" (+ button) and "Recent updates".
+- [x] **Step 102:** Build full-screen Story Viewer (`StatusViewerModal.tsx`):
   - Segmented progress bars at top advancing automatically (5s per photo)
   - Pause on tap/hold
   - Reply to status directly via direct message
   - Viewers bottom sheet for own statuses showing who saw the update
-- [ ] **Step 103:** Implement Status Privacy selector ("My Contacts", "My Contacts Except...", "Only Share With...").
-- [ ] **Step 104:** Write unit and integration tests for status creation, 24h expiration, viewer tracking, and deletion.
+- [x] **Step 103:** Implement Status Privacy selector ("My Contacts", "My Contacts Except...", "Only Share With...").
+- [x] **Step 104:** Write unit and integration tests for status creation, 24h expiration, viewer tracking, and deletion.
 
 ---
 
 ### Phase 8: Group Management, Community Channels & Admin Controls (Steps 105–115)
-- [ ] **Step 105:** Add `groupIcon`, `description`, `onlyAdminsCanMessage`, and `inviteCode` to `Room` schema.
-- [ ] **Step 106:** Create `POST /api/rooms/create-group` with multi-contact selection modal.
-- [ ] **Step 107:** Build WhatsApp Group Info Drawer (`GroupInfoDrawer.tsx`):
+- [x] **Step 105:** Add `groupIcon`, `description`, `onlyAdminsCanMessage`, and `inviteCode` to `Room` schema.
+- [x] **Step 106:** Create `POST /api/rooms/create-group` with multi-contact selection modal.
+- [x] **Step 107:** Build WhatsApp Group Info Drawer (`GroupInfoDrawer.tsx`):
   - Group icon and description editor
   - Participants list with "Admin" badges (`moderator` / `owner`)
   - "Add participant" and "Exit group" actions
-- [ ] **Step 108:** Add Group Settings sub-drawer ("Edit Group Info", "Send Messages" permissions).
-- [ ] **Step 109:** If `onlyAdminsCanMessage` is enabled, disable composer for regular members and display *"Only admins can send messages"*.
-- [ ] **Step 110:** Implement Group Invite Link generation (`/join/:inviteCode`) with copy link, QR code, and revoke link options.
-- [ ] **Step 111:** Create `GET /api/rooms/invite/:inviteCode` preview page showing group name, icon, member count, and "Join Group" button.
-- [ ] **Step 112:** Build WhatsApp-style `@mention` popover inside message composer with participant filtering.
-- [ ] **Step 113:** Display system messages when participants join, leave, or are promoted to group admin.
-- [ ] **Step 114:** Add "Dismiss as admin" and "Make group admin" context menu actions on participant rows.
-- [ ] **Step 115:** Write unit tests for group creation, invite link joining, permissions enforcement, and admin promotions.
+- [x] **Step 108:** Add Group Settings sub-drawer ("Edit Group Info", "Send Messages" permissions).
+- [x] **Step 109:** If `onlyAdminsCanMessage` is enabled, disable composer for regular members and display *"Only admins can send messages"*.
+- [x] **Step 110:** Implement Group Invite Link generation (`/join/:inviteCode`) with copy link, QR code, and revoke link options.
+- [x] **Step 111:** Create `GET /api/rooms/invite/:inviteCode` preview page showing group name, icon, member count, and "Join Group" button.
+- [x] **Step 112:** Build WhatsApp-style `@mention` popover inside message composer with participant filtering.
+- [x] **Step 113:** Display system messages when participants join, leave, or are promoted to group admin.
+- [x] **Step 114:** Add "Dismiss as admin" and "Make group admin" context menu actions on participant rows.
+- [x] **Step 115:** Write unit tests for group creation, invite link joining, permissions enforcement, and admin promotions.
 
 ---
 
