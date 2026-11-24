@@ -367,10 +367,22 @@ router.post('/:roomId/messages', async (req, res) => {
   try {
     const { roomId } = req.params;
     const userId = req.user.id;
-    const { text = '', attachments = [], clientMsgId, replyTo } = req.body || {};
+    const {
+      text = '',
+      attachments = [],
+      clientMsgId,
+      replyTo,
+      isVoiceNote = false,
+      voiceDuration = 0,
+      voiceWaveform = [],
+      isForwarded = false,
+      forwardedCount = 0,
+      location = null,
+      caption = '',
+    } = req.body || {};
     const trimmedText = typeof text === 'string' ? text.trim() : '';
 
-    if (!roomId || (!trimmedText && (!attachments || attachments.length === 0))) {
+    if (!roomId || (!trimmedText && !location && (!attachments || attachments.length === 0))) {
       return res.status(400).json({ error: 'message text or attachment required' });
     }
 
@@ -430,6 +442,16 @@ router.post('/:roomId/messages', async (req, res) => {
       }
     }
 
+    // Calculate disappearing message expiration
+    let expiresAt: Date | null = null;
+    if (room.disappearingTimer === '24h') {
+      expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    } else if (room.disappearingTimer === '7d') {
+      expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    } else if (room.disappearingTimer === '90d') {
+      expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
+    }
+
     const msg = await Message.create({
       room: roomId,
       sender: userId,
@@ -437,6 +459,15 @@ router.post('/:roomId/messages', async (req, res) => {
       attachments: Array.isArray(attachments) ? attachments : [],
       clientMsgId: clientMsgId || null,
       replyTo: replyTo || null,
+      deliveryStatus: 'sent',
+      expiresAt,
+      isVoiceNote: !!isVoiceNote,
+      voiceDuration: typeof voiceDuration === 'number' ? voiceDuration : 0,
+      voiceWaveform: Array.isArray(voiceWaveform) ? voiceWaveform : [],
+      isForwarded: !!isForwarded,
+      forwardedCount: typeof forwardedCount === 'number' ? forwardedCount : 0,
+      location: location && location.latitude != null ? location : undefined,
+      caption: typeof caption === 'string' ? caption.slice(0, 500) : '',
     });
 
     // Touch room updatedAt to bump conversation in list

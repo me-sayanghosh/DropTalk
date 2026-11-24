@@ -34,12 +34,35 @@ const messageSchema = new mongoose.Schema(
         users: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
       },
     ],
+    deliveryStatus: { type: String, enum: ['sent', 'delivered', 'read'], default: 'sent' },
+    deliveredAt: { type: Date, default: null },
+    readAt: { type: Date, default: null },
+    readBy: [
+      {
+        user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        readAt: { type: Date, default: Date.now },
+      },
+    ],
+    expiresAt: { type: Date, default: null },
+    isVoiceNote: { type: Boolean, default: false },
+    voiceDuration: { type: Number, default: 0 },
+    voiceWaveform: [{ type: Number }],
+    isForwarded: { type: Boolean, default: false },
+    forwardedCount: { type: Number, default: 0 },
+    location: {
+      latitude: { type: Number, default: null },
+      longitude: { type: Number, default: null },
+      name: { type: String, default: '' },
+      address: { type: String, default: '' },
+    },
+    caption: { type: String, default: '' },
   },
   { timestamps: true }
 );
 
 messageSchema.index({ room: 1, parentMessage: 1, createdAt: 1 });
 messageSchema.index({ clientMsgId: 1 }, { unique: true, sparse: true, partialFilterExpression: { clientMsgId: { $ne: null } } });
+messageSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 messageSchema.methods.toClient = function () {
   const isPopulated = this.sender && typeof this.sender === 'object' && this.sender._id;
@@ -79,6 +102,21 @@ messageSchema.methods.toClient = function () {
       emoji: r.emoji,
       users: r.users.map((u) => u.toString()),
     })),
+    deliveryStatus: this.deliveryStatus || 'sent',
+    deliveredAt: this.deliveredAt || null,
+    readAt: this.readAt || null,
+    readBy: (this.readBy || []).map((rb) => ({
+      user: rb.user ? rb.user.toString() : '',
+      readAt: rb.readAt,
+    })),
+    expiresAt: this.expiresAt || null,
+    isVoiceNote: !!this.isVoiceNote,
+    voiceDuration: this.voiceDuration || 0,
+    voiceWaveform: this.voiceWaveform || [],
+    isForwarded: !!this.isForwarded,
+    forwardedCount: this.forwardedCount || 0,
+    location: this.location?.latitude != null ? this.location : null,
+    caption: this.caption || '',
     createdAt: this.createdAt,
   };
 };

@@ -10,8 +10,9 @@ import {
   DMPanel, DMChat, CreateChannelModal, UserProfileCard, ForwardModal, MessageSearchModal,
   PinnedMessagesModal, ChannelSettingsModal, CallOverlay, QuickSwitcherModal, KeyboardShortcutsModal,
   CallLogsPanel, CallLogsMainView, ChannelMembersPage,
-  AIPanel, SuggestionsBar,
+  AIPanel, SuggestionsBar, WhatsAppShell,
 } from '../components';
+import { api } from '../../../shared/utils/api';
 import NotificationDrawer from '../../notifications/NotificationDrawer';
 import { useNotifications } from '../../notifications/useNotifications';
 import { useWebRTC } from '../hooks/useWebRTC';

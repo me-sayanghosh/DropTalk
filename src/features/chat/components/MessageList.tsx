@@ -12,6 +12,7 @@ import { formatDateSeparator } from '../../../shared/utils/dateUtils';
 import { getMediaUrl } from '../../../shared/utils';
 import { MessageSkeleton } from '../../../shared/components/ui/SkeletonLoaders';
 import { useAuth } from '../../../shared/context/AuthContext';
+import VoiceNoteBubble from './VoiceNoteBubble';
 
 /**
  * Parse message text and highlight @username mentions.
@@ -96,12 +97,12 @@ function renderAttachments(attachments, setLightboxData) {
         }
         if (att.fileType === 'audio') {
           return (
-            <div key={i} className="msg-att-audio-card">
-              <div className="audio-card-icon">🎵</div>
-              <div className="audio-card-body">
-                <audio controls src={fullUrl} />
-                <span className="audio-filename">{fileName}</span>
-              </div>
+            <div key={i} className="msg-att-audio-card max-w-sm">
+              <VoiceNoteBubble
+                audioUrl={fullUrl}
+                duration={att.size ? Math.round(att.size / 16000) : 0}
+                senderUsername={fileName}
+              />
             </div>
           );
         }

@@ -41,11 +41,20 @@ const roomSchema = new mongoose.Schema(
     category: { type: String, default: 'General', maxlength: 50 },
     slowMode: { type: Number, default: 0 },
     expiresAt: { type: Date, default: null },
+    disappearingTimer: { type: String, enum: ['off', '24h', '7d', '90d'], default: 'off' },
+    groupIcon: { type: String, default: '' },
+    groupDescription: { type: String, default: '', maxlength: 500 },
+    onlyAdminsCanMessage: { type: Boolean, default: false },
+    inviteCode: { type: String },
   },
   { timestamps: true }
 );
 
 roomSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+roomSchema.index(
+  { inviteCode: 1 },
+  { unique: true, sparse: true, partialFilterExpression: { inviteCode: { $type: 'string' } } }
+);
 
 roomSchema.methods.toClient = function () {
   return {
@@ -76,6 +85,11 @@ roomSchema.methods.toClient = function () {
     })),
     pinnedMessages: (this.pinnedMessages || []).map((p) => p.toString()),
     expiresAt: this.expiresAt,
+    disappearingTimer: this.disappearingTimer || 'off',
+    groupIcon: this.groupIcon || '',
+    groupDescription: this.groupDescription || '',
+    onlyAdminsCanMessage: !!this.onlyAdminsCanMessage,
+    inviteCode: this.inviteCode || null,
   };
 };
 
@@ -93,6 +107,11 @@ roomSchema.methods.toSummary = function () {
     slowMode: this.slowMode || 0,
     pinnedMessages: (this.pinnedMessages || []).map((p) => p.toString()),
     expiresAt: this.expiresAt,
+    disappearingTimer: this.disappearingTimer || 'off',
+    groupIcon: this.groupIcon || '',
+    groupDescription: this.groupDescription || '',
+    onlyAdminsCanMessage: !!this.onlyAdminsCanMessage,
+    inviteCode: this.inviteCode || null,
   };
 };
 

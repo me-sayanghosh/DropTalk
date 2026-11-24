@@ -1,5 +1,6 @@
 import { User } from '../auth/user.model';
 import { Room } from '../rooms/room.model';
+import { Message } from '../messages/message.model';
 import {
   getPresenceMap,
   setTyping,
@@ -114,6 +115,26 @@ export function registerPresenceHandlers(socket, io, { joined }) {
       }
 
       await setLastRead(roomId, socket.user.id, lastReadMessageId);
+
+      // Persist deliveryStatus 'read' in MongoDB
+      if (lastReadMessageId) {
+        try {
+          await Message.updateMany(
+            {
+              room: roomId,
+              _id: { $lte: lastReadMessageId },
+              sender: { $ne: socket.user.id },
+            },
+            {
+              $set: { deliveryStatus: 'read', readAt: new Date() },
+              $addToSet: { readBy: { user: socket.user.id, readAt: new Date() } },
+            }
+          );
+        } catch (dbErr: any) {
+          console.error('[presence] error updating read deliveryStatus:', dbErr.message);
+        }
+      }
+
       socket.to(roomId).emit('message:read', {
         roomId,
         userId: socket.user.id,

@@ -16,6 +16,7 @@ import dmRoutes from './features/dm/dm.routes';
 import notificationRoutes from './features/notifications/notifications.routes';
 import uploadRoutes from './features/upload/upload.routes';
 import callRoutes from './features/calls/calls.routes';
+import { statusRouter } from './features/status/status.routes';
 
 const dev = process.env.NODE_ENV !== 'production';
 
@@ -81,6 +82,7 @@ export function createApp({ disableCSP = false } = {}) {
   app.use('/api/notifications', notificationRoutes);
   app.use('/api/upload', uploadRoutes);
   app.use('/api/calls', callRoutes);
+  app.use('/api/status', statusRouter);
 
   // Global Express error handler to guarantee JSON error output instead of HTML
   app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

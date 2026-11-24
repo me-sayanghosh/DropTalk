@@ -115,8 +115,8 @@ export default function useDM() {
 
   // Send a message in an accepted DM via dual transport (Socket.IO + HTTP fallback) with optimistic UI
   const sendDMMessage = useCallback(
-    async (text: string, attachments: any[] = []) => {
-      if (!currentDM || (!text.trim() && (!attachments || attachments.length === 0))) return;
+    async (text: string, attachments: any[] = [], location?: any, isVoiceNote?: boolean, voiceMeta?: any) => {
+      if (!currentDM || (!text.trim() && !location && (!attachments || attachments.length === 0))) return;
       const roomIdStr = (currentDM.id || (currentDM as any)._id)?.toString();
       const clientMsgId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`;
       const tempId = `temp-${clientMsgId}`;
@@ -138,6 +138,10 @@ export default function useDM() {
         clientMsgId,
         status: 'sending',
         createdAt: new Date().toISOString(),
+        location: location || undefined,
+        isVoiceNote: !!isVoiceNote,
+        voiceDuration: voiceMeta?.voiceDuration || 0,
+        voiceWaveform: voiceMeta?.voiceWaveform || [],
       };
 
       setDmMessages((prev) => [...prev, optimisticMsg]);
@@ -157,6 +161,10 @@ export default function useDM() {
           text: text.trim(),
           attachments: attachments || [],
           clientMsgId,
+          location: location || undefined,
+          isVoiceNote: !!isVoiceNote,
+          voiceDuration: voiceMeta?.voiceDuration || 0,
+          voiceWaveform: voiceMeta?.voiceWaveform || [],
         });
 
         if (confirmedMsg) {

@@ -118,11 +118,25 @@ router.get('/:roomId/messages', async (req, res) => {
 router.post('/:roomId/messages', async (req, res) => {
   try {
     const { roomId } = req.params;
-    const { text = '', attachments = [], clientMsgId, replyTo, parentMessage, forwardedFrom } = req.body || {};
+    const {
+      text = '',
+      attachments = [],
+      clientMsgId,
+      replyTo,
+      parentMessage,
+      forwardedFrom,
+      isVoiceNote = false,
+      voiceDuration = 0,
+      voiceWaveform = [],
+      isForwarded = false,
+      forwardedCount = 0,
+      location = null,
+      caption = '',
+    } = req.body || {};
     const effectiveParent = parentMessage || req.body?.parentMessageId || null;
     const trimmedText = typeof text === 'string' ? text.trim() : '';
 
-    if (!roomId || (!trimmedText && (!attachments || attachments.length === 0))) {
+    if (!roomId || (!trimmedText && !location && (!attachments || attachments.length === 0))) {
       return res.status(400).json({ error: 'message text or attachment required' });
     }
 
@@ -145,6 +159,10 @@ router.post('/:roomId/messages', async (req, res) => {
 
     if (member && member.muted) {
       return res.status(403).json({ error: 'you are muted in this room' });
+    }
+
+    if (room.onlyAdminsCanMessage && member && member.role !== 'owner' && member.role !== 'moderator') {
+      return res.status(403).json({ error: 'Only admins can send messages in this group' });
     }
 
     if (room.slowMode > 0 && member && member.role !== 'owner' && member.role !== 'moderator') {
@@ -215,6 +233,16 @@ router.post('/:roomId/messages', async (req, res) => {
     const mentionedUsernames = parseMentions(trimmedText);
     const mentionIds = await resolveMentionIds(mentionedUsernames, req.user.id);
 
+    // Calculate disappearing message expiration
+    let expiresAt: Date | null = null;
+    if (room.disappearingTimer === '24h') {
+      expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    } else if (room.disappearingTimer === '7d') {
+      expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    } else if (room.disappearingTimer === '90d') {
+      expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
+    }
+
     const msg = await Message.create({
       room: roomId,
       sender: req.user.id,
@@ -225,6 +253,15 @@ router.post('/:roomId/messages', async (req, res) => {
       parentMessage: effectiveParent,
       forwardedFrom: forwardedFrom || null,
       mentions: mentionIds,
+      deliveryStatus: 'sent',
+      expiresAt,
+      isVoiceNote: !!isVoiceNote,
+      voiceDuration: typeof voiceDuration === 'number' ? voiceDuration : 0,
+      voiceWaveform: Array.isArray(voiceWaveform) ? voiceWaveform : [],
+      isForwarded: !!isForwarded,
+      forwardedCount: typeof forwardedCount === 'number' ? forwardedCount : 0,
+      location: location && location.latitude != null ? location : undefined,
+      caption: typeof caption === 'string' ? caption.slice(0, 500) : '',
     });
 
     const payload = {

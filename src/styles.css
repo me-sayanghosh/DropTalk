@@ -40,6 +40,25 @@
   --shadow-xl: 8px 8px 0px 0px #121212;
   --shadow-card: 6px 6px 0px 0px #121212;
 
+  /* WhatsApp Design System Tokens (Light Theme) */
+  --wa-green-primary: #00a884;
+  --wa-green-dark: #008069;
+  --wa-green-light: #25d366;
+  --wa-teal: #128c7e;
+  --wa-bg-deep: #eae6df;
+  --wa-bg-chat: #efeae2;
+  --wa-panel-bg: #ffffff;
+  --wa-panel-header: #f0f2f5;
+  --wa-panel-search: #f0f2f5;
+  --wa-bubble-out: #d9fdd3;
+  --wa-bubble-in: #ffffff;
+  --wa-text-primary: #111b21;
+  --wa-text-secondary: #667781;
+  --wa-border: #e9edef;
+  --wa-blue-tick: #53bdeb;
+  --wa-grey-tick: #8696a0;
+  --wa-danger: #ea0038;
+
   /* Typography */
   --font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
@@ -60,6 +79,25 @@
   --shadow-xl: 8px 8px 0px 0px #FFFFFF;
   --shadow-card: 6px 6px 0px 0px #FFFFFF;
   --color-muted: #2A2A2A;
+
+  /* WhatsApp Design System Tokens (Dark Theme) */
+  --wa-green-primary: #00a884;
+  --wa-green-dark: #008069;
+  --wa-green-light: #25d366;
+  --wa-teal: #128c7e;
+  --wa-bg-deep: #111b21;
+  --wa-bg-chat: #0b141a;
+  --wa-panel-bg: #111b21;
+  --wa-panel-header: #202c33;
+  --wa-panel-search: #202c33;
+  --wa-bubble-out: #005c4b;
+  --wa-bubble-in: #202c33;
+  --wa-text-primary: #e9edef;
+  --wa-text-secondary: #8696a0;
+  --wa-border: rgba(134, 150, 160, 0.15);
+  --wa-blue-tick: #53bdeb;
+  --wa-grey-tick: #8696a0;
+  --wa-danger: #f15c6d;
 }
 
 /* ── 2. Base Reset & Typography ── */
@@ -8724,5 +8762,621 @@ kbd, .kbd-group kbd {
 [data-theme="dark"] .cmp-status-dot {
   border-color: #1A1A1A;
 }
+
+/* ============================================================
+   WhatsApp Web & Mobile Design System Architecture
+   Pure Parity: Dual Pane, Mobile Stack, Bubbles, Voice, Stories
+   ============================================================ */
+
+.wa-shell {
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background-color: var(--wa-bg-deep);
+  color: var(--wa-text-primary);
+  position: relative;
+}
+
+.wa-sidebar {
+  width: 400px;
+  min-width: 340px;
+  max-width: 480px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--wa-panel-bg);
+  border-right: 1px solid var(--wa-border);
+  z-index: 10;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.wa-main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  position: relative;
+  background-color: var(--wa-bg-chat);
+}
+
+.wa-right-drawer {
+  width: 380px;
+  min-width: 320px;
+  height: 100%;
+  border-left: 1px solid var(--wa-border);
+  background-color: var(--wa-panel-bg);
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  transition: transform 0.25s ease;
+}
+
+/* Mobile responsive breakpoints */
+@media (max-width: 768px) {
+  .wa-sidebar {
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+  }
+  .wa-sidebar.mobile-hidden {
+    transform: translateX(-100%);
+    pointer-events: none;
+  }
+  .wa-main-area {
+    width: 100%;
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+  }
+  .wa-main-area.mobile-hidden {
+    transform: translateX(100%);
+    pointer-events: none;
+  }
+  .wa-right-drawer {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    z-index: 30;
+  }
+}
+
+/* WhatsApp Doodle Wallpaper */
+.wa-doodle-bg {
+  background-color: var(--wa-bg-chat);
+  background-image: radial-gradient(var(--wa-border) 1px, transparent 1px), radial-gradient(var(--wa-border) 1px, var(--wa-bg-chat) 1px);
+  background-size: 24px 24px;
+  background-position: 0 0, 12px 12px;
+}
+
+/* WhatsApp Top Headers */
+.wa-header {
+  height: 60px;
+  min-height: 60px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--wa-panel-header);
+  border-bottom: 1px solid var(--wa-border);
+  user-select: none;
+  z-index: 5;
+}
+
+.wa-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.wa-header-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  background-color: var(--wa-border);
+}
+
+.wa-header-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.wa-header-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--wa-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wa-header-subtitle {
+  font-size: 0.78rem;
+  color: var(--wa-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wa-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wa-icon-btn {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: var(--wa-text-secondary);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.wa-icon-btn:hover {
+  background-color: rgba(134, 150, 160, 0.12);
+  color: var(--wa-text-primary);
+}
+
+.wa-icon-btn:active {
+  background-color: rgba(134, 150, 160, 0.2);
+}
+
+/* Status Ring on Avatars */
+.wa-status-ring-container {
+  position: relative;
+  display: inline-block;
+  border-radius: 50%;
+  padding: 2px;
+  background: var(--wa-green-primary);
+  flex-shrink: 0;
+}
+
+.wa-status-ring-container.viewed {
+  background: var(--wa-text-secondary);
+}
+
+/* Chat List Item Row */
+.wa-chat-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  gap: 12px;
+  cursor: pointer;
+  background-color: var(--wa-panel-bg);
+  border-bottom: 1px solid var(--wa-border);
+  transition: background-color 0.12s ease;
+  user-select: none;
+}
+
+.wa-chat-item:hover {
+  background-color: var(--wa-panel-header);
+}
+
+.wa-chat-item.active {
+  background-color: var(--wa-panel-search);
+}
+
+.wa-chat-item-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.wa-chat-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.wa-chat-item-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--wa-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wa-chat-item-time {
+  font-size: 0.75rem;
+  color: var(--wa-text-secondary);
+  flex-shrink: 0;
+}
+
+.wa-chat-item-time.unread {
+  color: var(--wa-green-primary);
+  font-weight: 600;
+}
+
+.wa-chat-item-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+}
+
+.wa-chat-item-preview {
+  font-size: 0.82rem;
+  color: var(--wa-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.wa-badge {
+  background-color: var(--wa-green-primary);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  padding: 0 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* WhatsApp Message Bubbles */
+.wa-bubble-container {
+  display: flex;
+  flex-direction: column;
+  margin: 3px 0;
+  max-width: 75%;
+  position: relative;
+}
+
+.wa-bubble-container.out {
+  align-self: flex-end;
+}
+
+.wa-bubble-container.in {
+  align-self: flex-start;
+}
+
+.wa-bubble {
+  padding: 6px 9px 8px 9px;
+  border-radius: 7.5px;
+  position: relative;
+  box-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.13);
+  font-size: 0.9rem;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.wa-bubble.out {
+  background-color: var(--wa-bubble-out);
+  color: var(--wa-text-primary);
+  border-top-right-radius: 0px;
+}
+
+.wa-bubble.in {
+  background-color: var(--wa-bubble-in);
+  color: var(--wa-text-primary);
+  border-top-left-radius: 0px;
+}
+
+/* Quoted Reply Preview */
+.wa-quoted-reply {
+  padding: 5px 8px;
+  margin-bottom: 5px;
+  background-color: rgba(0, 0, 0, 0.06);
+  border-left: 3px solid var(--wa-green-primary);
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+[data-theme="dark"] .wa-quoted-reply {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.wa-quoted-sender {
+  font-weight: 600;
+  color: var(--wa-green-primary);
+  margin-bottom: 2px;
+}
+
+.wa-quoted-text {
+  color: var(--wa-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Message Meta & Delivery Ticks */
+.wa-msg-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  float: right;
+  margin-left: 8px;
+  margin-top: 4px;
+  font-size: 0.68rem;
+  color: var(--wa-text-secondary);
+  user-select: none;
+}
+
+.wa-tick-blue {
+  color: var(--wa-blue-tick);
+}
+
+.wa-tick-grey {
+  color: var(--wa-grey-tick);
+}
+
+/* Sticky Date Pill */
+.wa-date-pill {
+  align-self: center;
+  background-color: var(--wa-panel-header);
+  color: var(--wa-text-secondary);
+  padding: 5px 12px;
+  border-radius: 7.5px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin: 12px 0;
+  box-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.13);
+  user-select: none;
+}
+
+/* Voice Note Player */
+.wa-voice-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 4px;
+  min-width: 240px;
+}
+
+.wa-play-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: var(--wa-green-primary);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.wa-play-btn:active {
+  transform: scale(0.92);
+}
+
+.wa-waveform {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 24px;
+  cursor: pointer;
+}
+
+.wa-waveform-bar {
+  width: 3px;
+  border-radius: 1.5px;
+  background-color: var(--wa-text-secondary);
+  transition: height 0.1s ease, background-color 0.1s ease;
+}
+
+.wa-waveform-bar.played {
+  background-color: var(--wa-green-primary);
+}
+
+.wa-speed-pill {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 6px;
+  border-radius: 10px;
+  background-color: rgba(134, 150, 160, 0.18);
+  color: var(--wa-text-primary);
+  cursor: pointer;
+  user-select: none;
+}
+
+/* WhatsApp Emoji Reaction Bar */
+.wa-reaction-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background-color: var(--wa-panel-bg);
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+  position: absolute;
+  top: -36px;
+  z-index: 15;
+}
+
+.wa-reaction-bar.out {
+  right: 0;
+}
+
+.wa-reaction-bar.in {
+  left: 0;
+}
+
+.wa-reaction-item {
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+  user-select: none;
+}
+
+.wa-reaction-item:hover {
+  transform: scale(1.3);
+}
+
+/* Reactions Pill underneath Bubble */
+.wa-reactions-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 6px;
+  background-color: var(--wa-panel-bg);
+  border: 1px solid var(--wa-border);
+  border-radius: 12px;
+  font-size: 0.72rem;
+  margin-top: -6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Bottom Composer */
+.wa-composer-container {
+  min-height: 62px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  background-color: var(--wa-panel-header);
+  border-top: 1px solid var(--wa-border);
+  z-index: 5;
+}
+
+.wa-composer-input-box {
+  flex: 1;
+  min-height: 42px;
+  max-height: 120px;
+  background-color: var(--wa-panel-bg);
+  border-radius: 8px;
+  padding: 9px 12px;
+  display: flex;
+  align-items: center;
+  font-size: 0.95rem;
+  color: var(--wa-text-primary);
+  border: 1px solid var(--wa-border);
+}
+
+.wa-composer-textarea {
+  width: 100%;
+  border: none;
+  background: transparent;
+  outline: none;
+  resize: none;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  line-height: 1.35;
+}
+
+/* Audio Recording Bar */
+.wa-recording-bar {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background-color: var(--wa-panel-bg);
+  border-radius: 8px;
+  color: var(--wa-text-primary);
+}
+
+.wa-recording-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--wa-danger);
+  animation: wa-pulse 1s infinite;
+}
+
+@keyframes wa-pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.4; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Attachment Menu Popover */
+.wa-attachment-popover {
+  position: absolute;
+  bottom: 70px;
+  left: 20px;
+  background-color: var(--wa-panel-bg);
+  border-radius: 12px;
+  padding: 10px 0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 190px;
+  z-index: 25;
+  border: 1px solid var(--wa-border);
+}
+
+.wa-attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  color: var(--wa-text-primary);
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.wa-attachment-item:hover {
+  background-color: var(--wa-panel-header);
+}
+
+/* Fullscreen Media Viewer */
+.wa-lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(11, 20, 26, 0.96);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+}
+
+.wa-lightbox-header {
+  height: 60px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #ffffff;
+}
+
+.wa-lightbox-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.wa-lightbox-img {
+  max-width: 90vw;
+  max-height: 80vh;
+  object-fit: contain;
+  transition: transform 0.2s ease;
+}
+
 
 

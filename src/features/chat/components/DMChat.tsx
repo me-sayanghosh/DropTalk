@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { formatDateSeparator } from '../../../shared/utils/dateUtils';
 import { getMediaUrl, getSocket } from '../../../shared/utils';
 import { api } from '../../../shared/utils/api';
+import MessageStatusTick from './MessageStatusTick';
+import VoiceNoteBubble from './VoiceNoteBubble';
 
 export default function DMChat({ room, messages, userId, onAccept, onRemove, onSend, loading, onStartCall, onBack }) {
   const [text, setText] = useState('');
@@ -307,6 +309,15 @@ export default function DMChat({ room, messages, userId, onAccept, onRemove, onS
               <div className="dm-msg-bubble">
                 {m.deleted ? (
                   <span className="dm-msg-deleted">This message was deleted.</span>
+                ) : m.isVoiceNote && m.attachments?.[0]?.url ? (
+                  <VoiceNoteBubble
+                    audioUrl={m.attachments[0].url}
+                    duration={m.voiceDuration || 0}
+                    waveform={m.voiceWaveform || []}
+                    isMe={mine}
+                    timestamp={formatTime(m.createdAt)}
+                    status={m.deliveryStatus || m.status || 'sent'}
+                  />
                 ) : (
                   <>
                     {m.text && <span className="dm-msg-text">{m.text}</span>}
@@ -328,10 +339,11 @@ export default function DMChat({ room, messages, userId, onAccept, onRemove, onS
                   </>
                 )}
               </div>
-              <span className="dm-msg-time">
+              <span className="dm-msg-time flex items-center gap-1">
                 {formatTime(m.createdAt)}
-                {mine && m.status === 'sending' && ' · ⏳'}
-                {mine && m.status === 'failed' && ' · ⚠️'}
+                {mine && (
+                  <MessageStatusTick status={m.deliveryStatus || m.status || 'sent'} />
+                )}
               </span>
             </div>
           </div>

@@ -712,7 +712,13 @@ export default function useChat() {
     selectRoom(data.room).catch(() => {});
   }
 
-  async function send(text?: string, attachments: any[] = []) {
+  async function send(
+    text?: string,
+    attachments: any[] = [],
+    location?: any,
+    isVoiceNote?: boolean,
+    voiceMeta?: any
+  ) {
     if (!currentRoom) return;
     let textToSend = text || '';
 
@@ -734,6 +740,10 @@ export default function useChat() {
       text: textToSend,
       attachments: attachments || [],
       clientMsgId,
+      location: location || undefined,
+      isVoiceNote: !!isVoiceNote,
+      voiceDuration: voiceMeta?.voiceDuration || 0,
+      voiceWaveform: voiceMeta?.voiceWaveform || [],
     };
     if (replyTo) {
       payload.replyTo = replyTo.id;
@@ -762,6 +772,10 @@ export default function useChat() {
       status: 'sending',
       createdAt: new Date().toISOString(),
       reactions: [],
+      location: location || undefined,
+      isVoiceNote: !!isVoiceNote,
+      voiceDuration: voiceMeta?.voiceDuration || 0,
+      voiceWaveform: voiceMeta?.voiceWaveform || [],
     };
     if (replyTo) {
       optimisticMsg.replyTo = replyTo.id;

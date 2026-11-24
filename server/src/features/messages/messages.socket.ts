@@ -27,10 +27,24 @@ async function resolveMentionIds(usernames, senderId) {
 }
 
 export function registerMessageHandlers(socket, io, { joined }) {
-  socket.on('message:send', async ({ roomId, text = '', attachments = [], clientMsgId, replyTo, forwardedFrom }, ack) => {
+  socket.on('message:send', async ({
+    roomId,
+    text = '',
+    attachments = [],
+    clientMsgId,
+    replyTo,
+    forwardedFrom,
+    isVoiceNote = false,
+    voiceDuration = 0,
+    voiceWaveform = [],
+    isForwarded = false,
+    forwardedCount = 0,
+    location = null,
+    caption = '',
+  }, ack) => {
     try {
       const trimmedText = typeof text === 'string' ? text.trim() : '';
-      if (!roomId || (!trimmedText && (!attachments || attachments.length === 0))) {
+      if (!roomId && !location && (!trimmedText && (!attachments || attachments.length === 0))) {
         throw new Error('roomId and message text or attachment required');
       }
 
@@ -56,6 +70,10 @@ export function registerMessageHandlers(socket, io, { joined }) {
 
       const member = room.members.find((m) => m.user.toString() === socket.user.id);
       if (member && member.muted) throw new Error('you are muted in this room');
+
+      if (room.onlyAdminsCanMessage && member && member.role !== 'owner' && member.role !== 'moderator') {
+        throw new Error('Only admins can send messages in this group');
+      }
 
       // Enforce Room Slow Mode (seconds delay) for non-owners/mods
       if (room.slowMode > 0 && (!member || (member.role !== 'owner' && member.role !== 'moderator'))) {
@@ -117,6 +135,16 @@ export function registerMessageHandlers(socket, io, { joined }) {
       const mentionedUsernames = parseMentions(trimmedText);
       const mentionIds = await resolveMentionIds(mentionedUsernames, socket.user.id);
 
+      // Calculate disappearing message expiration
+      let expiresAt: Date | null = null;
+      if (room.disappearingTimer === '24h') {
+        expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      } else if (room.disappearingTimer === '7d') {
+        expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      } else if (room.disappearingTimer === '90d') {
+        expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
+      }
+
       const msg = await Message.create({
         room: roomId,
         sender: socket.user.id,
@@ -126,6 +154,15 @@ export function registerMessageHandlers(socket, io, { joined }) {
         replyTo: replyTo || null,
         forwardedFrom: forwardedFrom || null,
         mentions: mentionIds,
+        deliveryStatus: 'sent',
+        expiresAt,
+        isVoiceNote: !!isVoiceNote,
+        voiceDuration: typeof voiceDuration === 'number' ? voiceDuration : 0,
+        voiceWaveform: Array.isArray(voiceWaveform) ? voiceWaveform : [],
+        isForwarded: !!isForwarded,
+        forwardedCount: typeof forwardedCount === 'number' ? forwardedCount : 0,
+        location: location && location.latitude != null ? location : undefined,
+        caption: typeof caption === 'string' ? caption.slice(0, 500) : '',
       });
       const payload = {
         ...msg.toClient(),
@@ -498,6 +535,42 @@ export function registerMessageHandlers(socket, io, { joined }) {
       io.to(roomId).emit('message:unpinned', { roomId, messageId, pinnedMessages: pinnedIds });
       ack?.({ ok: true, pinnedMessages: pinnedIds });
     } catch (err) {
+      ack?.({ ok: false, error: err.message });
+    }
+  });
+
+  // Message Ack / Delivery Receipt Event (Double grey tick status)
+  socket.on('message:ack-received', async ({ roomId, messageId }, ack) => {
+    try {
+      if (!roomId || !messageId) return ack?.({ ok: false, error: 'roomId and messageId required' });
+
+      const msg = await Message.findById(messageId);
+      if (!msg) return ack?.({ ok: false, error: 'message not found' });
+
+      if (msg.deliveryStatus === 'sent') {
+        msg.deliveryStatus = 'delivered';
+        msg.deliveredAt = new Date();
+        await msg.save();
+
+        io.to(roomId).emit('message:delivered', {
+          roomId,
+          messageId: msg._id.toString(),
+          deliveredTo: socket.user.id,
+          deliveredAt: msg.deliveredAt,
+        });
+
+        if (msg.sender) {
+          io.to(`user:${msg.sender.toString()}`).emit('message:delivered', {
+            roomId,
+            messageId: msg._id.toString(),
+            deliveredTo: socket.user.id,
+            deliveredAt: msg.deliveredAt,
+          });
+        }
+      }
+
+      ack?.({ ok: true });
+    } catch (err: any) {
       ack?.({ ok: false, error: err.message });
     }
   });

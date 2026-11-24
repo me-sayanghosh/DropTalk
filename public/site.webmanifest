@@ -1,11 +1,12 @@
 {
-  "name": "DropTalk — Constructivist Workspace Messaging",
+  "name": "DropTalk — WhatsApp Web & Mobile Messenger",
   "short_name": "DropTalk",
-  "description": "Secure constructivist team messaging workspace engineered with end-to-end RSA/AES encryption, instant WebSockets, and WebRTC calls.",
-  "start_url": "/",
+  "description": "Secure WhatsApp-grade messaging workspace with zero-knowledge end-to-end encryption, voice notes, status stories, and crystal-clear calls.",
+  "start_url": "/chat",
   "display": "standalone",
-  "background_color": "#0E1015",
-  "theme_color": "#D02020",
+  "orientation": "portrait",
+  "background_color": "#111b21",
+  "theme_color": "#00a884",
   "icons": [
     {
       "src": "/favicon-16x16.png",
