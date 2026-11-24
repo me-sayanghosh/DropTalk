@@ -32,6 +32,23 @@ router.post('/send', async (req, res) => {
     const toUser = await User.findById(toUserId);
     if (!toUser) return res.status(404).json({ error: 'User not found' });
 
+    const fromUser = await User.findById(fromUserId);
+    if (!fromUser) return res.status(404).json({ error: 'Sender not found' });
+
+    const toUserBlockedFrom = (toUser.privacySettings?.blockedUsers || []).some(
+      (id: any) => id.toString() === fromUserId
+    );
+    if (toUserBlockedFrom) {
+      return res.status(403).json({ error: 'You cannot message this user' });
+    }
+
+    const fromUserBlockedTo = (fromUser.privacySettings?.blockedUsers || []).some(
+      (id: any) => id.toString() === toUserId
+    );
+    if (fromUserBlockedTo) {
+      return res.status(400).json({ error: 'You have blocked this user. Unblock to send a message.' });
+    }
+
     // Reuse existing DM room between these two users (either direction)
     let room = await Room.findOne({
       isDM: true,

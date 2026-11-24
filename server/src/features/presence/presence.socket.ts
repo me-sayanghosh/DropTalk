@@ -41,6 +41,20 @@ export function registerPresenceHandlers(socket, io, { joined }) {
   socket.on('message:read', async ({ roomId, lastReadMessageId }) => {
     try {
       if (!joined.has(roomId)) return;
+
+      // Check user's read receipts privacy setting
+      const user = (await User.findById(socket.user.id).select('privacySettings').lean()) as any;
+      const readReceiptsEnabled = user?.privacySettings?.readReceipts !== false;
+
+      // Check if room is DM
+      const { Room } = await import('../rooms/room.model');
+      const room = (await Room.findById(roomId).select('isDM').lean()) as any;
+
+      // If user disabled read receipts and it's a 1-to-1 DM, do not emit read receipt
+      if (!readReceiptsEnabled && room?.isDM) {
+        return;
+      }
+
       await setLastRead(roomId, socket.user.id, lastReadMessageId);
       socket.to(roomId).emit('message:read', {
         roomId,

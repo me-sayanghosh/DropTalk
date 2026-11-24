@@ -73,6 +73,24 @@ router.post('/log', async (req, res) => {
       return res.status(400).json({ error: 'Valid receiverId or roomId is required' });
     }
 
+    if (validReceiver) {
+      const { User } = await import('../auth/user.model');
+      const receiverUser = await User.findById(validReceiver);
+      const callerUser = await User.findById(callerId);
+      if (
+        receiverUser &&
+        (receiverUser.privacySettings?.blockedUsers || []).some((id: any) => id.toString() === callerId)
+      ) {
+        return res.status(403).json({ error: 'You cannot call this user' });
+      }
+      if (
+        callerUser &&
+        (callerUser.privacySettings?.blockedUsers || []).some((id: any) => id.toString() === validReceiver)
+      ) {
+        return res.status(400).json({ error: 'You have blocked this user' });
+      }
+    }
+
     const log = await CallLog.create({
       caller: callerId,
       receiver: validReceiver,

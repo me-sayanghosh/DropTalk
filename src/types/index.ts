@@ -21,6 +21,12 @@ export interface NotificationSettings {
 export interface PrivacySettings {
   showOnlineStatus?: boolean;
   showProfilePicture?: boolean;
+  readReceipts?: boolean;
+  lastSeen?: 'everyone' | 'contacts' | 'nobody';
+  online?: 'everyone' | 'same_as_last_seen';
+  profilePhoto?: 'everyone' | 'contacts' | 'nobody';
+  about?: 'everyone' | 'contacts' | 'nobody';
+  disappearingTimer?: 'off' | '24h' | '7d' | '90d';
   blockedUsers?: string[];
 }
 

@@ -32,6 +32,12 @@ const userSchema = new mongoose.Schema(
     privacySettings: {
       showOnlineStatus: { type: Boolean, default: true },
       showProfilePicture: { type: Boolean, default: true },
+      readReceipts: { type: Boolean, default: true },
+      lastSeen: { type: String, enum: ['everyone', 'contacts', 'nobody'], default: 'everyone' },
+      online: { type: String, enum: ['everyone', 'same_as_last_seen'], default: 'everyone' },
+      profilePhoto: { type: String, enum: ['everyone', 'contacts', 'nobody'], default: 'everyone' },
+      about: { type: String, enum: ['everyone', 'contacts', 'nobody'], default: 'everyone' },
+      disappearingTimer: { type: String, enum: ['off', '24h', '7d', '90d'], default: 'off' },
       blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     },
     customStatus: {
@@ -56,10 +62,18 @@ userSchema.methods.toClient = function () {
       directNotifications: true,
       backgroundSync: true,
     },
-    privacySettings: this.privacySettings || {
-      showOnlineStatus: true,
-      showProfilePicture: true,
-      blockedUsers: [],
+    privacySettings: {
+      showOnlineStatus: this.privacySettings?.showOnlineStatus ?? true,
+      showProfilePicture: this.privacySettings?.showProfilePicture ?? true,
+      readReceipts: this.privacySettings?.readReceipts ?? true,
+      lastSeen: this.privacySettings?.lastSeen || 'everyone',
+      online: this.privacySettings?.online || 'everyone',
+      profilePhoto: this.privacySettings?.profilePhoto || 'everyone',
+      about: this.privacySettings?.about || 'everyone',
+      disappearingTimer: this.privacySettings?.disappearingTimer || 'off',
+      blockedUsers: (this.privacySettings?.blockedUsers || []).map((u: any) =>
+        u?._id ? u._id.toString() : (u?.toString ? u.toString() : String(u))
+      ),
     },
     customStatus: this.customStatus || { emoji: '', text: '' },
     createdAt: this.createdAt,

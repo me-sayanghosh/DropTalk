@@ -461,7 +461,17 @@ router.put('/custom-status', requireAuth, async (req, res) => {
 // PUT /api/auth/privacy-settings - Update privacy & visibility settings
 router.put('/privacy-settings', requireAuth, async (req, res) => {
   try {
-    const { showOnlineStatus, showProfilePicture, blockedUsers } = req.body || {};
+    const {
+      showOnlineStatus,
+      showProfilePicture,
+      readReceipts,
+      lastSeen,
+      online,
+      profilePhoto,
+      about,
+      disappearingTimer,
+      blockedUsers,
+    } = req.body || {};
     const update: any = {};
 
     if (showOnlineStatus !== undefined) {
@@ -469,6 +479,24 @@ router.put('/privacy-settings', requireAuth, async (req, res) => {
     }
     if (showProfilePicture !== undefined) {
       update['privacySettings.showProfilePicture'] = Boolean(showProfilePicture);
+    }
+    if (readReceipts !== undefined) {
+      update['privacySettings.readReceipts'] = Boolean(readReceipts);
+    }
+    if (['everyone', 'contacts', 'nobody'].includes(lastSeen)) {
+      update['privacySettings.lastSeen'] = lastSeen;
+    }
+    if (['everyone', 'same_as_last_seen'].includes(online)) {
+      update['privacySettings.online'] = online;
+    }
+    if (['everyone', 'contacts', 'nobody'].includes(profilePhoto)) {
+      update['privacySettings.profilePhoto'] = profilePhoto;
+    }
+    if (['everyone', 'contacts', 'nobody'].includes(about)) {
+      update['privacySettings.about'] = about;
+    }
+    if (['off', '24h', '7d', '90d'].includes(disappearingTimer)) {
+      update['privacySettings.disappearingTimer'] = disappearingTimer;
     }
     if (Array.isArray(blockedUsers)) {
       update['privacySettings.blockedUsers'] = blockedUsers.filter((id: any) =>
@@ -485,6 +513,202 @@ router.put('/privacy-settings', requireAuth, async (req, res) => {
   } catch (err: any) {
     console.error('[auth] privacy-settings error:', err?.message || err);
     res.status(500).json({ error: err?.message || 'Failed to update privacy settings' });
+  }
+});
+
+// POST /api/auth/block-user - Block a user by userId or username
+router.post('/block-user', requireAuth, async (req, res) => {
+  try {
+    const { targetUserId, targetUsername } = req.body || {};
+    let targetUser: any = null;
+    if (targetUserId) {
+      if (!mongoose.Types.ObjectId.isValid(targetUserId)) {
+        return res.status(400).json({ error: 'Invalid user ID' });
+      }
+      targetUser = await User.findById(targetUserId);
+    } else if (targetUsername) {
+      targetUser = await User.findOne({ username: targetUsername.trim().replace(/^@/, '') });
+    }
+
+    if (!targetUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (targetUser._id.toString() === req.user.id) {
+      return res.status(400).json({ error: 'You cannot block yourself' });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.id,
+      { $addToSet: { 'privacySettings.blockedUsers': targetUser._id } },
+      { new: true }
+    ).populate('privacySettings.blockedUsers', 'username name profileImage');
+
+    return res.json({
+      ok: true,
+      message: `Blocked @${targetUser.username}`,
+      blockedUsers: (updatedUser?.privacySettings?.blockedUsers || []).map((u: any) => ({
+        id: u._id.toString(),
+        username: u.username,
+        name: u.name || '',
+        profileImage: u.profileImage || '',
+      })),
+    });
+  } catch (err: any) {
+    console.error('[auth] block-user error:', err?.message || err);
+    res.status(500).json({ error: err?.message || 'Failed to block user' });
+  }
+});
+
+// POST /api/auth/unblock-user - Unblock a user by targetUserId or targetUsername
+router.post('/unblock-user', requireAuth, async (req, res) => {
+  try {
+    const { targetUserId, targetUsername } = req.body || {};
+    let targetId = targetUserId;
+    if (!targetId && targetUsername) {
+      const u = await User.findOne({ username: targetUsername.trim().replace(/^@/, '') });
+      if (u) targetId = u._id.toString();
+    }
+
+    if (!targetId || !mongoose.Types.ObjectId.isValid(targetId)) {
+      return res.status(400).json({ error: 'Valid targetUserId required' });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.id,
+      { $pull: { 'privacySettings.blockedUsers': new mongoose.Types.ObjectId(targetId) } },
+      { new: true }
+    ).populate('privacySettings.blockedUsers', 'username name profileImage');
+
+    return res.json({
+      ok: true,
+      message: 'User unblocked',
+      blockedUsers: (updatedUser?.privacySettings?.blockedUsers || []).map((u: any) => ({
+        id: u._id.toString(),
+        username: u.username,
+        name: u.name || '',
+        profileImage: u.profileImage || '',
+      })),
+    });
+  } catch (err: any) {
+    console.error('[auth] unblock-user error:', err?.message || err);
+    res.status(500).json({ error: err?.message || 'Failed to unblock user' });
+  }
+});
+
+// GET /api/auth/blocked-users - Get populated list of blocked users
+router.get('/blocked-users', requireAuth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).populate(
+      'privacySettings.blockedUsers',
+      'username name profileImage'
+    );
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const blockedList = (user.privacySettings?.blockedUsers || []).map((u: any) => ({
+      id: u._id.toString(),
+      username: u.username,
+      name: u.name || '',
+      profileImage: u.profileImage || '',
+    }));
+
+    return res.json({ ok: true, blockedUsers: blockedList });
+  } catch (err: any) {
+    console.error('[auth] get-blocked-users error:', err?.message || err);
+    res.status(500).json({ error: err?.message || 'Failed to fetch blocked users' });
+  }
+});
+
+// GET /api/auth/export-data - GDPR/CCPA Data Subject Access Request
+router.get('/export-data', requireAuth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const { Room } = await import('../rooms/room.model');
+    const { CallLog } = await import('../calls/callLog.model');
+    const { Message } = await import('../messages/message.model');
+
+    const rooms = await Room.find({ 'members.user': user._id }).select('name type isDM topic createdAt');
+    const callsCount = await CallLog.countDocuments({ $or: [{ caller: user._id }, { receiver: user._id }] });
+    const messagesCount = await Message.countDocuments({ sender: user._id });
+
+    const exportData = {
+      exportDate: new Date().toISOString(),
+      platform: 'DropTalk Secure Messenger',
+      compliance: 'GDPR / CCPA Data Subject Access Request',
+      user: {
+        id: user._id.toString(),
+        username: user.username,
+        name: user.name || '',
+        email: user.email,
+        createdAt: user.createdAt,
+        notificationSettings: user.notificationSettings,
+        privacySettings: user.toClient().privacySettings,
+        customStatus: user.customStatus,
+      },
+      activityMetrics: {
+        totalRoomsJoined: rooms.length,
+        totalMessagesSent: messagesCount,
+        totalCallsLogged: callsCount,
+      },
+      rooms: rooms.map((r) => ({
+        id: r._id.toString(),
+        name: r.name,
+        type: r.type,
+        isDM: !!r.isDM,
+        topic: r.topic || '',
+        createdAt: r.createdAt,
+      })),
+    };
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename=droptalk_export_${user.username}.json`);
+    return res.json(exportData);
+  } catch (err: any) {
+    console.error('[auth] export-data error:', err?.message || err);
+    res.status(500).json({ error: err?.message || 'Failed to export account data' });
+  }
+});
+
+// DELETE /api/auth/delete-account - Account Erasure (Right to be Forgotten)
+router.delete('/delete-account', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { Room } = await import('../rooms/room.model');
+
+    // Remove user from room memberships & encrypted keys
+    await Room.updateMany(
+      { 'members.user': userId },
+      {
+        $pull: {
+          members: { user: userId },
+          encryptedKeys: { user: userId },
+        },
+      }
+    );
+
+    // Delete user OTPs
+    const user = await User.findById(userId);
+    if (user?.email) {
+      await Otp.deleteMany({ email: user.email });
+    }
+
+    // Delete User record
+    await User.findByIdAndDelete(userId);
+
+    // Clean up presence in Redis
+    try {
+      const { decrementPresence } = await import('../presence/presence.service');
+      await decrementPresence(userId);
+    } catch {
+      // ignore redis cleanup error
+    }
+
+    return res.json({ ok: true, message: 'Account and associated credentials successfully deleted' });
+  } catch (err: any) {
+    console.error('[auth] delete-account error:', err?.message || err);
+    res.status(500).json({ error: err?.message || 'Failed to delete account' });
   }
 });
 

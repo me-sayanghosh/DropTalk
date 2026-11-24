@@ -3,9 +3,22 @@
  */
 export function registerWebRTCHandlers(socket, io) {
   // Initiate a call to a target user or room
-  socket.on('webrtc:call-initiate', ({ targetUserId, roomId, isVideo }, ack) => {
+  socket.on('webrtc:call-initiate', async ({ targetUserId, roomId, isVideo }, ack) => {
     try {
       if (!targetUserId && !roomId) throw new Error('targetUserId or roomId required');
+
+      if (targetUserId) {
+        const { User } = await import('../../features/auth/user.model');
+        const targetUser = await User.findById(targetUserId);
+        if (
+          targetUser &&
+          (targetUser.privacySettings?.blockedUsers || []).some(
+            (id: any) => id.toString() === socket.user.id
+          )
+        ) {
+          return ack?.({ ok: false, error: 'User is unavailable' });
+        }
+      }
 
       const payload = {
         fromUserId: socket.user.id,
