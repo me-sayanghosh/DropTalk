@@ -236,21 +236,25 @@ Every completed step must adhere to the **DropTalk Quality Standard**:
 
 ## 5. Record of Executed Steps in Current Sprint
 
-### Steps 1–25: Privacy Architecture & Legal Infrastructure (Completed & Verified)
+### Steps 1–25: Privacy Architecture & Legal Infrastructure (Completed & Deep Verified)
 - **Files Modified/Created:**
   - `server/src/features/auth/user.model.ts`: Expanded schema with 7 WhatsApp privacy fields and safe `toClient()` serialization.
   - `src/types/index.ts`: Updated `PrivacySettings` interface.
-  - `server/src/features/auth/auth.routes.ts`: Implemented `PUT /privacy-settings`, `POST /block-user`, `POST /unblock-user`, `GET /blocked-users`, `GET /export-data`, and `DELETE /delete-account`.
-  - `server/src/features/dm/dm.routes.ts`: Enforced bidirectional contact blocking in `POST /api/dm/send`.
-  - `server/src/features/calls/calls.routes.ts`: Enforced contact blocking in `POST /api/calls/log`.
-  - `server/src/shared/socket/webrtc.socket.ts`: Enforced contact blocking in `webrtc:call-initiate`.
-  - `server/src/features/presence/presence.socket.ts`: Enforced `readReceipts` privacy toggle in `message:read` event.
+  - `server/src/features/auth/auth.routes.ts`: Implemented `PUT /privacy-settings`, `POST /block-user`, `POST /unblock-user`, `GET /blocked-users`, `GET /export-data`, and hardened `DELETE /delete-account` with full BSON ObjectId cascading cleanup across rooms, notifications, and blocklists. Added privacy sanitization to `GET /users/search`.
+  - `server/src/features/dm/dm.routes.ts`: Enforced bidirectional contact blocking in `POST /api/dm/send`, `POST /api/dm/:roomId/messages`, and `POST /api/dm/:roomId/accept`. Sanitized partner avatar in `GET /conversations`.
+  - `server/src/features/messages/messages.routes.ts`: Enforced contact blocking in `POST /api/rooms/:roomId/messages` for DM rooms.
+  - `server/src/features/messages/messages.socket.ts`: Enforced contact blocking in `socket.on('message:send')` for DM rooms.
+  - `server/src/features/calls/calls.routes.ts`: Enforced contact blocking in `POST /api/calls/log` (supporting both `receiverId` and DM `roomId` lookups).
+  - `server/src/shared/socket/webrtc.socket.ts`: Enforced bidirectional contact blocking in `webrtc:call-initiate` and `webrtc:call-accept`.
+  - `server/src/features/presence/presence.socket.ts`: Enforced `readReceipts` toggle in `message:read`, suppressed typing indicators between blocked contacts in `user:typing`, and filtered blocked/hidden users from `presence:request-map`.
+  - `server/src/shared/socket/index.ts`: Suppressed public online broadcast when user has `showOnlineStatus: false`.
+  - `src/features/chat/components/MessageList.tsx`: Corrected tick logic so sent messages to offline recipients display single tick (sent), and suppressed blue ticks when user disables read receipts.
   - `src/app/privacy/page.tsx`: Created full-length WhatsApp-grade Privacy Policy.
   - `src/app/terms/page.tsx`: Created full-length WhatsApp-grade Terms of Service.
   - `src/features/profile/pages/SettingsPage.tsx`: Integrated full WhatsApp Privacy Center with live server blocking, last seen toggle, read receipts switch, disappearing timer defaults, E2EE identity verification, GDPR data export, and account deletion modal.
-  - `server/tests/privacy_whatsapp.test.ts`: Created 8 comprehensive integration test suites verifying all endpoints and blocking behaviors.
+  - `server/tests/privacy_whatsapp.test.ts`: Expanded to 14 integration test suites verifying all endpoints, blocking bypass resistance, and data sanitation.
 
 - **Test Results:**
   - Total test suites: **15 passed, 15 total**
-  - Total tests: **75 passed, 75 total**
+  - Total tests: **81 passed, 81 total**
   - Typecheck: **0 errors** (`tsc --noEmit` passed)
