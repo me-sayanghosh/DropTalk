@@ -11,6 +11,7 @@ interface StatusViewerModalProps {
   onClose: () => void;
   onRecordView?: (statusId: string) => void;
   onReplyToStatus?: (partnerId: string, replyText: string) => void;
+  onDeleteStatus?: (statusId: string) => void;
 }
 
 export const StatusViewerModal: React.FC<StatusViewerModalProps> = ({
@@ -21,6 +22,7 @@ export const StatusViewerModal: React.FC<StatusViewerModalProps> = ({
   onClose,
   onRecordView,
   onReplyToStatus,
+  onDeleteStatus,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [progress, setProgress] = useState(0);
@@ -160,9 +162,25 @@ export const StatusViewerModal: React.FC<StatusViewerModalProps> = ({
             </div>
           </div>
 
-          <button onClick={onClose} className="wa-icon-btn text-white hover:bg-white/20" title="Close (Esc)">
-            ✕
-          </button>
+          <div className="flex items-center gap-2">
+            {isOwnStatus && onDeleteStatus && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (confirm('Delete this status update?')) {
+                    onDeleteStatus(currentStatus.id);
+                  }
+                }}
+                className="wa-icon-btn text-red-400 hover:bg-red-500/20"
+                title="Delete update"
+              >
+                🗑
+              </button>
+            )}
+            <button onClick={onClose} className="wa-icon-btn text-white hover:bg-white/20" title="Close (Esc)">
+              ✕
+            </button>
+          </div>
         </div>
       </div>
 

@@ -33,3 +33,6 @@ export { default as ChatItemRow } from './ChatItemRow';
 export { default as ContactInfoDrawer } from './ContactInfoDrawer';
 export { default as MediaLightbox } from './MediaLightbox';
 export { default as StatusViewerModal } from './StatusViewerModal';
+export { default as WhatsAppInviteModal } from './WhatsAppInviteModal';
+export { default as WhatsAppNewChatModal } from './WhatsAppNewChatModal';
+export { default as WhatsAppStatusModal } from './WhatsAppStatusModal';
