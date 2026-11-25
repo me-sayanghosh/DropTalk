@@ -2,14 +2,25 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Lock } from 'lucide-react';
+import { Lock, ArrowLeft } from 'lucide-react';
+import { useNavigation } from '../../shared/context/NavigationContext';
 
 export default function PrivacyPolicyPage() {
+  const { navigateBack } = useNavigation();
   return (
     <div className="min-h-screen bg-[#0b141a] text-[#e9edef] font-sans antialiased">
       {/* Top Navigation Bar */}
       <header className="sticky top-0 z-50 bg-[#202c33] border-b border-[#313d45] px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => navigateBack('/')}
+            className="p-2 rounded-lg text-[#8696a0] hover:text-[#e9edef] hover:bg-[#2a3942] transition-colors"
+            title="Go Back"
+            aria-label="Go Back"
+          >
+            <ArrowLeft size={18} />
+          </button>
           <Link href="/" className="flex items-center gap-2 text-xl font-bold text-[#00a884] hover:opacity-90">
             <span className="w-8 h-8 rounded-full bg-[#00a884] text-[#111b21] flex items-center justify-center font-extrabold text-lg">
               D
