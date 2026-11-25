@@ -3,7 +3,16 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { MessageSquare, Lock } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Room, User, Message, DMConversation, StatusStory } from '../../../types';
+import {
+  SECTION_EASE,
+  collapseBarVariants,
+  directionalSlideVariants,
+  drawerSlideVariants,
+  mobileSlideVariants,
+  type NavigationDirection,
+} from '../../../shared/utils/animations';
 import WhatsAppHeader from './WhatsAppHeader';
 import WhatsAppComposer from './WhatsAppComposer';
 import MessageBubble from './MessageBubble';
@@ -72,6 +81,8 @@ export const WhatsAppShell: React.FC<WhatsAppShellProps> = ({
 
   // Mobile navigation state
   const [mobileView, setMobileView] = useState<'sidebar' | 'chat'>('sidebar');
+  const [mobileDirection, setMobileDirection] = useState<NavigationDirection>(1);
+  const [chatDirection, setChatDirection] = useState<NavigationDirection>(1);
   const [searchFilter, setSearchFilter] = useState('');
   const [activeTabFilter, setActiveTabFilter] = useState<'all' | 'unread' | 'groups' | 'contacts'>('all');
   const [showRightDrawer, setShowRightDrawer] = useState(false);
@@ -112,7 +123,11 @@ export const WhatsAppShell: React.FC<WhatsAppShellProps> = ({
   // Sync mobile view with active room/DM selection
   useEffect(() => {
     if (activeRoom || activeDM) {
+      setMobileDirection(1);
+      setChatDirection(1);
       setMobileView('chat');
+    } else {
+      setChatDirection(-1);
     }
   }, [activeRoom?.id, activeDM?.id]);
 
@@ -154,6 +169,7 @@ export const WhatsAppShell: React.FC<WhatsAppShellProps> = ({
 
   // Handle mobile back to chat list
   const handleBackToSidebar = () => {
+    setMobileDirection(-1);
     setMobileView('sidebar');
     setShowRightDrawer(false);
     setShowInChatSearch(false);
@@ -311,12 +327,12 @@ export const WhatsAppShell: React.FC<WhatsAppShellProps> = ({
     return elements;
   };
 
-  return (
-    <div className="wa-shell select-none">
-      {/* ── 1. LEFT SIDEBAR (Chats List & Navigation) ── */}
-      <div className={`wa-sidebar ${isMobile && mobileView === 'chat' ? 'mobile-hidden' : ''}`}>
-        {/* Sidebar Header */}
-        <div className="wa-header">
+  const activeChatKey = activeDM?.id ? `dm-${activeDM.id}` : activeRoom?.id ? `room-${activeRoom.id}` : 'empty';
+
+  const sidebarContent = (
+    <>
+      {/* Sidebar Header */}
+      <div className="wa-header">
           <div className="flex items-center gap-3">
             {currentUser.profileImage ? (
               <img
@@ -465,30 +481,47 @@ export const WhatsAppShell: React.FC<WhatsAppShellProps> = ({
             ))
           )}
         </div>
-      </div>
+    </>
+  );
 
-      {/* ── 2. MAIN CHAT VIEW (Active Conversation) ── */}
-      <div className={`wa-main-area ${isMobile && mobileView === 'sidebar' ? 'mobile-hidden' : ''}`}>
-        {activeRoom || activeDM ? (
-          <>
-            {/* WhatsApp Top Chat Header */}
-            <WhatsAppHeader
-              title={currentChatTitle}
-              subtitle={activeDM ? (isCurrentOnline ? 'online' : 'offline') : `${activeRoom?.members?.length || 0} participants`}
-              avatar={currentChatAvatar}
-              isOnline={isCurrentOnline}
-              isTyping={isCurrentTyping}
-              hasDisappearingTimer={(activeRoom?.disappearingTimer || 'off') !== 'off'}
-              onBackMobile={handleBackToSidebar}
-              onVoiceCall={() => onStartCall(currentPartner?.id || null, (activeDM?.id || activeRoom?.id)!, false)}
-              onVideoCall={() => onStartCall(currentPartner?.id || null, (activeDM?.id || activeRoom?.id)!, true)}
-              onSearchClick={() => setShowInChatSearch((prev) => !prev)}
-              onOpenInfo={() => setShowRightDrawer((prev) => !prev)}
-            />
+  const mainAreaContent = (
+    <AnimatePresence mode="wait" custom={chatDirection} initial={false}>
+      {activeRoom || activeDM ? (
+        <motion.div
+          key={activeChatKey}
+          custom={chatDirection}
+          variants={directionalSlideVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          className="flex flex-col flex-1 min-h-0 h-full w-full"
+        >
+          {/* WhatsApp Top Chat Header */}
+          <WhatsAppHeader
+            title={currentChatTitle}
+            subtitle={activeDM ? (isCurrentOnline ? 'online' : 'offline') : `${activeRoom?.members?.length || 0} participants`}
+            avatar={currentChatAvatar}
+            isOnline={isCurrentOnline}
+            isTyping={isCurrentTyping}
+            hasDisappearingTimer={(activeRoom?.disappearingTimer || 'off') !== 'off'}
+            onBackMobile={handleBackToSidebar}
+            onVoiceCall={() => onStartCall(currentPartner?.id || null, (activeDM?.id || activeRoom?.id)!, false)}
+            onVideoCall={() => onStartCall(currentPartner?.id || null, (activeDM?.id || activeRoom?.id)!, true)}
+            onSearchClick={() => setShowInChatSearch((prev) => !prev)}
+            onOpenInfo={() => setShowRightDrawer((prev) => !prev)}
+          />
 
-            {/* In-chat search bar toggle */}
+          {/* In-chat search bar toggle */}
+          <AnimatePresence>
             {showInChatSearch && (
-              <div className="flex items-center gap-2 px-4 py-2 bg-[var(--wa-panel-search)] border-b border-[var(--wa-border)] animate-in slide-in-from-top duration-150">
+              <motion.div
+                variants={collapseBarVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                style={{ overflow: 'hidden' }}
+                className="flex items-center gap-2 px-4 py-2 bg-[var(--wa-panel-search)] border-b border-[var(--wa-border)]"
+              >
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[var(--wa-text-secondary)]">
                   <circle cx="11" cy="11" r="8" />
                   <line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -506,199 +539,325 @@ export const WhatsAppShell: React.FC<WhatsAppShellProps> = ({
                     ✕
                   </button>
                 )}
-              </div>
+              </motion.div>
             )}
+          </AnimatePresence>
 
-            {/* WhatsApp Doodle Wallpaper Messages Container */}
-            <div
-              ref={messagesContainerRef}
-              className="flex-1 overflow-y-auto px-4 py-3 flex flex-col wa-doodle-bg relative"
-            >
-              {renderMessagesWithDatePills()}
-              <ScrollToBottom containerRef={messagesContainerRef} />
-            </div>
-
-            {/* WhatsApp Composer */}
-            <WhatsAppComposer
-              onSendMessage={onSendMessage}
-              onTyping={onSendTyping}
-              replyToMessage={replyMessage}
-              onClearReply={() => setReplyMessage(null)}
-              disabled={activeRoom?.onlyAdminsCanMessage && !activeDM}
-              onUploadFile={onUploadFile}
-            />
-          </>
-        ) : (
-          /* Empty Chat Splash */
-          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-[var(--wa-text-secondary)] wa-doodle-bg select-none">
-            <div className="w-16 h-16 rounded-full bg-[var(--wa-panel-bg)] border border-[var(--wa-border)] flex items-center justify-center text-[var(--wa-green-primary)] mb-4 shadow-sm">
-              <MessageSquare size={28} />
-            </div>
-            <h2 className="text-xl font-bold text-[var(--wa-text-primary)] mb-2">DropTalk for Web</h2>
-            <p className="text-xs max-w-sm leading-relaxed mb-6">
-              Send and receive messages without keeping your phone online. Use DropTalk on your browser with zero-knowledge encryption.
-            </p>
-            <div className="flex items-center gap-1.5 text-xs text-[var(--wa-text-secondary)]">
-              <Lock size={13} />
-              <span>End-to-end encrypted</span>
-            </div>
+          {/* WhatsApp Doodle Wallpaper Messages Container */}
+          <div
+            ref={messagesContainerRef}
+            className="flex-1 overflow-y-auto px-4 py-3 flex flex-col wa-doodle-bg relative"
+          >
+            {renderMessagesWithDatePills()}
+            <ScrollToBottom containerRef={messagesContainerRef} />
           </div>
-        )}
-      </div>
+
+          {/* WhatsApp Composer */}
+          <WhatsAppComposer
+            onSendMessage={onSendMessage}
+            onTyping={onSendTyping}
+            replyToMessage={replyMessage}
+            onClearReply={() => setReplyMessage(null)}
+            disabled={activeRoom?.onlyAdminsCanMessage && !activeDM}
+            onUploadFile={onUploadFile}
+          />
+        </motion.div>
+      ) : (
+        /* Empty Chat Splash */
+        <motion.div
+          key="empty-splash"
+          custom={chatDirection}
+          variants={directionalSlideVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          className="flex-1 flex flex-col items-center justify-center p-8 text-center text-[var(--wa-text-secondary)] wa-doodle-bg select-none"
+        >
+          <div className="w-16 h-16 rounded-full bg-[var(--wa-panel-bg)] border border-[var(--wa-border)] flex items-center justify-center text-[var(--wa-green-primary)] mb-4 shadow-sm">
+            <MessageSquare size={28} />
+          </div>
+          <h2 className="text-xl font-bold text-[var(--wa-text-primary)] mb-2">DropTalk for Web</h2>
+          <p className="text-xs max-w-sm leading-relaxed mb-6">
+            Send and receive messages without keeping your phone online. Use DropTalk on your browser with zero-knowledge encryption.
+          </p>
+          <div className="flex items-center gap-1.5 text-xs text-[var(--wa-text-secondary)]">
+            <Lock size={13} />
+            <span>End-to-end encrypted</span>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+
+  return (
+    <div className="wa-shell select-none relative overflow-hidden">
+      {isMobile ? (
+        <AnimatePresence mode="popLayout" custom={mobileDirection} initial={false}>
+          {mobileView === 'sidebar' ? (
+            <motion.div
+              key="mobile-sidebar"
+              custom={mobileDirection}
+              variants={mobileSlideVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              className="wa-sidebar"
+            >
+              {sidebarContent}
+            </motion.div>
+          ) : (
+            <motion.div
+              key="mobile-chat"
+              custom={mobileDirection}
+              variants={mobileSlideVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              className="wa-main-area"
+            >
+              {mainAreaContent}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      ) : (
+        <>
+          {/* ── 1. LEFT SIDEBAR (Chats List & Navigation) ── */}
+          <div className="wa-sidebar">
+            {sidebarContent}
+          </div>
+
+          {/* ── 2. MAIN CHAT VIEW (Active Conversation) ── */}
+          <div className="wa-main-area">
+            {mainAreaContent}
+          </div>
+        </>
+      )}
 
       {/* ── 3. RIGHT CONTACT / GROUP INFO DRAWER ── */}
-      {showRightDrawer && (activeRoom || activeDM) && (
-        <ContactInfoDrawer
-          room={activeRoom || activeDM?.room}
-          partner={currentPartner}
-          currentUserId={myId}
-          onClose={() => setShowRightDrawer(false)}
-          isBlocked={(currentUser.privacySettings?.blockedUsers || []).some(
-            (id: any) => id?.toString() === currentPartner?.id?.toString()
-          )}
-          onBlockUser={async (targetId) => {
-            try {
-              await api.post('/auth/block-user', { targetUserId: targetId });
-              onBlockUser?.(targetId);
-            } catch (err: any) {
-              alert(err.response?.data?.error || 'Failed to block user');
-            }
-          }}
-          onUnblockUser={async (targetId) => {
-            try {
-              await api.post('/auth/unblock-user', { targetUserId: targetId });
-              onUnblockUser?.(targetId);
-            } catch (err: any) {
-              alert(err.response?.data?.error || 'Failed to unblock user');
-            }
-          }}
-          onLeaveRoom={() => {
-            if (activeRoom?.id) {
-              onLeaveRoom?.(activeRoom.id);
-              setShowRightDrawer(false);
-            }
-          }}
-          onInviteLinkClick={() => setShowInviteModal(true)}
-          onUpdateDisappearingTimer={async (timer) => {
-            const roomId = activeDM?.id || activeRoom?.id;
-            if (roomId) {
-              await api.put(`/rooms/${roomId}/disappearing-timer`, { disappearingTimer: timer });
-              if (activeRoom) activeRoom.disappearingTimer = timer;
-              if (activeDM?.room) activeDM.room.disappearingTimer = timer;
-            }
-          }}
-          onToggleAdminOnly={async (enabled) => {
-            if (activeRoom?.id) {
-              await api.put(`/rooms/${activeRoom.id}/permissions`, { onlyAdminsCanMessage: enabled });
-              activeRoom.onlyAdminsCanMessage = enabled;
-            }
-          }}
-        />
-      )}
+      <AnimatePresence>
+        {showRightDrawer && (activeRoom || activeDM) && (
+          <motion.div
+            key="contact-info-drawer"
+            custom="right"
+            variants={drawerSlideVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            className="h-full shrink-0"
+          >
+            <ContactInfoDrawer
+              room={activeRoom || activeDM?.room}
+              partner={currentPartner}
+              currentUserId={myId}
+              onClose={() => setShowRightDrawer(false)}
+              isBlocked={(currentUser.privacySettings?.blockedUsers || []).some(
+                (id: any) => id?.toString() === currentPartner?.id?.toString()
+              )}
+              onBlockUser={async (targetId) => {
+                try {
+                  await api.post('/auth/block-user', { targetUserId: targetId });
+                  onBlockUser?.(targetId);
+                } catch (err: any) {
+                  alert(err.response?.data?.error || 'Failed to block user');
+                }
+              }}
+              onUnblockUser={async (targetId) => {
+                try {
+                  await api.post('/auth/unblock-user', { targetUserId: targetId });
+                  onUnblockUser?.(targetId);
+                } catch (err: any) {
+                  alert(err.response?.data?.error || 'Failed to unblock user');
+                }
+              }}
+              onLeaveRoom={() => {
+                if (activeRoom?.id) {
+                  onLeaveRoom?.(activeRoom.id);
+                  setShowRightDrawer(false);
+                }
+              }}
+              onInviteLinkClick={() => setShowInviteModal(true)}
+              onUpdateDisappearingTimer={async (timer) => {
+                const roomId = activeDM?.id || activeRoom?.id;
+                if (roomId) {
+                  await api.put(`/rooms/${roomId}/disappearing-timer`, { disappearingTimer: timer });
+                  if (activeRoom) activeRoom.disappearingTimer = timer;
+                  if (activeDM?.room) activeDM.room.disappearingTimer = timer;
+                }
+              }}
+              onToggleAdminOnly={async (enabled) => {
+                if (activeRoom?.id) {
+                  await api.put(`/rooms/${activeRoom.id}/permissions`, { onlyAdminsCanMessage: enabled });
+                  activeRoom.onlyAdminsCanMessage = enabled;
+                }
+              }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── 4. STATUS UPDATES MODAL (List + Create + Delete) ── */}
-      {showStatusModal && (
-        <WhatsAppStatusModal
-          currentUser={currentUser}
-          statusStories={statusStories}
-          onClose={() => setShowStatusModal(false)}
-          onOpenStoryIndex={(idx) => {
-            setActiveStoryIndex(idx);
-            setShowStatusViewer(true);
-          }}
-          onRefreshFeed={fetchStatusFeed}
-          onUploadFile={onUploadFile}
-        />
-      )}
+      <AnimatePresence>
+        {showStatusModal && (
+          <motion.div
+            key="wa-status-modal"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: SECTION_EASE }}
+          >
+            <WhatsAppStatusModal
+              currentUser={currentUser}
+              statusStories={statusStories}
+              onClose={() => setShowStatusModal(false)}
+              onOpenStoryIndex={(idx) => {
+                setActiveStoryIndex(idx);
+                setShowStatusViewer(true);
+              }}
+              onRefreshFeed={fetchStatusFeed}
+              onUploadFile={onUploadFile}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── 5. FULLSCREEN STATUS STORY VIEWER ── */}
-      {showStatusViewer && statusStories.length > 0 && activeStoryIndex !== null && (
-        <StatusViewerModal
-          isOpen={showStatusViewer}
-          statuses={statusStories}
-          initialIndex={activeStoryIndex}
-          currentUserId={myId}
-          onClose={() => {
-            setShowStatusViewer(false);
-            setActiveStoryIndex(null);
-          }}
-          onRecordView={(statusId) => api.post(`/status/${statusId}/view`)}
-          onReplyToStatus={(partnerId, text) => {
-            onSendMessage(text);
-          }}
-          onDeleteStatus={async (statusId) => {
-            await api.delete(`/status/${statusId}`);
-            await fetchStatusFeed();
-            setShowStatusViewer(false);
-          }}
-        />
-      )}
+      <AnimatePresence>
+        {showStatusViewer && statusStories.length > 0 && activeStoryIndex !== null && (
+          <motion.div
+            key="wa-status-viewer"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.22, ease: SECTION_EASE }}
+          >
+            <StatusViewerModal
+              isOpen={showStatusViewer}
+              statuses={statusStories}
+              initialIndex={activeStoryIndex}
+              currentUserId={myId}
+              onClose={() => {
+                setShowStatusViewer(false);
+                setActiveStoryIndex(null);
+              }}
+              onRecordView={(statusId) => api.post(`/status/${statusId}/view`)}
+              onReplyToStatus={(partnerId, text) => {
+                onSendMessage(text);
+              }}
+              onDeleteStatus={async (statusId) => {
+                await api.delete(`/status/${statusId}`);
+                await fetchStatusFeed();
+                setShowStatusViewer(false);
+              }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── 6. NEW CONVERSATION & GROUP MODAL ── */}
-      {showNewChatModal && (
-        <WhatsAppNewChatModal
-          currentUserId={myId}
-          onClose={() => setShowNewChatModal(false)}
-          onStartDM={(targetUserId) => {
-            const found = conversations.find(
-              (c: any) => c.partner?.id === targetUserId || c.partner?._id === targetUserId
-            );
-            if (found) {
-              onSelectDM(found);
-            } else {
-              api
-                .post('/dm/send', { toUserId: targetUserId, text: 'Hi! Started a new chat.' })
-                .then((res) => {
-                  if (res.data?.room) {
-                    onSelectDM(res.data.room);
-                  }
-                })
-                .catch((err) => {
-                  alert(err.response?.data?.error || 'Failed to start direct message');
-                });
-            }
-          }}
-          onGroupCreated={(newRoom) => {
-            onSelectRoom(newRoom);
-          }}
-        />
-      )}
+      <AnimatePresence>
+        {showNewChatModal && (
+          <motion.div
+            key="wa-new-chat-modal"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: SECTION_EASE }}
+          >
+            <WhatsAppNewChatModal
+              currentUserId={myId}
+              onClose={() => setShowNewChatModal(false)}
+              onStartDM={(targetUserId) => {
+                const found = conversations.find(
+                  (c: any) => c.partner?.id === targetUserId || c.partner?._id === targetUserId
+                );
+                if (found) {
+                  onSelectDM(found);
+                } else {
+                  api
+                    .post('/dm/send', { toUserId: targetUserId, text: 'Hi! Started a new chat.' })
+                    .then((res) => {
+                      if (res.data?.room) {
+                        onSelectDM(res.data.room);
+                      }
+                    })
+                    .catch((err) => {
+                      alert(err.response?.data?.error || 'Failed to start direct message');
+                    });
+                }
+              }}
+              onGroupCreated={(newRoom) => {
+                onSelectRoom(newRoom);
+              }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── 7. GROUP INVITE LINK MODAL ── */}
-      {showInviteModal && activeRoom && (
-        <WhatsAppInviteModal
-          roomId={activeRoom.id}
-          roomName={activeRoom.name}
-          initialCode={activeRoom.inviteCode || ''}
-          onClose={() => setShowInviteModal(false)}
-        />
-      )}
+      <AnimatePresence>
+        {showInviteModal && activeRoom && (
+          <motion.div
+            key="wa-invite-modal"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: SECTION_EASE }}
+          >
+            <WhatsAppInviteModal
+              roomId={activeRoom.id}
+              roomName={activeRoom.name}
+              initialCode={activeRoom.inviteCode || ''}
+              onClose={() => setShowInviteModal(false)}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── 8. FORWARD MESSAGE MODAL ── */}
-      {forwardingMessage && (
-        <ForwardModal
-          message={forwardingMessage}
-          rooms={rooms}
-          conversations={conversations}
-          onClose={() => setForwardingMessage(null)}
-          onForward={async (target, msg) => {
-            if (onForwardMessage) {
-              await onForwardMessage(target, msg);
-            }
-            setForwardingMessage(null);
-          }}
-        />
-      )}
+      <AnimatePresence>
+        {forwardingMessage && (
+          <motion.div
+            key="wa-forward-modal"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: SECTION_EASE }}
+          >
+            <ForwardModal
+              message={forwardingMessage}
+              rooms={rooms}
+              conversations={conversations}
+              onClose={() => setForwardingMessage(null)}
+              onForward={async (target, msg) => {
+                if (onForwardMessage) {
+                  await onForwardMessage(target, msg);
+                }
+                setForwardingMessage(null);
+              }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── 9. FULLSCREEN MEDIA LIGHTBOX ── */}
-      {isLightboxOpen && (
-        <MediaLightbox
-          isOpen={isLightboxOpen}
-          mediaList={lightboxMedia}
-          initialIndex={lightboxIndex}
-          onClose={() => setIsLightboxOpen(false)}
-        />
-      )}
+      <AnimatePresence>
+        {isLightboxOpen && (
+          <motion.div
+            key="wa-media-lightbox"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.22, ease: SECTION_EASE }}
+          >
+            <MediaLightbox
+              isOpen={isLightboxOpen}
+              mediaList={lightboxMedia}
+              initialIndex={lightboxIndex}
+              onClose={() => setIsLightboxOpen(false)}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
