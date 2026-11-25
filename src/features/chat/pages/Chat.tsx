@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { AnimatePresence, motion } from 'framer-motion';
 import useChat from '../hooks/useChat';
 import useDM from '../hooks/useDM';
 import {
@@ -25,6 +26,12 @@ import { useToast } from '../../../shared/context/ToastContext';
 import { useAuth } from '../../../shared/context/AuthContext';
 import { NotificationItem, CallLog, Room, User } from '../../../types';
 import NavRail from '../../../shared/components/NavRail';
+import {
+  SECTION_EASE,
+  directionalSlideVariants,
+  drawerSlideVariants,
+  type NavigationDirection,
+} from '../../../shared/utils/animations';
 
 export default function Chat() {
   const { setUser } = useAuth();
@@ -98,10 +105,26 @@ export default function Chat() {
   };
 
   const [navRailTab, setNavRailTab] = useState<'calls' | 'notifications' | 'dm' | 'chat'>(getInitialTab);
+  const [sectionDirection, setSectionDirection] = useState<NavigationDirection>(1);
   const [channelView, setChannelView] = useState<'chat' | 'members'>('chat');
   const [dmRequestToast, setDmRequestToast] = useState<string | null>(null);
   const [mobileActiveView, setMobileActiveView] = useState<'sidebar' | 'chat'>(getInitialMobileView);
   const [layoutMode, setLayoutMode] = useState<'whatsapp' | 'classic'>('whatsapp');
+
+  const TAB_ORDER: Record<'chat' | 'dm' | 'calls' | 'notifications', number> = {
+    chat: 0,
+    dm: 1,
+    calls: 2,
+    notifications: 3,
+  };
+
+  const switchNavTab = (nextTab: 'calls' | 'notifications' | 'dm' | 'chat', explicitDir?: NavigationDirection) => {
+    if (nextTab === navRailTab) return;
+    const dir: NavigationDirection =
+      explicitDir ?? (TAB_ORDER[nextTab] >= TAB_ORDER[navRailTab] ? 1 : -1);
+    setSectionDirection(dir);
+    setNavRailTab(nextTab);
+  };
 
   // Reset channel view to chat whenever room changes
   useEffect(() => {
@@ -471,116 +494,138 @@ export default function Chat() {
         activeTab={navRailTab}
         unreadCount={unreadCount}
         pendingCount={pendingCount}
-        onCreateChannel={() => { setShowCreateModal(true); setNavRailTab('chat'); setMobileActiveView('sidebar'); }}
-        onNotificationsClick={() => { router.push('/notifications'); setNavRailTab('notifications'); setMobileActiveView('chat'); }}
-        onCallsClick={() => { router.push('/calls'); setNavRailTab('calls'); setMobileActiveView('chat'); }}
-        onChannelsClick={() => { router.push('/channels'); setNavRailTab('chat'); setMobileActiveView('sidebar'); }}
-        onDMClick={() => { router.push('/dm'); setNavRailTab('dm'); setMobileActiveView('sidebar'); }}
+        onCreateChannel={() => { setShowCreateModal(true); switchNavTab('chat'); setMobileActiveView('sidebar'); }}
+        onNotificationsClick={() => { router.push('/notifications'); switchNavTab('notifications'); setMobileActiveView('chat'); }}
+        onCallsClick={() => { router.push('/calls'); switchNavTab('calls'); setMobileActiveView('chat'); }}
+        onChannelsClick={() => { router.push('/channels'); switchNavTab('chat'); setMobileActiveView('sidebar'); }}
+        onDMClick={() => { router.push('/dm'); switchNavTab('dm'); setMobileActiveView('sidebar'); }}
         onSearchClick={() => setShowQuickSwitcher(true)}
         onSettingsClick={() => router.push('/settings/profile')}
         onLogout={logout}
       />
 
       {/* 2. Sidebar — Channels, DM panel, Notifications, or Calls panel */}
-      <aside className="sidebar">
-        {navRailTab === 'notifications' ? (
-          <NotificationsPanel
-            notifications={notifications}
-            unreadCount={unreadCount}
-            activeFilter={notifFilter}
-            onSelectFilter={(f: string) => setNotifFilter(f)}
-            onMarkAllRead={markAllRead}
-            onClearAll={clearAllNotifications}
-          />
-        ) : navRailTab === 'calls' ? (
-          <CallLogsPanel
-            logs={callLogs}
-            loading={callLogsLoading}
-            onSelectLog={(log: any) => { setSelectedCallLog(log); setMobileActiveView('chat'); }}
-            onStartCall={handleStartCall}
-            onDeleteLog={deleteCallLog}
-            onClearHistory={clearCallHistory}
-          />
-        ) : navRailTab === 'dm' ? (
-          <DMPanel
-            conversations={conversations}
-            currentDM={currentDM}
-            onOpen={handleOpenDM}
-            onSendRequest={(toUserId: string) => handleDMUser(toUserId)}
-            userId={user?.id}
-            loading={dmLoading}
-            onOpenSearch={() => setShowQuickSwitcher(true)}
-            onOpenNotifications={() => { router.push('/notifications'); setNavRailTab('notifications'); setMobileActiveView('chat'); }}
-            unreadNotifCount={unreadCount}
-          />
-        ) : (
-          <Channels
-            rooms={rooms}
-            current={currentRoom}
-            onSelect={handleSelectRoom}
-            onLeave={leaveRoom}
-            onRequestJoin={handleRequestJoin}
-            memberRooms={memberRooms}
-            pendingRooms={pendingRooms}
-            onOpenCreate={() => setShowCreateModal(true)}
-            onOpenSearch={() => setShowQuickSwitcher(true)}
-            onOpenNotifications={() => { router.push('/notifications'); setNavRailTab('notifications'); setMobileActiveView('chat'); }}
-            unreadNotifCount={unreadCount}
-            unreadCounts={unreadCounts}
-            mentionAlerts={mentionAlerts}
-            onMarkAsRead={markRoomAsRead}
-            onClearChat={clearRoomMessages}
-            loading={roomsLoading}
-          />
-        )}
+      <aside className="sidebar overflow-hidden">
+        <AnimatePresence mode="wait" custom={sectionDirection} initial={false}>
+          <motion.div
+            key={`sidebar-${navRailTab}`}
+            custom={sectionDirection}
+            variants={directionalSlideVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            className="h-full w-full flex flex-col"
+          >
+            {navRailTab === 'notifications' ? (
+              <NotificationsPanel
+                notifications={notifications}
+                unreadCount={unreadCount}
+                activeFilter={notifFilter}
+                onSelectFilter={(f: string) => setNotifFilter(f)}
+                onMarkAllRead={markAllRead}
+                onClearAll={clearAllNotifications}
+              />
+            ) : navRailTab === 'calls' ? (
+              <CallLogsPanel
+                logs={callLogs}
+                loading={callLogsLoading}
+                onSelectLog={(log: any) => { setSelectedCallLog(log); setMobileActiveView('chat'); }}
+                onStartCall={handleStartCall}
+                onDeleteLog={deleteCallLog}
+                onClearHistory={clearCallHistory}
+              />
+            ) : navRailTab === 'dm' ? (
+              <DMPanel
+                conversations={conversations}
+                currentDM={currentDM}
+                onOpen={handleOpenDM}
+                onSendRequest={(toUserId: string) => handleDMUser(toUserId)}
+                userId={user?.id}
+                loading={dmLoading}
+                onOpenSearch={() => setShowQuickSwitcher(true)}
+                onOpenNotifications={() => { router.push('/notifications'); switchNavTab('notifications'); setMobileActiveView('chat'); }}
+                unreadNotifCount={unreadCount}
+              />
+            ) : (
+              <Channels
+                rooms={rooms}
+                current={currentRoom}
+                onSelect={handleSelectRoom}
+                onLeave={leaveRoom}
+                onRequestJoin={handleRequestJoin}
+                memberRooms={memberRooms}
+                pendingRooms={pendingRooms}
+                onOpenCreate={() => setShowCreateModal(true)}
+                onOpenSearch={() => setShowQuickSwitcher(true)}
+                onOpenNotifications={() => { router.push('/notifications'); switchNavTab('notifications'); setMobileActiveView('chat'); }}
+                unreadNotifCount={unreadCount}
+                unreadCounts={unreadCounts}
+                mentionAlerts={mentionAlerts}
+                onMarkAsRead={markRoomAsRead}
+                onClearChat={clearRoomMessages}
+                loading={roomsLoading}
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
       </aside>
 
       {/* 3. Main Chat Area */}
-      <main className="main">
-        {navRailTab === 'notifications' ? (
-          /* Notifications Main View */
-          <NotificationsMainView
-            notifications={notifications}
-            unreadCount={unreadCount}
-            filter={notifFilter}
-            onSelectFilter={(f: string) => setNotifFilter(f)}
-            onMarkRead={markRead}
-            onDeleteNotif={deleteNotification}
-            onMarkAllRead={markAllRead}
-            onClearAll={clearAllNotifications}
-            onBack={() => { router.push('/channels'); setNavRailTab('chat'); setMobileActiveView('sidebar'); }}
-            onNavigateToRoom={(roomId: string) => {
-              const r = rooms.find((rm: Room) => rm.id === roomId);
-              if (r) {
-                selectRoom(r);
-                setNavRailTab('chat');
-              }
-            }}
-          />
-        ) : navRailTab === 'calls' ? (
-          /* Call Logs Main View */
-          <CallLogsMainView
-            logs={callLogs}
-            selectedLog={selectedCallLog}
-            onStartCall={handleStartCall}
-            onDeleteLog={deleteCallLog}
-            onClearHistory={clearCallHistory}
-            onBack={() => { router.push('/channels'); setNavRailTab('chat'); setMobileActiveView('sidebar'); }}
-          />
-        ) : navRailTab === 'dm' ? (
-          /* DM Main View */
-          <DMChat
-            room={currentDM}
-            messages={dmMessages}
-            userId={user?.id}
-            loading={dmLoading}
-            onAccept={acceptDM}
-            onRemove={removeDM}
-            onSend={sendDMMessage}
-            onStartCall={handleStartCall}
-            onBack={() => setMobileActiveView('sidebar')}
-          />
-        ) : (
+      <main className="main overflow-hidden">
+        <AnimatePresence mode="wait" custom={sectionDirection} initial={false}>
+          <motion.div
+            key={`main-${navRailTab}`}
+            custom={sectionDirection}
+            variants={directionalSlideVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            className="h-full w-full flex flex-col min-h-0"
+          >
+            {navRailTab === 'notifications' ? (
+              /* Notifications Main View */
+              <NotificationsMainView
+                notifications={notifications}
+                unreadCount={unreadCount}
+                filter={notifFilter}
+                onSelectFilter={(f: string) => setNotifFilter(f)}
+                onMarkRead={markRead}
+                onDeleteNotif={deleteNotification}
+                onMarkAllRead={markAllRead}
+                onClearAll={clearAllNotifications}
+                onBack={() => { router.push('/channels'); switchNavTab('chat', -1); setMobileActiveView('sidebar'); }}
+                onNavigateToRoom={(roomId: string) => {
+                  const r = rooms.find((rm: Room) => rm.id === roomId);
+                  if (r) {
+                    selectRoom(r);
+                    switchNavTab('chat', -1);
+                  }
+                }}
+              />
+            ) : navRailTab === 'calls' ? (
+              /* Call Logs Main View */
+              <CallLogsMainView
+                logs={callLogs}
+                selectedLog={selectedCallLog}
+                onStartCall={handleStartCall}
+                onDeleteLog={deleteCallLog}
+                onClearHistory={clearCallHistory}
+                onBack={() => { router.push('/channels'); switchNavTab('chat', -1); setMobileActiveView('sidebar'); }}
+              />
+            ) : navRailTab === 'dm' ? (
+              /* DM Main View */
+              <DMChat
+                room={currentDM}
+                messages={dmMessages}
+                userId={user?.id}
+                loading={dmLoading}
+                onAccept={acceptDM}
+                onRemove={removeDM}
+                onSend={sendDMMessage}
+                onStartCall={handleStartCall}
+                onBack={() => setMobileActiveView('sidebar')}
+              />
+            ) : (
           /* Group Chat View */
           <>
             <header className="chat-header">
@@ -732,87 +777,119 @@ export default function Chat() {
               )}
             </header>
 
-            <div className="main-content">
+            <div className="main-content overflow-hidden">
               {currentRoom ? (
-                channelView === 'members' ? (
-                  <ChannelMembersPage
-                    room={currentRoom}
-                    members={members}
-                    online={online}
-                    currentUserId={user?.id || (user as any)?._id}
-                    onBack={() => setChannelView('chat')}
-                    onMemberUpdate={refreshMembers}
-                    onOpenProfile={(u) => setSelectedProfileUser(u)}
-                    onDMUser={handleDMUser}
-                  />
-                ) : (
-                  <>
-                    <div className="chat-area">
-                      {isPrivate && keyStatus !== 'ready' && keyStatus !== null && (
-                        <div className="encryption-notice">
-                          {keyStatus === 'waiting' ? 'Exchanging E2EE keys...' : 'Encryption key error'}
-                        </div>
-                      )}
-                      <div
-                        className="messages-container"
-                        ref={messagesContainerRef}
-                        onScroll={(e: React.UIEvent<HTMLDivElement>) => {
-                          if (e.currentTarget.scrollTop < 40) {
-                            loadOlderMessages();
-                          }
-                        }}
-                      >
-                        <MessageList
-                          messages={displayMessages}
-                          meId={user?.id || (user as any)?._id}
-                          onDelete={deleteMessage}
-                          onDeleteForMe={deleteForMe}
-                          members={members}
-                          onRead={handleReadReceipt}
-                          readReceipts={readReceipts}
-                          onlineUserIds={online.map((u) => u.id)}
-                          onOpenThread={setThreadMessage}
-                          onReact={handleReact}
-                          threadCounts={threadCounts}
-                          onReply={setReplyTo}
-                          replyToData={replyToData}
-                          membersMap={membersMap}
-                          onDMUser={handleDMUser}
-                          onEdit={editMessage}
-                          onPin={pinMessage}
-                          onUnpin={unpinMessage}
-                          onOpenForward={setForwardMsg}
-                          pinnedMessages={currentRoom.pinnedMessages || []}
-                        />
+                <AnimatePresence mode="wait" custom={channelView === 'members' ? 1 : -1} initial={false}>
+                  {channelView === 'members' ? (
+                    <motion.div
+                      key="channel-members-view"
+                      custom={1}
+                      variants={directionalSlideVariants}
+                      initial="initial"
+                      animate="animate"
+                      exit="exit"
+                      className="flex-1 flex min-h-0 h-full w-full"
+                    >
+                      <ChannelMembersPage
+                        room={currentRoom}
+                        members={members}
+                        online={online}
+                        currentUserId={user?.id || (user as any)?._id}
+                        onBack={() => setChannelView('chat')}
+                        onMemberUpdate={refreshMembers}
+                        onOpenProfile={(u) => setSelectedProfileUser(u)}
+                        onDMUser={handleDMUser}
+                      />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="channel-chat-view"
+                      custom={-1}
+                      variants={directionalSlideVariants}
+                      initial="initial"
+                      animate="animate"
+                      exit="exit"
+                      className="flex-1 flex min-h-0 h-full w-full"
+                    >
+                      <div className="chat-area">
+                        {isPrivate && keyStatus !== 'ready' && keyStatus !== null && (
+                          <div className="encryption-notice">
+                            {keyStatus === 'waiting' ? 'Exchanging E2EE keys...' : 'Encryption key error'}
+                          </div>
+                        )}
+                        <div
+                          className="messages-container"
+                          ref={messagesContainerRef}
+                          onScroll={(e: React.UIEvent<HTMLDivElement>) => {
+                            if (e.currentTarget.scrollTop < 40) {
+                              loadOlderMessages();
+                            }
+                          }}
+                        >
+                          <MessageList
+                            messages={displayMessages}
+                            meId={user?.id || (user as any)?._id}
+                            onDelete={deleteMessage}
+                            onDeleteForMe={deleteForMe}
+                            members={members}
+                            onRead={handleReadReceipt}
+                            readReceipts={readReceipts}
+                            onlineUserIds={online.map((u) => u.id)}
+                            onOpenThread={setThreadMessage}
+                            onReact={handleReact}
+                            threadCounts={threadCounts}
+                            onReply={setReplyTo}
+                            replyToData={replyToData}
+                            membersMap={membersMap}
+                            onDMUser={handleDMUser}
+                            onEdit={editMessage}
+                            onPin={pinMessage}
+                            onUnpin={unpinMessage}
+                            onOpenForward={setForwardMsg}
+                            pinnedMessages={currentRoom.pinnedMessages || []}
+                          />
 
+                        </div>
+                        <TypingIndicator typingUsers={typingUsers} />
+                        <MessageInput
+                          value={currentInput}
+                          onSend={send}
+                          onTyping={handleTyping}
+                          onTextChange={setCurrentInput}
+                          replyTo={replyTo}
+                          onClearReply={() => setReplyTo(null)}
+                          membersMap={membersMap}
+                          slowMode={currentRoom.slowMode || 0}
+                          editingMessage={editingMessage}
+                          onSaveEdit={editMessage}
+                          onCancelEdit={() => setEditingMessage(null)}
+                          onEditLastMessage={editLastSentMessage}
+                        />
                       </div>
-                      <TypingIndicator typingUsers={typingUsers} />
-                      <MessageInput
-                        value={currentInput}
-                        onSend={send}
-                        onTyping={handleTyping}
-                        onTextChange={setCurrentInput}
-                        replyTo={replyTo}
-                        onClearReply={() => setReplyTo(null)}
-                        membersMap={membersMap}
-                        slowMode={currentRoom.slowMode || 0}
-                        editingMessage={editingMessage}
-                        onSaveEdit={editMessage}
-                        onCancelEdit={() => setEditingMessage(null)}
-                        onEditLastMessage={editLastSentMessage}
-                      />
-                    </div>
-                    {threadMessage && (
-                      <ThreadPanel
-                        parentMessage={threadMessage}
-                        roomId={currentRoom.id}
-                        meId={user?.id}
-                        isPrivate={isPrivate}
-                        onClose={() => setThreadMessage(null)}
-                      />
-                    )}
-                  </>
-                )
+                      <AnimatePresence>
+                        {threadMessage && (
+                          <motion.div
+                            key="thread-panel"
+                            custom="right"
+                            variants={drawerSlideVariants}
+                            initial="initial"
+                            animate="animate"
+                            exit="exit"
+                            className="h-full shrink-0 flex"
+                          >
+                            <ThreadPanel
+                              parentMessage={threadMessage}
+                              roomId={currentRoom.id}
+                              meId={user?.id}
+                              isPrivate={isPrivate}
+                              onClose={() => setThreadMessage(null)}
+                            />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               ) : roomsLoading ? (
                 <div className="empty-state">
                   <div className="bauhaus-loading-shapes" style={{ marginBottom: '1.25rem' }}>
@@ -847,6 +924,8 @@ export default function Chat() {
             </div>
           </>
         )}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* Notification Drawer Modal */}
@@ -862,29 +941,49 @@ export default function Chat() {
       />
 
       {/* Create Channel Modal */}
-      {showCreateModal && (
-        <CreateChannelModal
-          onClose={() => setShowCreateModal(false)}
-          onCreate={createRoom}
-        />
-      )}
+      <AnimatePresence>
+        {showCreateModal && (
+          <motion.div
+            key="classic-create-modal"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: SECTION_EASE }}
+          >
+            <CreateChannelModal
+              onClose={() => setShowCreateModal(false)}
+              onCreate={createRoom}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* User Profile Card Popover */}
-      {selectedProfileUser && (
-        <UserProfileCard
-          user={selectedProfileUser}
-          isOnline={online.some((o) => o.id === selectedProfileUser.id || (o as any)._id === selectedProfileUser.id)}
-          currentUserId={user?.id || (user as any)?._id}
-          onClose={() => setSelectedProfileUser(null)}
-          onStartDM={(toUserId: string) => handleDMUser(toUserId, selectedProfileUser.username)}
-          onStartCall={(targetUserId: string, isVideo: boolean, partnerData?: any) =>
-            handleStartCall(targetUserId, undefined, isVideo, partnerData || selectedProfileUser)
-          }
-          onMention={(username: string) => {
-            setCurrentInput((prev) => (prev ? `${prev} @${username} ` : `@${username} `));
-          }}
-        />
-      )}
+      <AnimatePresence>
+        {selectedProfileUser && (
+          <motion.div
+            key="classic-profile-card"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: SECTION_EASE }}
+          >
+            <UserProfileCard
+              user={selectedProfileUser}
+              isOnline={online.some((o) => o.id === selectedProfileUser.id || (o as any)._id === selectedProfileUser.id)}
+              currentUserId={user?.id || (user as any)?._id}
+              onClose={() => setSelectedProfileUser(null)}
+              onStartDM={(toUserId: string) => handleDMUser(toUserId, selectedProfileUser.username)}
+              onStartCall={(targetUserId: string, isVideo: boolean, partnerData?: any) =>
+                handleStartCall(targetUserId, undefined, isVideo, partnerData || selectedProfileUser)
+              }
+              onMention={(username: string) => {
+                setCurrentInput((prev) => (prev ? `${prev} @${username} ` : `@${username} `));
+              }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Message Search Modal */}
       {showSearchModal && currentRoom && (
@@ -916,26 +1015,46 @@ export default function Chat() {
       )}
 
       {/* Forward Message Modal */}
-      {forwardMsg && (
-        <ForwardModal
-          message={forwardMsg}
-          rooms={rooms}
-          conversations={conversations}
-          onClose={() => setForwardMsg(null)}
-          onForward={forwardMessage}
-        />
-      )}
+      <AnimatePresence>
+        {forwardMsg && (
+          <motion.div
+            key="classic-forward-modal"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: SECTION_EASE }}
+          >
+            <ForwardModal
+              message={forwardMsg}
+              rooms={rooms}
+              conversations={conversations}
+              onClose={() => setForwardMsg(null)}
+              onForward={forwardMessage}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Channel Settings Modal */}
-      {showChannelSettingsModal && currentRoom && (
-        <ChannelSettingsModal
-          room={currentRoom}
-          onClose={() => setShowChannelSettingsModal(false)}
-          onUpdated={(updatedRoom: Room) => {
-            selectRoom(updatedRoom);
-          }}
-        />
-      )}
+      <AnimatePresence>
+        {showChannelSettingsModal && currentRoom && (
+          <motion.div
+            key="classic-channel-settings-modal"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: SECTION_EASE }}
+          >
+            <ChannelSettingsModal
+              room={currentRoom}
+              onClose={() => setShowChannelSettingsModal(false)}
+              onUpdated={(updatedRoom: Room) => {
+                selectRoom(updatedRoom);
+              }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* WebRTC Call Overlay UI */}
       <CallOverlay
