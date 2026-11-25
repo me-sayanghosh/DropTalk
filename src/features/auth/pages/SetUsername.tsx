@@ -3,8 +3,10 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { useAuth } from '../../../shared/context/AuthContext';
 import { API_BASE, STORAGE_KEYS } from '../../../shared/utils/constants';
+import { SECTION_EASE } from '../../../shared/utils/animations';
 
 export default function SetUsername() {
   const [username, setUsername] = useState('');
@@ -45,7 +47,12 @@ export default function SetUsername() {
       <div className="bauhaus-auth-bg-square" />
       <div className="bauhaus-auth-bg-triangle" />
 
-      <div className="bauhaus-auth-card">
+      <motion.div
+        className="bauhaus-auth-card"
+        initial={{ opacity: 0, y: 22, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.32, ease: SECTION_EASE }}
+      >
         <div className="bauhaus-auth-top-bar">
           <span className="b-bar-yellow" />
           <span className="b-bar-red" />
@@ -96,7 +103,7 @@ export default function SetUsername() {
             SKIP FOR NOW &rarr;
           </Link>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

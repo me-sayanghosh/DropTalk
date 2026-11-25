@@ -2,6 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { SECTION_EASE } from '../shared/utils/animations';
 
 export default function NotFound() {
   return (
@@ -19,7 +21,10 @@ export default function NotFound() {
         padding: '24px',
       }}
     >
-      <div
+      <motion.div
+        initial={{ opacity: 0, y: 18, scale: 0.96 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.3, ease: SECTION_EASE }}
         style={{
           border: '4px solid var(--border-color, #121212)',
           boxShadow: 'var(--shadow-xl, 8px 8px 0px 0px #121212)',
@@ -41,7 +46,7 @@ export default function NotFound() {
         <Link href="/" className="bauhaus-btn bauhaus-btn-red">
           Back to Home
         </Link>
-      </div>
+      </motion.div>
     </div>
   );
 }
