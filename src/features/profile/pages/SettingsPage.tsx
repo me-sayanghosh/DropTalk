@@ -3,7 +3,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ShieldCheck, Download, Trash2 } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '../../../shared/context/AuthContext';
+import {
+  directionalSlideVariants,
+  modalBackdropVariants,
+  modalPanelVariants,
+  type NavigationDirection,
+} from '../../../shared/utils/animations';
 import { useTheme } from '../../../shared/hooks/useTheme';
 import { useNotifications } from '../../notifications/useNotifications';
 import useDM from '../../chat/hooks/useDM';
@@ -28,10 +35,16 @@ export default function SettingsPage() {
   const VALID_SECTIONS = ['profile', 'appearance', 'privacy', 'notifications', 'shortcuts', 'help'];
   const initialSection = VALID_SECTIONS.includes(sectionParam) ? sectionParam : 'profile';
   const [activeSection, setActiveSection] = useState<string>(initialSection);
+  const [sectionDirection, setSectionDirection] = useState<NavigationDirection>(1);
 
   useEffect(() => {
     if (sectionParam && VALID_SECTIONS.includes(sectionParam)) {
-      setActiveSection(sectionParam);
+      const prevIdx = VALID_SECTIONS.indexOf(activeSection);
+      const nextIdx = VALID_SECTIONS.indexOf(sectionParam);
+      if (prevIdx !== nextIdx) {
+        setSectionDirection(nextIdx >= prevIdx ? 1 : -1);
+        setActiveSection(sectionParam);
+      }
     }
   }, [sectionParam]);
 
@@ -517,6 +530,9 @@ export default function SettingsPage() {
   const handleSelectSection = (secOrPath: string) => {
     const sec = secOrPath.replace('/settings/', '').trim();
     if (VALID_SECTIONS.includes(sec)) {
+      const prevIdx = VALID_SECTIONS.indexOf(activeSection);
+      const nextIdx = VALID_SECTIONS.indexOf(sec);
+      setSectionDirection(nextIdx >= prevIdx ? 1 : -1);
       setActiveSection(sec);
     }
     setMobileActiveView('chat');
@@ -654,6 +670,7 @@ export default function SettingsPage() {
             <button
               className="mobile-back-btn"
               onClick={() => {
+                setSectionDirection(-1);
                 setMobileActiveView('sidebar');
                 if (typeof window !== 'undefined') {
                   window.history.pushState({ section: activeSection, view: 'sidebar' }, '', `/settings/${activeSection}`);
@@ -686,8 +703,17 @@ export default function SettingsPage() {
         </header>
 
         {/* Section Content Panel */}
-        <div className="settings-content-panel">
+        <div className="settings-content-panel overflow-x-hidden">
           <div className="settings-container-inner">
+            <AnimatePresence mode="wait" custom={sectionDirection} initial={false}>
+              <motion.div
+                key={activeSection}
+                custom={sectionDirection}
+                variants={directionalSlideVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+              >
 
             {/* SECTION 1: PROFILE */}
             {activeSection === 'profile' && (
@@ -1241,43 +1267,59 @@ export default function SettingsPage() {
                 </div>
 
                 {/* Account Deletion Confirmation Modal */}
-                {showDeleteModal && (
-                  <div className="settings-modal-overlay" onClick={() => setShowDeleteModal(false)}>
-                    <div className="settings-modal-card" onClick={(e) => e.stopPropagation()}>
-                      <div className="modal-header">
-                        <h3 style={{ color: '#ef4444' }}>Delete DropTalk Account?</h3>
-                        <button type="button" onClick={() => setShowDeleteModal(false)}>&times;</button>
-                      </div>
-                      <div className="modal-body">
-                        <p style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                          This action is irreversible.
-                        </p>
-                        <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                          Deleting your account will permanently wipe your profile credentials, room memberships, 
-                          cryptographic key records, and active sessions.
-                        </p>
-                      </div>
-                      <div className="modal-footer" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                        <button
-                          type="button"
-                          className="button-secondary-pill"
-                          onClick={() => setShowDeleteModal(false)}
-                          disabled={isDeletingAccount}
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="button"
-                          className="button-danger-pill"
-                          onClick={handleDeleteAccount}
-                          disabled={isDeletingAccount}
-                        >
-                          {isDeletingAccount ? 'Deleting...' : 'Yes, Permanently Delete'}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                <AnimatePresence>
+                  {showDeleteModal && (
+                    <motion.div
+                      variants={modalBackdropVariants}
+                      initial="initial"
+                      animate="animate"
+                      exit="exit"
+                      className="settings-modal-overlay"
+                      onClick={() => setShowDeleteModal(false)}
+                    >
+                      <motion.div
+                        variants={modalPanelVariants}
+                        initial="initial"
+                        animate="animate"
+                        exit="exit"
+                        className="settings-modal-card"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="modal-header">
+                          <h3 style={{ color: '#ef4444' }}>Delete DropTalk Account?</h3>
+                          <button type="button" onClick={() => setShowDeleteModal(false)}>&times;</button>
+                        </div>
+                        <div className="modal-body">
+                          <p style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                            This action is irreversible.
+                          </p>
+                          <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                            Deleting your account will permanently wipe your profile credentials, room memberships, 
+                            cryptographic key records, and active sessions.
+                          </p>
+                        </div>
+                        <div className="modal-footer" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                          <button
+                            type="button"
+                            className="button-secondary-pill"
+                            onClick={() => setShowDeleteModal(false)}
+                            disabled={isDeletingAccount}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            className="button-danger-pill"
+                            onClick={handleDeleteAccount}
+                            disabled={isDeletingAccount}
+                          >
+                            {isDeletingAccount ? 'Deleting...' : 'Yes, Permanently Delete'}
+                          </button>
+                        </div>
+                      </motion.div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             )}
 
@@ -1494,32 +1536,50 @@ export default function SettingsPage() {
                   </button>
                 </div>
 
-                {showTermsModal && (
-                  <div className="settings-modal-overlay" onClick={() => setShowTermsModal(false)}>
-                    <div className="settings-modal-card" onClick={(e) => e.stopPropagation()}>
-                      <div className="modal-header">
-                        <h3>Terms of Service &amp; Privacy Policy</h3>
-                        <button type="button" onClick={() => setShowTermsModal(false)}>&times;</button>
-                      </div>
-                      <div className="modal-body">
-                        <h4>1. User Privacy</h4>
-                        <p>DropTalk respects your data privacy. All messages sent within private channels are end-to-end encrypted using AES-256 and RSA-2048 keys stored locally.</p>
-                        <h4>2. Direct Messaging</h4>
-                        <p>1-on-1 direct messages require recipient acceptance to prevent spam and unauthorized contact.</p>
-                        <h4>3. Data Protection</h4>
-                        <p>Your user profile credentials and email address are never shared with third parties.</p>
-                      </div>
-                      <div className="modal-footer">
-                        <button type="button" className="button-secondary-pill" onClick={() => setShowTermsModal(false)}>
-                          Close
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                <AnimatePresence>
+                  {showTermsModal && (
+                    <motion.div
+                      variants={modalBackdropVariants}
+                      initial="initial"
+                      animate="animate"
+                      exit="exit"
+                      className="settings-modal-overlay"
+                      onClick={() => setShowTermsModal(false)}
+                    >
+                      <motion.div
+                        variants={modalPanelVariants}
+                        initial="initial"
+                        animate="animate"
+                        exit="exit"
+                        className="settings-modal-card"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="modal-header">
+                          <h3>Terms of Service &amp; Privacy Policy</h3>
+                          <button type="button" onClick={() => setShowTermsModal(false)}>&times;</button>
+                        </div>
+                        <div className="modal-body">
+                          <h4>1. User Privacy</h4>
+                          <p>DropTalk respects your data privacy. All messages sent within private channels are end-to-end encrypted using AES-256 and RSA-2048 keys stored locally.</p>
+                          <h4>2. Direct Messaging</h4>
+                          <p>1-on-1 direct messages require recipient acceptance to prevent spam and unauthorized contact.</p>
+                          <h4>3. Data Protection</h4>
+                          <p>Your user profile credentials and email address are never shared with third parties.</p>
+                        </div>
+                        <div className="modal-footer">
+                          <button type="button" className="button-secondary-pill" onClick={() => setShowTermsModal(false)}>
+                            Close
+                          </button>
+                        </div>
+                      </motion.div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             )}
 
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
       </main>
